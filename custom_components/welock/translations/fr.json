@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuration de WeLock Smart Lock",
+        "description": "Entrez vos identifiants d'API WeLock obtenus dans l'application mobile WeLock (Menu latéral -> Home Assistant).",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "reauth": {
+        "title": "Réauthentifier le compte WeLock",
+        "description": "Veuillez mettre à jour vos identifiants pour rétablir la connexion à vos appareils WeLock.",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter au Cloud WeLock (api.welockglobal.com). Veuillez vérifier votre connexion réseau.",
+      "invalid_auth": "Client ID ou Client Secret invalide. Veuillez vérifier dans l'application WeLock.",
+      "unknown": "Une erreur inattendue est survenue. Veuillez réessayer."
+    },
+    "abort": {
+      "already_configured": "Ce compte WeLock est déjà configuré dans Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de l'intégration WeLock",
+        "description": "Configurez l'intervalle d'actualisation et le comportement de la serrure.",
+        "data": {
+          "scan_interval": "Intervalle d'interrogation (secondes)",
+          "auto_relock_delay": "Délai de reverrouillage mécanique (secondes)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Batterie"
+      },
+      "signal_strength": {
+        "name": "Puissance du signal"
+      },
+      "last_unlock_type": {
+        "name": "Dernière méthode de déverrouillage"
+      }
+    },
+    "binary_sensor": {
+      "connectivity": {
+        "name": "État de la serrure"
+      },
+      "gateway_connectivity": {
+        "name": "État de la passerelle"
+      }
+    }
+  }
+}

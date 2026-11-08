@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WeLock Smart Lock Setup",
+        "description": "Enter your WeLock API credentials obtained from the WeLock mobile application (Sidebar Menu -> Home Assistant).",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "reauth": {
+        "title": "Re-authenticate WeLock Account",
+        "description": "Please update your credentials to restore the connection to your WeLock devices.",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to WeLock Cloud (api.welockglobal.com). Please verify internet connection.",
+      "invalid_auth": "Invalid Client ID or Client Secret. Please verify in the WeLock mobile app.",
+      "unknown": "An unexpected error occurred. Please try again."
+    },
+    "abort": {
+      "already_configured": "This WeLock account is already configured in Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WeLock Integration Options",
+        "description": "Configure update polling frequency and lock behavior.",
+        "data": {
+          "scan_interval": "Data polling interval (seconds)",
+          "auto_relock_delay": "Mechanical relock reset delay (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "signal_strength": {
+        "name": "Signal Strength"
+      },
+      "last_unlock_type": {
+        "name": "Last Unlock Method"
+      }
+    },
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Lock Status"
+      },
+      "gateway_connectivity": {
+        "name": "Gateway Status"
+      }
+    }
+  }
+}
