@@ -1,0 +1,43 @@
+name: Bug Report
+description: Create a bug report to help us improve WeLock integration or tools
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue!
+  - type: input
+    id: version
+    attributes:
+      label: Integration & Home Assistant Version
+      description: What version of this integration and Home Assistant are you using?
+      placeholder: "Integration v1.2.0, Home Assistant 2024.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: WeLock Hardware Model
+      options:
+        - "Touch41 (Fingerprint)"
+        - "PCB41 (Passcode)"
+        - "SECBN51"
+        - "WiFiBox 2"
+        - "WiFiBox 3"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Home Assistant Logs / Diagnostic Output
+      description: Please paste logs (ensure passwords and tokens are redacted!).
+      render: shell

@@ -57,6 +57,10 @@ class WeLockApiClient:
         """Return the client id."""
         return self._client_id
 
+    def __repr__(self) -> str:
+        """Return safe string representation redacting secrets."""
+        return f"<WeLockApiClient client_id={self._client_id!r} authenticated={bool(self._access_token)}>"
+
     async def async_authenticate(self) -> bool:
         """Authenticate with the WeLock Open Cloud API and acquire an access token."""
         url = f"{self._base_url}{ENDPOINT_AUTH}"

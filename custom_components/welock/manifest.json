@@ -6,6 +6,8 @@
   "documentation": "https://github.com/Ebenhoeh80/welock",
   "issue_tracker": "https://github.com/Ebenhoeh80/welock/issues",
   "iot_class": "cloud_polling",
+  "integration_type": "hub",
   "version": "1.2.0",
-  "requirements": ["aiohttp>=3.9.0"]
+  "requirements": ["aiohttp>=3.9.0"],
+  "loggers": ["custom_components.welock"]
 }

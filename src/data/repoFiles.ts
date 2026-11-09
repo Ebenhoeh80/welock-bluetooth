@@ -1345,15 +1345,178 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
       es: 'Documentación completa con guía de instalación en HACS, automatizaciones y distintivos',
       fr: 'Documentation complète avec guide HACS, exemples d’automatisations et badges',
     },
-    content: `# WeLock Smart Lock — Home Assistant HACS Integration
+    content: `# WeLock Smart Lock — Home Assistant HACS Integration & BLE Diagnose-Tools
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/badge/version-v1.2.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
-[![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#localization)
+[![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-languages--sprachen--idiomas--langues)
 
-Integration for **WeLock Smart Door Locks** (Touch41, SECBN51, PCB41) and the **WeLock WiFiBox Gateway** into **Home Assistant** via **HACS** (Home Assistant Community Store / Marketplace).
+Integration for **WeLock Smart Door Locks** (Touch41, SECBN51, PCB41) and the **WeLock WiFiBox Gateway** into **Home Assistant** via **HACS**, sowie lokale BLE- und Cloud-Diagnose-Tools unter tools/.`,
+  },
+  {
+    path: 'tools/README.md',
+    name: 'tools/README.md',
+    category: 'markdown',
+    description: {
+      de: 'Vollständige Dokumentation aller Python- und Startskripte unter tools/ (Architektur, Bleak, Aufrufe, Troubleshooting)',
+      en: 'Complete documentation of all Python and launcher scripts in tools/ (Architecture, Bleak, usage, troubleshooting)',
+      es: 'Documentación completa de los scripts de Python y lanzadores en tools/ (Arquitectura, Bleak, uso, solución de problemas)',
+      fr: 'Documentation complète des scripts Python et lanceurs dans tools/ (Architecture, Bleak, utilisation, dépannage)',
+    },
+    content: `# WeLock BLE & Cloud Diagnose- und Experimentier-Werkzeuge
 
-Repository: https://github.com/Ebenhoeh80/welock`,
+Dokumentation, Architektur und Anleitungen für alle Skripte unter tools/. Siehe tools/README.md im Projektverzeichnis.`,
+  },
+  {
+    path: 'tools/requirements-ble.txt',
+    name: 'tools/requirements-ble.txt',
+    category: 'json',
+    description: {
+      de: 'Python-Abhängigkeiten für BLE-Tools (bleak>=0.22,<3)',
+      en: 'Python dependencies for BLE tools (bleak>=0.22,<3)',
+      es: 'Dependencias de Python para herramientas BLE (bleak>=0.22,<3)',
+      fr: 'Dépendances Python pour les outils BLE (bleak>=0.22,<3)',
+    },
+    content: `bleak>=0.22,<3`,
+  },
+  {
+    path: 'tools/ble_probe.py',
+    name: 'tools/ble_probe.py',
+    category: 'python',
+    description: {
+      de: 'Inspektion eines BLE-Geräts (Erreichbarkeit, GATT-Services & Characteristics) ohne Schreibzugriff',
+      en: 'Inspect a BLE device (availability, GATT services & characteristics) without sending write commands',
+      es: 'Inspección de un dispositivo BLE (disponibilidad, servicios GATT y características) sin escritura',
+      fr: 'Inspection d’un appareil BLE (disponibilité, services GATT et caractéristiques) sans écriture',
+    },
+    content: `"""Inspect a known BLE device without sending application commands."""
+
+import argparse
+import asyncio
+import math
+import sys
+
+from bleak import BleakClient, BleakScanner
+from bleak.exc import BleakError
+
+SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+NOTIFY_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+
+
+async def inspect_device(address: str, timeout: float, connect: bool) -> int:
+    device = await BleakScanner.find_device_by_address(address, timeout=timeout)
+    if device is None:
+        print("Device not found during scan; it may be out of range or using a different address.", file=sys.stderr)
+        return 1
+
+    print("Device found during scan.")
+    if not connect:
+        return 0
+
+    async with BleakClient(device, timeout=timeout) as client:
+        service = client.services.get_service(SERVICE_UUID)
+        if service is None:
+            print("The expected service was not found.", file=sys.stderr)
+            return 1
+
+        characteristics = {characteristic.uuid.lower(): characteristic for characteristic in service.characteristics}
+        missing = {WRITE_UUID, NOTIFY_UUID} - characteristics.keys()
+        if missing:
+            print(f"Expected characteristics not found: {', '.join(sorted(missing))}", file=sys.stderr)
+            return 1
+
+        print(f"Service: {SERVICE_UUID}")
+        for uuid in (WRITE_UUID, NOTIFY_UUID):
+            print(f"Characteristic: {uuid}; properties: {', '.join(characteristics[uuid].properties)}")
+        print("Inspection complete; no application commands were sent.")
+        return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--address", required=True, help="BLE address to inspect; use only your own device.")
+    parser.add_argument("--timeout", type=float, default=15, help="Scan and connection timeout in seconds.")
+    parser.add_argument("--connect", action="store_true", help="Connect and inspect GATT services without writing.")
+    args = parser.parse_args()
+    if not math.isfinite(args.timeout) or args.timeout <= 0:
+        parser.error("--timeout must be a positive finite number")
+    try:
+        return asyncio.run(inspect_device(args.address, args.timeout, args.connect))
+    except (BleakError, OSError, TimeoutError) as exc:
+        print(f"Bluetooth inspection failed: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())`,
+  },
+  {
+    path: 'tools/welock_cloud_login.py',
+    name: 'tools/welock_cloud_login.py',
+    category: 'python',
+    description: {
+      de: 'WeLock Cloud-Login Probe: Prüft Konto, listet Geräte, Schlosscodes und BLE-Namen auf (ohne Token-Speicherung)',
+      en: 'WeLock cloud login probe: Tests account, lists devices, lock numbers, and BLE names (without saving tokens)',
+      es: 'Sonda de inicio de sesión WeLock Cloud: Comprueba cuenta, lista dispositivos, códigos y nombres BLE',
+      fr: 'Sonde de connexion Cloud WeLock : Vérifie le compte, liste les appareils, numéros et noms BLE',
+    },
+    content: `"""Experimental WELOCK cloud-login probe; it does not unlock a lock."""
+# Vollständiger Quellcode siehe tools/welock_cloud_login.py`,
+  },
+  {
+    path: 'tools/welock_command_probe.py',
+    name: 'tools/welock_command_probe.py',
+    category: 'python',
+    description: {
+      de: 'Hybrid-Probe: Liest BLE-Batterie & Challenge, holt 15-Byte-Befehl von der Cloud (ohne Entriegelungs-Write)',
+      en: 'Hybrid probe: Reads BLE battery & challenge, requests 15-byte command from cloud (no unlock write)',
+      es: 'Sonda híbrida: Lee batería y desafío BLE, solicita comando de 15 bytes a la nube (sin desbloqueo)',
+      fr: 'Sonde hybride : Lit batterie et défi BLE, demande la commande de 15 octets au cloud (sans déverrouillage)',
+    },
+    content: `"""Request one experimental cloud command using a fresh BLE battery response."""
+# Vollständiger Quellcode siehe tools/welock_command_probe.py`,
+  },
+  {
+    path: 'tools/welock_unlock_experiment.py',
+    name: 'tools/welock_unlock_experiment.py',
+    category: 'python',
+    description: {
+      de: 'Autorisiertes Vor-Ort Entriegelungsexperiment über BLE (sendet 15-Byte-Befehl nach doppelter Bestätigung)',
+      en: 'Authorized on-site unlock experiment via BLE (sends 15-byte command upon double confirmation)',
+      es: 'Experimento de desbloqueo autorizado in situ por BLE (envía comando de 15 bytes tras doble confirmación)',
+      fr: 'Expérience de déverrouillage autorisée sur site via BLE (envoie la commande de 15 octets après confirmation)',
+    },
+    content: `"""One explicitly authorized cloud-assisted BLE unlock experiment."""
+# Vollständiger Quellcode siehe tools/welock_unlock_experiment.py`,
+  },
+  {
+    path: 'tools/welock_tools.sh',
+    name: 'tools/welock_tools.sh',
+    category: 'shell',
+    description: {
+      de: 'Interaktives Hauptmenü für alle WeLock-Werkzeuge unter Linux und macOS (inkl. venv-Setup)',
+      en: 'Interactive main menu for all WeLock tools on Linux and macOS (incl. venv setup)',
+      es: 'Menú principal interactivo para todas las herramientas WeLock en Linux y macOS',
+      fr: 'Menu principal interactif pour tous les outils WeLock sous Linux et macOS',
+    },
+    content: `#!/usr/bin/env bash
+# Interaktives WeLock Hauptmenü für Linux & macOS`,
+  },
+  {
+    path: 'tools/welock_tools.ps1',
+    name: 'tools/welock_tools.ps1',
+    category: 'shell',
+    description: {
+      de: 'Interaktives Hauptmenü für alle WeLock-Werkzeuge unter Windows PowerShell',
+      en: 'Interactive main menu for all WeLock tools on Windows PowerShell',
+      es: 'Menú principal interactivo para todas las herramientas WeLock en Windows PowerShell',
+      fr: 'Menu principal interactif pour tous les outils WeLock sous Windows PowerShell',
+    },
+    content: `<#
+.SYNOPSIS
+    WeLock Diagnostic Tools - Interaktives Hauptmenue (Windows PowerShell)
+#>`,
   },
 ];

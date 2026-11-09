@@ -3,7 +3,7 @@ export type Language = 'de' | 'en' | 'es' | 'fr';
 export interface RepoFile {
   path: string;
   name: string;
-  category: 'python' | 'json' | 'markdown' | 'license';
+  category: 'python' | 'json' | 'markdown' | 'license' | 'shell';
   description: Record<Language, string>;
   content: string;
 }
