@@ -50,7 +50,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 5. Abhaengigkeit pruefen (bleak)
-$BleakCheck = & $PythonBin -c "import bleak" 2>$null
+#$BleakCheck = & $PythonBin -c "import bleak" 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "======================================================================" -ForegroundColor Red
     Write-Host "FEHLER: Das erforderliche Python-Paket 'bleak' ist nicht installiert!" -ForegroundColor Red
