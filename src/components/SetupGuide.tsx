@@ -23,7 +23,7 @@ export const SetupGuide: React.FC<SetupGuideProps> = ({ currentLang }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
 
   const handleCopyRepo = () => {
-    navigator.clipboard.writeText('https://github.com/Ebenhoeh80/welock');
+    navigator.clipboard.writeText('https://github.com/Ebenhoeh80/welock-aistudio');
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
   };
@@ -126,7 +126,7 @@ export const SetupGuide: React.FC<SetupGuideProps> = ({ currentLang }) => {
                 {step.repoAction && (
                   <div className="pt-2 flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg font-mono text-xs text-cyan-300">
-                      <span>https://github.com/Ebenhoeh80/welock</span>
+                      <span>https://github.com/Ebenhoeh80/welock-aistudio</span>
                     </div>
                     <button
                       onClick={handleCopyRepo}

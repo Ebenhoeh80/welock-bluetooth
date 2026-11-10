@@ -1,7 +1,7 @@
 # WeLock Smart Lock — Home Assistant HACS Integration & BLE Diagnose-Tools
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
-[![GitHub Release](https://img.shields.io/badge/version-v1.2.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock/releases)
+[![GitHub Release](https://img.shields.io/badge/version-v1.2.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock-aistudio/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-languages--sprachen--idiomas--langues)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -62,6 +62,36 @@ welock/
 
 ---
 
+## 📋 Voraussetzungen (Prerequisites)
+
+Damit Sie sowohl die **Home Assistant Integration** als auch die **BLE-Diagnosetools** erfolgreich einsetzen können, beachten Sie bitte folgende System-, Hardware- und Softwarevoraussetzungen:
+
+### 1. 📡 Bluetooth-Hardware & Reichweite (für BLE-Tools)
+* **Bluetooth-Empfänger:** Ein Rechner oder Bluetooth-Adapter mit Unterstützung für mindestens **Bluetooth 4.0 Low Energy (BLE)** (integriertes Modul oder USB-BLE-Dongle).
+* **Funkreichweite:** Das Schloss muss sich in direkter Funkreichweite des BLE-Empfängers befinden (optimal **unter 3 bis 5 Metern**). Massive Brandschutztüren, Stahlarmierungen oder dicke Außenmauern dämpfen das 2.4-GHz-BLE-Signal stark.
+* **⚠️ Schloss aufwecken (Wake-Up-Prozedur):**
+  WeLock Smart Locks schalten ihr Funkmodul in einen stromsparenden Tiefschlaf (*Deep Sleep*), um die 3x AAA-Batterien zu schonen. **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden** durch kurzes Berühren der Zifferntastatur oder des Fingerabdrucksensors (die Tastaturbeleuchtung oder das OLED-Display leuchtet auf).
+* **🔋 Batteriezustand:** Mindestens 3 frische AAA Alkaline- oder Lithium-Batterien (1.5V). Bei niedrigem Batteriestand (< 20%) deaktiviert die interne Firmware häufig die BLE-Antenne oder schlägt die mechanische Kupplung fehl.
+
+### 2. 🌐 WeLock WiFiBox Gateway (für Home Assistant)
+* Für die dauerhafte, zuverlässige Steuerung in Home Assistant (auch wenn der Home Assistant Host nicht in BLE-Reichweite der Haustür steht) wird das offizielle **WeLock WiFiBox Gateway (2.4 GHz WLAN)** benötigt.
+* Das Schloss muss in der offiziellen WeLock Smartphone-App mit dieser WiFiBox gekoppelt sein.
+
+### 3. 🐍 Software- & Betriebssystem-Voraussetzungen
+* **Python-Version:** Mindestens **Python 3.10** oder neuer (getestet unter Python 3.10, 3.11 und 3.12).
+* **Python-Bibliothek `bleak`:** Für die Ausführung aller BLE-Werkzeuge (`pip install -r tools/requirements-ble.txt` bzw. `pip install bleak>=0.22.0,<3.0.0`).
+* **Betriebssystemspezifische Berechtigungen:**
+  * **Linux:** Installierter und aktiver BlueZ-Stack (`systemctl status bluetooth`). Der ausführende Benutzer sollte Mitglied der Gruppe `bluetooth` oder `netdev` sein. Prüfen Sie mit `rfkill list`, dass Bluetooth nicht *soft-blocked* ist.
+  * **macOS:** macOS 12+ mit Apple CoreBluetooth. Dem ausführenden Terminal (Terminal.app, iTerm2 oder IDE wie VS Code) muss in den Systemeinstellungen unter *Datenschutz & Sicherheit ➔ Bluetooth* die Erlaubnis für Bluetooth erteilt sein.
+  * **Windows:** Windows 10 (ab Build 1809) oder Windows 11 mit aktiviertem Bluetooth und erteilten App-Berechtigungen für Bluetooth und Standortdienste.
+* **Home Assistant:** Version **2024.1.0** oder neuer mit installiertem **HACS** (Home Assistant Community Store) oder Dateizugriff auf `/config/custom_components/`.
+
+### 4. 🔑 WeLock-Konto & API-Schlüssel
+* Ein aktives Benutzerkonto in der offiziellen **WeLock App** (iOS / Android).
+* Ihre persönliche **Client-ID** und Ihr **Client-Secret** (abrufbar in der WeLock App unter: *Menü ➔ Home Assistant*).
+
+---
+
 ## 🛠 Teil 1: BLE & Cloud Diagnose-Werkzeuge (`tools/`)
 
 Wenn Sie die **BLE-MAC-Adresse**, den **BLE-Gerätenamen** oder den **Akkustand** Ihres Schlosses direkt über Bluetooth ermitteln oder Cloud-Befehle analysieren möchten:
@@ -108,7 +138,7 @@ pip install -r tools/requirements-ble.txt
 2. Klicken Sie oben rechts auf das Drei-Punkte-Menü und wählen Sie **Benutzerdefinierte Repositories** (Custom repositories).
 3. Geben Sie die Repository-URL ein:
    ```text
-   https://github.com/Ebenhoeh80/welock
+   https://github.com/Ebenhoeh80/welock-aistudio
    ```
 4. Wählen Sie als Kategorie **Integration** und klicken Sie auf **Hinzufügen**.
 5. Suchen Sie nach **WeLock Smart Lock**, klicken Sie auf **Herunterladen** und starten Sie Home Assistant neu.

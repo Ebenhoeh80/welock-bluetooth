@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleCopyRepo = () => {
-    navigator.clipboard.writeText('https://github.com/Ebenhoeh80/welock');
+    navigator.clipboard.writeText('https://github.com/Ebenhoeh80/welock-aistudio');
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
   };
@@ -72,10 +72,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={handleCopyRepo}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-cyan-300 hover:text-white transition text-xs font-mono border border-slate-700/70"
-            title="https://github.com/Ebenhoeh80/welock"
+            title="https://github.com/Ebenhoeh80/welock-aistudio"
           >
             {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedUrl ? t.copied : 'github.com/Ebenhoeh80/welock'}</span>
+            <span>{copiedUrl ? t.copied : 'github.com/Ebenhoeh80/welock-aistudio'}</span>
           </button>
         </div>
       </div>

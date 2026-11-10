@@ -97,16 +97,22 @@ Der empfohlene Ablauf zur Erforschung und Inbetriebnahme Ihres Schlosses glieder
 
 ## 📦 Voraussetzungen & Python-Abhängigkeiten
 
-### Systemvoraussetzungen:
-- **Python**: Version **3.10** oder neuer.
-- **Bluetooth Hardware**: Bluetooth 4.0 oder neuer (BLE-fähig).
+### Hardware-Voraussetzungen:
+- **Bluetooth-Empfänger**: Rechner oder USB-Dongle mit **Bluetooth 4.0 Low Energy (BLE)** oder neuer.
+- **Funkreichweite**: Das WeLock-Schloss muss sich in direkter Nähe befinden (optimal **< 3 bis 5 Meter**). Metalltüren oder dicke Wände reduzieren die Reichweite erheblich.
+- **⚠️ Schloss aufwecken (Wake-Up-Prozedur)**:
+  WeLock-Schlösser gehen zur Schonung der AAA-Batterien in einen tiefen Ruhezustand (*Deep Sleep*). **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden**, indem Sie die Tastatur oder den Fingerabdrucksensor kurz berühren.
+- **Batterieladestand**: Mindestens 3x frische AAA-Batterien mit stabiler Spannung (bei < 20% verweigert die Firmware oft Funkbefehle).
+
+### Systemvoraussetzungen & Berechtigungen:
+- **Python**: Version **3.10** oder neuer (getestet mit 3.10, 3.11, 3.12).
 - **Betriebssysteme**:
-  - **Linux**: BlueZ Bluetooth-Stack (Debian, Ubuntu, Arch, Fedora etc.).
-  - **macOS**: Bluetooth mit Terminal-Berechtigung (CoreBluetooth).
-  - **Windows**: Windows 10/11 mit Microsoft Bluetooth-Stack (WinRT).
+  - **Linux**: BlueZ Bluetooth-Stack (`bluetoothd`). Prüfen Sie mit `rfkill list`, ob Bluetooth aktiv ist. Führen Sie Skripte als Benutzer in der Gruppe `bluetooth` oder mit passenden Berechtigungen aus.
+  - **macOS**: macOS 12+ (CoreBluetooth). Dem ausführenden Terminal muss in *Systemeinstellungen ➔ Datenschutz & Sicherheit ➔ Bluetooth* Zugriff gewährt sein.
+  - **Windows**: Windows 10 (Build 1809+) oder Windows 11 mit WinRT-Bluetooth-Stack und aktiver Bluetooth-Schnittstelle.
 
 ### Python-Pakete (`requirements-ble.txt`):
-- **`bleak`** (`>=0.22,<3`): Asynchrone, plattformübergreifende Bluetooth-Low-Energy-Bibliothek.
+- **`bleak`** (`>=0.22.0,<3.0.0`): Asynchrone, plattformübergreifende Bluetooth-Low-Energy-Bibliothek.
 - `welock_cloud_login.py` benötigt **keine** externen Pakete (reine Standardbibliothek).
 - `ble_probe.py`, `welock_command_probe.py` und `welock_unlock_experiment.py` benötigen zwingend **`bleak`**.
 

@@ -22,7 +22,7 @@ If you discover a security vulnerability within this project:
 
 1. **Do NOT open a public GitHub issue.**
 2. Report the vulnerability privately via **GitHub Private Vulnerability Reporting** at:
-   `https://github.com/Ebenhoeh80/welock/security/advisories/new`
+   `https://github.com/Ebenhoeh80/welock-aistudio/security/advisories/new`
 3. Include detailed reproduction steps, affected firmware/versions, and a proof of concept if available.
 
 We will acknowledge receipt within 48 hours and work with you on a coordinated disclosure timeline.

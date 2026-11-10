@@ -30,7 +30,7 @@ jobs:
 
       - name: Run Ruff Linter
         run: |
-          ruff check .
+          ruff check custom_components/ tools/ tests/
 
       - name: Run Black Code Formatter Check
         run: |
