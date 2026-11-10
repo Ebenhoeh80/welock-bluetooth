@@ -3,6 +3,11 @@
 from dataclasses import dataclass
 
 
+# Nordic UART Service (NUS) UUIDs used by WeLock Smart Locks
+SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+WRITE_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+NOTIFY_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+
 BATTERY_REQUEST = bytes((0x55, 0x30)) + bytes(13)
 BATTERY_RESPONSE_HEADER = bytes((0x55, 0x30))
 

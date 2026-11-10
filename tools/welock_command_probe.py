@@ -1,7 +1,9 @@
-"""Request one experimental cloud command using a fresh BLE battery response.
+"""Fordert einen experimentellen Cloud-Befehl anhand einer frischen BLE-Challenge an.
 
-No unlock command is transmitted to the lock.
+Standardmäßig wird KEIN Entriegelungsbefehl an das Schloss übertragen.
 """
+
+from __future__ import annotations
 
 import asyncio
 import getpass
@@ -9,30 +11,67 @@ import json
 import sys
 import warnings
 
-from bleak import BleakClient, BleakScanner
-from bleak.exc import BleakError
+try:
+    from bleak import BleakClient, BleakScanner
+    from bleak.exc import BleakError
+except ImportError:
+    BleakClient = None  # type: ignore[assignment,misc]
+    BleakScanner = None  # type: ignore[assignment,misc]
+    BleakError = Exception  # type: ignore[assignment,misc]
 
-from tools.ble_probe import NOTIFY_UUID, SERVICE_UUID, WRITE_UUID
-from tools.welock_cloud_login import CloudError, CloudSession
-from tools.welock_protocol import BATTERY_REQUEST, BatteryResponse, parse_battery_response
+from dependency_check import check_bleak_installed
 
+try:
+    from welock_cloud_login import CloudError, CloudSession
+    from welock_protocol import (
+        BATTERY_REQUEST,
+        NOTIFY_UUID,
+        SERVICE_UUID,
+        WRITE_UUID,
+        BatteryResponse,
+        parse_battery_response,
+    )
+except ImportError:
+    from tools.welock_cloud_login import CloudError, CloudSession
+    from tools.welock_protocol import (
+        BATTERY_REQUEST,
+        NOTIFY_UUID,
+        SERVICE_UUID,
+        WRITE_UUID,
+        BatteryResponse,
+        parse_battery_response,
+    )
 
 TIMEOUT = 15.0
 
 
 async def probe(
-    session: CloudSession, address: str, device_number: str, device_name: str, *, send_unlock: bool = False
+    session: CloudSession,
+    address: str,
+    device_number: str,
+    device_name: str,
+    *,
+    send_unlock: bool = False,
 ) -> bytes:
+    """Liest BLE-Status, fragt Cloud-Befehl an und sendet ihn optional zum Entriegeln."""
+    if BleakScanner is None or BleakClient is None:
+        _, msg = check_bleak_installed()
+        raise RuntimeError(f"BLE-Modul fehlt: {msg}")
+
+    print(f"Suche nach BLE-Schloss [{address}]...")
     device = await BleakScanner.find_device_by_address(address, timeout=TIMEOUT)
     if device is None:
-        raise RuntimeError("Das BLE-Geraet wurde nicht gefunden.")
+        raise RuntimeError(f"Das BLE-Gerät [{address}] wurde nicht gefunden (in Reichweite? aufgeweckt?).")
+
     async with BleakClient(device, timeout=TIMEOUT) as client:
         service = client.services.get_service(SERVICE_UUID)
         if service is None:
-            raise RuntimeError("Der erwartete BLE-Service fehlt.")
-        chars = {characteristic.uuid.lower(): characteristic for characteristic in service.characteristics}
+            raise RuntimeError(f"Der erwartete WeLock BLE-Service ({SERVICE_UUID}) fehlt.")
+
+        chars = {char.uuid.lower(): char for char in service.characteristics}
         if WRITE_UUID not in chars or NOTIFY_UUID not in chars:
-            raise RuntimeError("Die erwarteten BLE-Characteristics fehlen.")
+            raise RuntimeError("Erforderliche BLE-Characteristics (TX/RX) fehlen auf dem Schloss.")
+
         response: asyncio.Future[BatteryResponse] = asyncio.get_running_loop().create_future()
         followup: asyncio.Future[None] = asyncio.get_running_loop().create_future()
         waiting_for_followup = False
@@ -49,118 +88,161 @@ async def probe(
                     response.set_exception(exc)
 
         await client.start_notify(chars[NOTIFY_UUID], notification)
+        print("Sende Batterie- und Challenge-Anfrage per BLE...")
         await client.write_gatt_char(chars[WRITE_UUID], BATTERY_REQUEST, response=False)
+
         state = await asyncio.wait_for(response, TIMEOUT)
+        print(f"BLE-Antwort empfangen: Akkustand {state.battery}%, Challenge {state.random_factor}")
+
+        print("Fordere autorisierten Befehl von der WeLock Cloud API an...")
         command = await asyncio.to_thread(
-            session.request_unlock_command, device_number, device_name, state.random_factor, state.battery
+            session.request_unlock_command,
+            device_number,
+            device_name,
+            state.random_factor,
+            state.battery,
         )
+
         if send_unlock:
             if len(command) != 15 or not command.startswith(b"U1") or not command.isalnum():
-                raise RuntimeError("Cloud-Command hat nicht die fuer diesen Test belegte 15-Byte-Form; kein Unlock-Write.")
+                raise RuntimeError("Cloud-Command hat nicht die erwartete 15-Byte-Form (U1...); kein Write.")
             waiting_for_followup = True
-            print("Ein frischer Cloud-Command wird einmalig ohne Suffix geschrieben.")
-            print("Ab jetzt bei Fehlern nicht sofort wiederholen: mindestens 30 Sekunden Abstand halten.")
+            print("\n[Achtung] Frischer Cloud-Befehl wird einmalig an das Schloss geschrieben...")
+            print("Hinweis: Zwischen Entriegelungen mindestens 30 Sekunden Abstand halten.")
             await client.write_gatt_char(chars[WRITE_UUID], command, response=False)
-            print("BLE-Write abgeschlossen; das beweist keine mechanische Entriegelung.")
+            print("BLE-Befehl erfolgreich übertragen.")
             try:
                 await asyncio.wait_for(followup, TIMEOUT)
-                print("Eine anschliessende Notification wurde empfangen; ihr Inhalt wurde nicht ausgewertet.")
+                print("Bestätigungs-Notification vom Schloss empfangen.")
             except asyncio.TimeoutError:
-                print("Keine Notification innerhalb des Zeitlimits; Entriegelung unklar.")
+                print("Keine anschließende Notification empfangen.")
+
+        await client.stop_notify(chars[NOTIFY_UUID])
         return command
 
 
 async def discover_devices() -> list[tuple[str, str]]:
+    """Hilfsfunktion: Sucht BLE-Geräte in Reichweite."""
+    if BleakScanner is None:
+        return []
     devices = await BleakScanner.discover(timeout=TIMEOUT)
-    return sorted(((device.address, device.name or "(unbekannt)") for device in devices), key=lambda item: item[1])
+    return sorted(
+        ((device.address, device.name or "(unbekannt)") for device in devices),
+        key=lambda item: item[1],
+    )
 
 
 def run_interactive(*, send_unlock: bool = False) -> int:
+    """Interaktive Ausführung für Command-Probe oder autorisierten Unlock."""
+    if BleakScanner is None:
+        _, msg = check_bleak_installed()
+        print(f"Fehler: {msg}", file=sys.stderr)
+        return 1
+
     if send_unlock:
-        print("Experiment: EIN frischer Cloud-Command wird an das Schloss gesendet und kann es entriegeln.")
-        print("Schloss sichern, vor Ort bleiben und keine anderen Unlock-Versuche parallel ausloesen.")
-        print("Zwischen Unlock-Versuchen mehr als 30 Sekunden Abstand halten; kein automatisches Warten.")
+        print("=" * 70)
+        print("  AUTORISIERTER ENTRIEGELUNGSTEST (Vor-Ort BLE-Unlock)")
+        print("=" * 70)
+        print("Dieser Test sendet einen echten 15-Byte-Befehl an das WeLock-Schloss.")
+        print("Bleiben Sie vor Ort am Schloss und halten Sie mindestens 30 Sekunden Abstand.")
     else:
-        print("Experiment: Cloud-Geraeteliste und/oder Command anfordern; KEIN Unlock-Befehl wird gesendet.")
-    print("Die Cloud-Anmeldung kann die WELOCK-App auf anderen Geraeten abmelden.")
+        print("=" * 70)
+        print("  WeLock Hybrid Command-Probe (Test ohne Entriegelung)")
+        print("=" * 70)
+        print("Fragt einen Cloud-Befehl anhand der BLE-Challenge an, sendet ihn aber NICHT.")
+
     if input("Fortfahren? JA eingeben: ").strip() != "JA":
-        print("Abgebrochen; keine Anmeldung oder BLE-Aktion.")
+        print("Abgebrochen; keine Aktion durchgeführt.")
         return 1
-    if send_unlock and input("Einmaligen Unlock-Write erlauben? ENTRIEGELN eingeben: ").strip() != "ENTRIEGELN":
-        print("Abgebrochen; keine Anmeldung oder BLE-Aktion.")
+
+    if send_unlock and input("Einmaligen Unlock-Befehl senden? ENTRIEGELN eingeben: ").strip() != "ENTRIEGELN":
+        print("Abgebrochen; Schloss wird nicht entriegelt.")
         return 1
-    account = input("WELOCK-E-Mail: ").strip()
-    address = input("BLE-Adresse des eigenen Schlosses (Enter = suchen): ").strip()
+
+    account = input("WeLock-Konto (E-Mail): ").strip()
+    address = input("BLE-Adresse des Schlosses (Enter = jetzt suchen): ").strip()
+
     if not address:
         try:
+            print("Suche nach BLE-Geräten...")
             devices = asyncio.run(discover_devices())
         except (BleakError, OSError, TimeoutError) as exc:
             print(f"BLE-Suche fehlgeschlagen: {exc}", file=sys.stderr)
             return 1
+
         if not devices:
-            print("Keine BLE-Geraete gefunden; keine Anmeldung.", file=sys.stderr)
+            print("Keine BLE-Geräte gefunden. Schloss aufwecken und wiederholen.", file=sys.stderr)
             return 1
-        print("Gefundene BLE-Geraete (Kennungen nicht im Chat teilen):")
+
+        print("\nGefundene BLE-Geräte:")
         for index, (candidate_address, name) in enumerate(devices, 1):
-            print(f"{index}: {name} [{candidate_address}]")
-        selection = input("Nummer des eigenen Schlosses: ").strip()
+            print(f"  [{index}] {name} ({candidate_address})")
+        selection = input("\nNummer Ihres Schlosses: ").strip()
         if not selection.isdecimal() or not 1 <= int(selection) <= len(devices):
-            print("Ungueltige Auswahl; keine Anmeldung.", file=sys.stderr)
+            print("Ungültige Auswahl; abgebrochen.", file=sys.stderr)
             return 1
         address = devices[int(selection) - 1][0]
-    number = input("Schlossnummer: ").strip()
-    name = input("Cloud-BLE-Geraetename (Enter = aus erster Seite der Cloud-Geraeteliste auswaehlen): ").strip()
+
+    number = input("Schlossnummer (deviceNumber, z.B. C41...): ").strip()
+    name = input("Cloud-BLE-Gerätename (Enter = aus Cloud-Geräteliste auswählen): ").strip()
+
     if not account or not address or not number:
-        print("E-Mail, BLE-Adresse und Schlossnummer sind erforderlich; keine Anmeldung oder BLE-Aktion.", file=sys.stderr)
+        print("Fehler: E-Mail, BLE-Adresse und Schlossnummer sind erforderlich.", file=sys.stderr)
         return 1
+
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
-            password = getpass.getpass("WELOCK-Passwort (verdeckte Eingabe): ")
+            password = getpass.getpass("WeLock-Passwort (verdeckte Eingabe): ")
+
         session = CloudSession()
         session.authenticate(account, password)
         del password
-        print("Cloud-Login akzeptiert.")
+        print("Cloud-Anmeldung erfolgreich.")
+
         if not name:
-            print("Cloud-Geraeteliste wird geladen (nur erste Seite; Kennungen nicht im Chat teilen).")
-            devices = session.list_devices()
-            if not devices:
-                raise CloudError("Die erste Seite enthaelt keine auswaehlbaren BLE-Eintraege.")
-            for index, (candidate_number, candidate_name, ble_name) in enumerate(devices, 1):
-                print(f"{index}: Nummer {json.dumps(candidate_number, ensure_ascii=True)}, "
-                      f"Anzeigename {json.dumps(candidate_name, ensure_ascii=True)}, "
-                      f"BLE-Name {json.dumps(ble_name, ensure_ascii=True)}")
-            selection = input("Nummer des zugehoerigen Cloud-BLE-Eintrags (Enter = abbrechen): ").strip()
-            if not selection.isdecimal() or not 1 <= int(selection) <= len(devices):
-                raise CloudError("Kein Cloud-Geraet ausgewaehlt; kein Command angefordert.")
-            number, _, name = devices[int(selection) - 1]
-        print("BLE-Antwort und Command werden angefordert.")
+            print("Lade WeLock-Geräteliste aus der Cloud...")
+            dev_list = session.list_devices()
+            if not dev_list:
+                raise CloudError("Keine BLE-fähigen Schlösser im WeLock-Konto gefunden.")
+            print("\nRegistrierte Schlösser im Konto:")
+            for index, (candidate_number, candidate_name, ble_name) in enumerate(dev_list, 1):
+                print(f"  [{index}] Nummer: {candidate_number} | Name: {candidate_name} | BLE: {ble_name}")
+            selection = input("\nNummer des zugehörigen Schlosses: ").strip()
+            if not selection.isdecimal() or not 1 <= int(selection) <= len(dev_list):
+                raise CloudError("Kein Schloss ausgewählt.")
+            number, _, name = dev_list[int(selection) - 1]
+
         if send_unlock:
             command = asyncio.run(probe(session, address, number, name, send_unlock=True))
         else:
-            command = asyncio.run(probe(session, address, number, name))
+            command = asyncio.run(probe(session, address, number, name, send_unlock=False))
+
     except getpass.GetPassWarning:
-        print("Verdeckte Passworteingabe nicht verfuegbar; abgebrochen.", file=sys.stderr)
+        print("Fehler: Verdeckte Passworteingabe wird im aktuellen Terminal nicht unterstützt.", file=sys.stderr)
         return 1
     except (CloudError, BleakError, OSError, TimeoutError, RuntimeError, ValueError) as exc:
-        print(f"Experiment fehlgeschlagen: {exc}", file=sys.stderr)
+        print(f"Fehler beim Testlauf: {exc}", file=sys.stderr)
         return 1
+
     if send_unlock:
-        print("Bitte mechanisch pruefen, ob der Knauf entriegelt ist; das Skript kann dies nicht feststellen.")
+        print("\n" + "=" * 50)
+        print("  Befehl gesendet. Bitte mechanisch prüfen, ob der Außenknauf einkuppelt.")
+        print("=" * 50)
         return 0
-    print(f"Cloud lieferte einen Hex-Command mit {len(command)} Bytes. Kein Unlock-Write wurde gesendet.")
-    print("Der Command ist sensibel; Terminalausgaben koennen protokolliert werden.")
-    if input("Command nur lokal anzeigen? ANZEIGEN eingeben, sonst Enter: ").strip() == "ANZEIGEN":
-        print(command.hex())
-    print("Command und Token wurden nicht gespeichert. Die Gueltigkeit am Schloss ist nicht nachgewiesen.")
+
+    print(f"\nErfolg: Cloud lieferte einen gültigen Befehl mit {len(command)} Bytes.")
+    print("Der Befehl wurde absichtlich NICHT an das Schloss gesendet.")
+    if input("Hex-Befehl lokal im Terminal anzeigen? [j/N]: ").strip().lower() in ("j", "ja", "y"):
+        print(f"Befehl: {command.hex()}")
     return 0
 
 
 def main() -> int:
     try:
-        return run_interactive()
+        return run_interactive(send_unlock=False)
     except (EOFError, KeyboardInterrupt):
-        print("\nAbgebrochen.", file=sys.stderr)
+        print("\nAbbruch durch Benutzer.", file=sys.stderr)
         return 1
 
 

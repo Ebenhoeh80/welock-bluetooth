@@ -41,19 +41,26 @@ welock/
 │       └── translations/         # de.json, en.json, es.json, fr.json
 │
 ├── tools/                        # Lokale BLE- & Cloud-Diagnosetools (Details: tools/README.md)
-│   ├── ble_probe.py              # BLE-Inspektion (Adresse & GATT-Services)
-│   ├── welock_cloud_login.py     # WeLock Cloud-Login & Geräteübersicht
-│   ├── welock_command_probe.py   # Hybrid-Probe (BLE Challenge + Cloud-Command)
-│   ├── welock_unlock_experiment.py # Autorisierter Entriegelungstest via BLE
-│   ├── welock_protocol.py        # Protokolldefinition (Battery Request/Response)
-│   ├── requirements-ble.txt      # Python-Abhängigkeit: bleak>=0.22,<3
-│   ├── run_ble_probe.sh / .ps1   # Startskripte für ble_probe (Linux/macOS / Windows)
+│   ├── ble_scan.py               # BLE-Gerätesuche & WeLock-Erkennung (RSSI, Mac, Name)
+│   ├── ble_battery.py            # Akkustand (%) & Challenge per BLE auslesen
+│   ├── ble_probe.py              # BLE-Inspektion (Adresse & GATT-Services/Nordic UART)
+│   ├── welock_cloud_login.py     # WeLock Cloud-Login & Geräteübersicht (deviceNumber)
+│   ├── welock_command_probe.py   # Hybrid-Probe (BLE Challenge + Cloud-Command, kein Unlock)
+│   ├── welock_unlock.py          # Autorisierter Entriegelungstest via BLE + Cloud
+│   ├── welock_tools.py           # Interaktives Python-Hauptmenü für alle Werkzeuge
+│   ├── dependency_check.py       # System- & Abhängigkeitsprüfung (Python, Bleak, Bluetooth)
+│   ├── welock_protocol.py        # Protokolldefinition & UUID-Konstanten
+│   ├── requirements-ble.txt      # Python-Abhängigkeit: bleak>=0.22.0,<3.0.0
+│   ├── run_ble_scan.sh / .ps1    # Startskripte für BLE-Suche (Linux/macOS / Windows)
+│   ├── run_ble_battery.sh / .ps1 # Startskripte für Akku-Abfrage
+│   ├── run_ble_probe.sh / .ps1   # Startskripte für ble_probe
 │   ├── run_cloud_login.sh / .ps1 # Startskripte für cloud_login
 │   ├── run_command_probe.sh / .ps1 # Startskripte für command_probe
-│   ├── run_unlock_experiment.sh / .ps1 # Startskripte für unlock_experiment
+│   ├── run_unlock.sh / .ps1      # Startskripte für autorisierten Unlock-Test
 │   ├── welock_tools.sh / .ps1    # Interaktives Hauptmenü für alle Tools
 │   └── README.md                 # Umfassende Werkzeug-Dokumentation
 │
+├── archiv/                       # Revisionssicher archivierte Entwicklungsstände
 ├── hacs.json                     # HACS / Marketplace Metadaten
 ├── info.md                       # HACS Store-Beschreibung
 ├── README.md                     # Hauptdokumentation (diese Datei)
@@ -108,10 +115,12 @@ pip install -r tools/requirements-ble.txt
 ./tools/welock_tools.sh
 
 # Oder direkt ein bestimmtes Werkzeug starten:
-./tools/run_ble_probe.sh --address "AA:BB:CC:DD:EE:FF" --connect
-./tools/run_cloud_login.sh
-./tools/run_command_probe.sh
-./tools/run_unlock_experiment.sh
+./tools/run_ble_scan.sh                     # BLE-Geräte & Schlösser suchen
+./tools/run_ble_battery.sh "AA:BB:CC:..."   # Akkustand & Challenge abfragen
+./tools/run_ble_probe.sh --address "AA:BB:..." --connect
+./tools/run_cloud_login.sh                  # Cloud-Konto & Geräte prüfen
+./tools/run_command_probe.sh                # Test Challenge + Cloud-Befehl
+./tools/run_unlock.sh                       # Autorisierter Entriegelungstest
 ```
 
 ### Startskripte für Windows (PowerShell):
@@ -120,10 +129,12 @@ pip install -r tools/requirements-ble.txt
 .\tools\welock_tools.ps1
 
 # Oder direkt ein bestimmtes Werkzeug starten:
-.\tools\run_ble_probe.ps1 --address "AA:BB:CC:DD:EE:FF" --connect
-.\tools\run_cloud_login.ps1
-.\tools\run_command_probe.ps1
-.\tools\run_unlock_experiment.ps1
+.\tools\run_ble_scan.ps1                    # BLE-Geräte & Schlösser suchen
+.\tools\run_ble_battery.ps1 "AA:BB:CC:..."  # Akkustand & Challenge abfragen
+.\tools\run_ble_probe.ps1 --address "AA:BB:..." --connect
+.\tools\run_cloud_login.ps1                 # Cloud-Konto & Geräte prüfen
+.\tools\run_command_probe.ps1               # Test Challenge + Cloud-Befehl
+.\tools\run_unlock.ps1                      # Autorisierter Entriegelungstest
 ```
 
 > 📖 **Detaillierte Werkzeug-Dokumentation:** Eine vollständige Anleitung mit allen Parametern, Protokoll-Details und Fehlerbehebungen finden Sie in der [**tools/README.md**](tools/README.md).

@@ -1,41 +1,37 @@
-# WeLock BLE & Cloud Diagnose- und Experimentier-Werkzeuge
+# WeLock BLE & Cloud Diagnose- und Test-Werkzeugkasten
 
-Dieses Verzeichnis enthält spezialisierte Python-Skripte und betriebssystemspezifische Startskripte (`.sh` für Linux/macOS, `.ps1` für Windows) für die direkte Kommunikation mit **WeLock Smart Locks** (z. B. Touch41, SECBN51, PCB41) über **Bluetooth Low Energy (BLE)** und die **WeLock Cloud API**.
+Dieses Verzeichnis enthält die konsolidierte, produktionsreife Werkzeugsammlung für die direkte Kommunikation mit **WeLock Smart Locks** (z. B. Touch41, SECBN51, PCB41) über **Bluetooth Low Energy (BLE)** und die **WeLock Cloud API**.
 
-Sie dienen insbesondere dazu:
-1. Das Schloss über BLE zu suchen, die **BLE-MAC-Adresse** sowie den **BLE-Gerätenamen** (`SECBN...`, `Touch...`, `PCB...`) zu ermitteln.
-2. Die GATT-Dienste (Nordic UART Service) und Eigenschaften zu inspizieren.
-3. Den Batteriestand sowie den dynamischen Challenge-Faktor (`random_factor`) per BLE auszulesen.
-4. Ein WeLock-Benutzerkonto zu testen und registrierte Schlosscodes (`deviceNumber`), Anzeigenamen und zugeordnete BLE-Namen abzufragen.
-5. Das Zusammenspiel aus BLE-Challenge und Cloud-Entriegelungsbefehl (`15-Byte-Command`) kontrolliert zu analysieren und vor Ort ohne WiFiBox-Gateway zu testen.
+Alle Werkzeuge sind plattformunabhängig geschrieben und verfügen über passende Shell-Startskripte (`.sh` für Linux/macOS, `.ps1` für Windows) sowie ein interaktives Python-Hauptmenü (`welock_tools.py`), das direkt ohne Shell-Skripte gestartet werden kann.
 
 ---
 
 ## 📑 Inhaltsverzeichnis
 
 - [Architektur & Protokoll](#architektur--protokoll)
-- [Werkzeugkette & Workflow](#werkzeugkette--workflow)
-- [Voraussetzungen & Python-Abhängigkeiten](#voraussetzungen--python-abhängigkeiten)
-- [Schnellstart & Installation](#schnellstart--installation)
-- [Übersicht aller Skripte](#übersicht-aller-skripte)
-  - [1. ble_probe.py (GATT-Inspektion)](#1-ble_probepy-gatt-inspektion)
-  - [2. welock_cloud_login.py (Cloud-Konto & Geräte)](#2-welock_cloud_loginpy-cloud-konto--geräte)
-  - [3. welock_command_probe.py (Hybrid-Probe ohne Unlock)](#3-welock_command_probepy-hybrid-probe-ohne-unlock)
-  - [4. welock_unlock_experiment.py (Autorisierter Unlock-Test)](#4-welock_unlock_experimentpy-autorisierter-unlock-test)
-  - [5. welock_protocol.py (Protokollmodul)](#5-welock_protocolpy-protokollmodul)
-  - [6. welock_tools.sh / welock_tools.ps1 (Interaktives Menü)](#6-welock_toolssh--welock_toolsps1-interaktives-menü)
-- [Startskripte & Plattformnutzung](#startskripte--plattformnutzung)
-  - [Linux / macOS (.sh)](#linux--macos-sh)
-  - [Windows PowerShell (.ps1)](#windows-powershell-ps1)
-- [Typische Anwendungsbeispiele](#typische-anwendungsbeispiele)
-- [Troubleshooting & Fehlerbehebung](#troubleshooting--fehlerbehebung)
-- [Sicherheits- & Entwicklerhinweise](#sicherheits--entwicklerhinweise)
+- [Werkzeug-Übersicht](#werkzeug-übersicht)
+- [Voraussetzungen & Abhängigkeiten](#voraussetzungen--abhängigkeiten)
+- [Schnellstart](#schnellstart)
+- [Detaillierte Werkzeug-Dokumentation](#detaillierte-werkzeug-dokumentation)
+  - [1. ble_scan.py — BLE-Gerätesuche & WeLock-Erkennung](#1-ble_scanpy--ble-gerätesuche--welock-erkennung)
+  - [2. ble_battery.py — Akkustand & Challenge per BLE auslesen](#2-ble_batterypy--akkustand--challenge-per-ble-auslesen)
+  - [3. ble_probe.py — GATT-Dienste & Characteristics inspizieren](#3-ble_probepy--gatt-dienste--characteristics-inspizieren)
+  - [4. welock_cloud_login.py — Cloud-Konto & Geräteübersicht](#4-welock_cloud_loginpy--cloud-konto--geräteübersicht)
+  - [5. welock_command_probe.py — Hybrid Command-Probe (ohne Unlock)](#5-welock_command_probepy--hybrid-command-probe-ohne-unlock)
+  - [6. welock_unlock.py — Autorisierter Entriegelungstest](#6-welock_unlockpy--autorisierter-entriegelungstest)
+  - [7. welock_tools.py — Interaktives Hauptmenü](#7-welock_toolspy--interaktives-hauptmenü)
+  - [8. dependency_check.py — System- & Abhängigkeitsprüfung](#8-dependency_checkpy--system---abhängigkeitsprüfung)
+  - [9. welock_protocol.py — Protokolldefinition & Konstanten](#9-welock_protocolpy--protokolldefinition--konstanten)
+- [Plattform-Startskripte (Linux / macOS / Windows)](#plattform-startskripte-linux--macos--windows)
+- [Typische Arbeitsabläufe (Workflows)](#typische-arbeitsabläufe-workflows)
+- [Fehlerbehebung (Troubleshooting)](#fehlerbehebung-troubleshooting)
+- [Archivierung alter Skripte](#archivierung-alter-skripte)
 
 ---
 
 ## 🏗 Architektur & Protokoll
 
-WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy auf Basis des **Nordic UART Service (NUS)**:
+WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy (BLE) auf Basis des **Nordic UART Service (NUS)**:
 
 | Eigenschaft | UUID | Beschreibung |
 | :--- | :--- | :--- |
@@ -59,235 +55,205 @@ WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy auf
 
 ---
 
-## 🔄 Werkzeugkette & Workflow
+## 🧰 Werkzeug-Übersicht
 
-Der empfohlene Ablauf zur Erforschung und Inbetriebnahme Ihres Schlosses gliedert sich in folgende Schritte:
-
-```
-┌────────────────────────────────────────────────────────┐
-│ 1. BLE-Scan & Adresse ermitteln                        │
-│    ./run_ble_probe.sh --address <MAC> [--connect]      │
-│    (Findet MAC-Adresse, RSSI & prüft BLE-GATT Service) │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│ 2. Cloud-Konto prüfen & Gerätenummer abrufen           │
-│    ./run_cloud_login.sh                                │
-│    (Liefert: deviceNumber, deviceName, ble.deviceName) │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│ 3. Challenge-Response testen (Ohne Entriegeln)         │
-│    ./run_command_probe.sh                              │
-│    (Liest BLE-Challenge, holt 15-Byte Cloud-Command,   │
-│     sendet ihn aber NICHT an das Schloss)              │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│ 4. Vor-Ort Entriegelungstest (Optional / Autorisert)   │
-│    ./run_unlock_experiment.sh                          │
-│    (Sendet den 15-Byte Command per BLE -> Entriegelt)  │
-└────────────────────────────────────────────────────────┘
-```
+| Python-Skript | Bash-Starter (`.sh`) | PowerShell-Starter (`.ps1`) | Zweck / Funktion |
+| :--- | :--- | :--- | :--- |
+| `ble_scan.py` | `run_ble_scan.sh` | `run_ble_scan.ps1` | Sucht alle BLE-Geräte, hebt WeLock-Schlösser hervor, zeigt RSSI und Adressen. |
+| `ble_battery.py` | `run_ble_battery.sh` | `run_ble_battery.ps1` | Fragt Batteriestand (%) und Challenge-Faktor per BLE ab. |
+| `ble_probe.py` | `run_ble_probe.sh` | `run_ble_probe.ps1` | Inspiziert GATT-Services und Characteristics des Schlosses. |
+| `welock_cloud_login.py` | `run_cloud_login.sh` | `run_cloud_login.ps1` | Prüft Cloud-Konto, listet Schlosscodes (`deviceNumber`) und BLE-Namen. |
+| `welock_command_probe.py` | `run_command_probe.sh` | `run_command_probe.ps1` | Hybrid-Test: BLE-Challenge + Cloud-Befehl anfordern (**ohne Unlock**). |
+| `welock_unlock.py` | `run_unlock.sh` | `run_unlock.ps1` | Autorisierter Entriegelungstest (**sendet echten Unlock-Befehl per BLE**). |
+| `welock_tools.py` | `welock_tools.sh` | `welock_tools.ps1` | Interaktives Konsolen-Hauptmenü mit allen Funktionen. |
+| `dependency_check.py` | — | — | Prüft Python-Version, Bleak-Installation und Bluetooth-Stack. |
+| `welock_protocol.py` | — | — | Gemeinsames Protokollmodul (Konstanten, UUIDs, Parser). |
 
 ---
 
-## 📦 Voraussetzungen & Python-Abhängigkeiten
+## 📦 Voraussetzungen & Abhängigkeiten
 
 ### Hardware-Voraussetzungen:
-- **Bluetooth-Empfänger**: Rechner oder USB-Dongle mit **Bluetooth 4.0 Low Energy (BLE)** oder neuer.
-- **Funkreichweite**: Das WeLock-Schloss muss sich in direkter Nähe befinden (optimal **< 3 bis 5 Meter**). Metalltüren oder dicke Wände reduzieren die Reichweite erheblich.
-- **⚠️ Schloss aufwecken (Wake-Up-Prozedur)**:
-  WeLock-Schlösser gehen zur Schonung der AAA-Batterien in einen tiefen Ruhezustand (*Deep Sleep*). **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden**, indem Sie die Tastatur oder den Fingerabdrucksensor kurz berühren.
-- **Batterieladestand**: Mindestens 3x frische AAA-Batterien mit stabiler Spannung (bei < 20% verweigert die Firmware oft Funkbefehle).
+- **Bluetooth-Empfänger:** Rechner oder USB-Dongle mit **Bluetooth 4.0 Low Energy (BLE)** oder neuer.
+- **Funkreichweite:** Das Schloss muss sich in direkter Nähe befinden (optimal **< 3 bis 5 Meter**). Metalltüren dämpfen das Funksignal stark.
+- **⚠️ Schloss aufwecken (Wake-Up-Prozedur):**
+  WeLock-Schlösser gehen zur Schonung der AAA-Batterien in einen tiefen Ruhezustand (*Deep Sleep*). **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden**, indem Sie die Tastatur oder den Fingerabdrucksensor kurz berühren (Beleuchtung geht an).
+- **Batterieladestand:** Mindestens 3x frische AAA-Batterien mit stabiler Spannung (bei < 20% verweigert die Firmware oft Funkbefehle).
 
 ### Systemvoraussetzungen & Berechtigungen:
-- **Python**: Version **3.10** oder neuer (getestet mit 3.10, 3.11, 3.12).
-- **Betriebssysteme**:
-  - **Linux**: BlueZ Bluetooth-Stack (`bluetoothd`). Prüfen Sie mit `rfkill list`, ob Bluetooth aktiv ist. Führen Sie Skripte als Benutzer in der Gruppe `bluetooth` oder mit passenden Berechtigungen aus.
-  - **macOS**: macOS 12+ (CoreBluetooth). Dem ausführenden Terminal muss in *Systemeinstellungen ➔ Datenschutz & Sicherheit ➔ Bluetooth* Zugriff gewährt sein.
-  - **Windows**: Windows 10 (Build 1809+) oder Windows 11 mit WinRT-Bluetooth-Stack und aktiver Bluetooth-Schnittstelle.
+- **Python:** Version **3.10** oder neuer (getestet mit Python 3.10, 3.11, 3.12).
+- **Betriebssysteme:**
+  - **Linux:** BlueZ Bluetooth-Stack (`bluetoothd`). Prüfen Sie mit `rfkill list`, ob Bluetooth aktiv ist. Führen Sie Skripte als Benutzer in der Gruppe `bluetooth` aus.
+  - **macOS:** macOS 12+ (CoreBluetooth). Dem ausführenden Terminal muss in *Systemeinstellungen ➔ Datenschutz & Sicherheit ➔ Bluetooth* Zugriff gewährt sein.
+  - **Windows:** Windows 10 (Build 1809+) oder Windows 11 mit WinRT-Bluetooth-Stack und aktiver Bluetooth-Schnittstelle.
 
 ### Python-Pakete (`requirements-ble.txt`):
 - **`bleak`** (`>=0.22.0,<3.0.0`): Asynchrone, plattformübergreifende Bluetooth-Low-Energy-Bibliothek.
-- `welock_cloud_login.py` benötigt **keine** externen Pakete (reine Standardbibliothek).
-- `ble_probe.py`, `welock_command_probe.py` und `welock_unlock_experiment.py` benötigen zwingend **`bleak`**.
+- `welock_cloud_login.py` und `dependency_check.py` benötigen **keine** externen Pakete (reine Python-Standardbibliothek).
 
 ---
 
-## 🚀 Schnellstart & Installation
+## 🚀 Schnellstart
 
-### Linux / macOS:
+### 1. Abhängigkeiten installieren
 ```bash
-# 1. In das Projektverzeichnis wechseln
-cd welock
-
-# 2. Virtuelle Python-Umgebung anlegen
+# In virtueller Umgebung:
 python3 -m venv .venv
-
-# 3. Virtuelle Umgebung aktivieren
-source .venv/bin/activate
-
-# 4. Bleak installieren
+source .venv/bin/activate       # Windows: .venv\Scripts\Activate.ps1
 pip install -r tools/requirements-ble.txt
-
-# 5. Startskripte ausführbar machen (falls noch nicht geschehen)
-chmod +x tools/*.sh
-
-# 6. Interaktives Menü starten
-./tools/welock_tools.sh
 ```
 
-### Windows (PowerShell):
-```powershell
-# 1. In das Projektverzeichnis wechseln
-cd welock
+### 2. Interaktives Menü starten
+```bash
+# Linux / macOS:
+./tools/welock_tools.sh
 
-# 2. Virtuelle Umgebung anlegen & aktivieren
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+# Oder plattformunabhängig mit Python:
+python3 tools/welock_tools.py
 
-# 3. Bleak installieren
-pip install -r tools\requirements-ble.txt
-
-# 4. Interaktives Menü starten
+# Windows (PowerShell):
 .\tools\welock_tools.ps1
 ```
 
 ---
 
-## 🛠 Übersicht aller Skripte
+## 📖 Detaillierte Werkzeug-Dokumentation
 
-### 1. `ble_probe.py` (GATT-Inspektion)
-Untersucht ein bekanntes BLE-Gerät anhand seiner Adresse ohne das Senden von Anwendungsbefehlen.
+### 1. `ble_scan.py` — BLE-Gerätesuche & WeLock-Erkennung
+Sucht nach allen Bluetooth-Low-Energy-Geräten in Reichweite, hebt erkannte WeLock-Zylinder hervor und sortiert nach Signalstärke (RSSI).
 
-- **Aufrufparameter**:
-  - `--address` *(Pflicht)*: BLE-Adresse (MAC-Adresse `AA:BB:CC:DD:EE:FF` oder macOS UUID).
-  - `--timeout` *(Optional, Standard: 15)*: Timeout in Sekunden für Scan und Verbindung.
-  - `--connect` *(Optional)*: Stellt Verbindung her und prüft Service- und Characteristic-UUIDs.
-- **Startskripte**:
-  - Linux/macOS: `./tools/run_ble_probe.sh --address "AA:BB:CC:DD:EE:FF" --connect`
-  - Windows: `.\tools\run_ble_probe.ps1 --address "AA:BB:CC:DD:EE:FF" --connect`
-
-### 2. `welock_cloud_login.py` (Cloud-Konto & Geräte)
-Verbindet sich mit der offiziellen mobilen WeLock-API (`https://clientapi.welock.com.cn/api`), authentifiziert das Konto und listet alle registrierten Schlösser auf.
-
-- **Besonderheiten**:
-  - Reine Python-Standardbibliothek (kein `pip` erforderlich).
-  - Fragt E-Mail und Passwort interaktiv ab (verdeckte Eingabe).
-  - Speichert **keine** Zugangsdaten oder Tokens auf der Festplatte.
-  - Zeigt Schlosscodes (`deviceNumber`), Anzeigenamen und zugehörige BLE-Namen (`ble[].deviceName`).
-- **Startskripte**:
-  - Linux/macOS: `./tools/run_cloud_login.sh`
-  - Windows: `.\tools\run_cloud_login.ps1`
-
-### 3. `welock_command_probe.py` (Hybrid-Probe ohne Unlock)
-Führt die vollständige Challenge-Response-Kette durch, sendet jedoch **keinen** Entriegelungsbefehl an das Schloss.
-
-- **Ablauf**:
-  1. BLE-Gerät scannen (automatisch oder per Adresse).
-  2. Akkustand und Challenge-Faktor (`random_factor`) per BLE abrufen.
-  3. Cloud-Login durchführen.
-  4. Dynamischen 15-Byte-Unlock-Befehl von der Cloud anfordern.
-  5. Befehl analysieren (Länge/Hex) und verwerfen, ohne das Schloss zu öffnen.
-- **Startskripte**:
-  - Linux/macOS: `./tools/run_command_probe.sh`
-  - Windows: `.\tools\run_command_probe.ps1`
-
-### 4. `welock_unlock_experiment.py` (Autorisierter Unlock-Test)
-Führt ein echtes, autorisiertes Vor-Ort-Entriegelungsexperiment über BLE durch.
-
-- **Sicherheitsvorkehrungen**:
-  - Verlangt zweifache Bestätigung (`JA` gefolgt von `ENTRIEGELN`).
-  - Sendet den frischen 15-Byte-Befehl einmalig per BLE an das Schloss.
-  - Warnhinweis: Mindestens 30 Sekunden Abstand zwischen Entriegelungsversuchen einhalten.
-- **Startskripte**:
-  - Linux/macOS: `./tools/run_unlock_experiment.sh`
-  - Windows: `.\tools\run_unlock_experiment.ps1`
-
-### 5. `welock_protocol.py` (Protokollmodul)
-Reines Bibliotheksmodul ohne CLI-Einstiegspunkt. Definiert die Konstanten `BATTERY_REQUEST`, `BATTERY_RESPONSE_HEADER` und die Datenklasse `BatteryResponse` samt Parserfunktion `parse_battery_response`.
-
-### 6. `welock_tools.sh` / `welock_tools.ps1` (Interaktives Menü)
-Komfortables Auswahlmenü, das alle Einzelwerkzeuge auf Knopfdruck bereitstellt und optional direkt die virtuelle Umgebung einrichtet.
-
----
-
-## 💻 Startskripte & Plattformnutzung
-
-Die Startskripte wurden speziell so entwickelt, dass sie:
-1. **Das Projektverzeichnis automatisch erkennen**, unabhängig davon, aus welchem Arbeitsverzeichnis heraus sie aufgerufen werden.
-2. Den `PYTHONPATH` zwingend auf das Repository-Root setzen, damit modulübergreifende Importe (`from tools.ble_probe import ...`) fehlerfrei funktionieren.
-3. Existierende virtuelle Umgebungen (`.venv` im Root oder im `tools/`-Ordner) automatisch priorisieren.
-4. Bei fehlendem `bleak` sofort eine verständliche Anleitung zur Installation anzeigen.
-5. Alle übergebenen Parameter (`"$@"` bzw. `$args`) transparent an das jeweilige Python-Skript durchreichen.
-
----
-
-## 💡 Typische Anwendungsbeispiele
-
-### Beispiel 1: Alle WeLock-Schlösser in der Nähe suchen
-```bash
-./tools/run_command_probe.sh
-```
-*Geben Sie bei der Adressabfrage einfach die Eingabetaste (Enter) ein. Das Skript startet einen 15-sekündigen BLE-Scan und listet alle gefundenen Geräte auf.*
-
-### Beispiel 2: Bekanntes Schloss auf Erreichbarkeit prüfen
-```bash
-./tools/run_ble_probe.sh --address "DF:32:88:1A:BC:90" --connect --timeout 10
-```
-
-### Beispiel 3: Eigene Schlossnummer und Cloud-BLE-Name herausfinden
-```bash
-./tools/run_cloud_login.sh
-```
-*Geben Sie Ihre WeLock-E-Mail und Ihr Passwort ein. Das Skript listet alle in der App registrierten Schlösser mit Nummer und BLE-Namen auf.*
-
----
-
-## ❓ Troubleshooting & Fehlerbehebung
-
-### 1. `FEHLER: Das erforderliche Python-Paket 'bleak' ist nicht installiert!`
-- **Ursache**: Das Python-Modul `bleak` fehlt im aktuellen Interpreter.
-- **Lösung**:
+* **Parameter:**
+  * `--timeout`, `-t` (float, Standard `10.0`): Suchdauer in Sekunden.
+  * `--filter`, `-f` (str): Filtert nach Name oder MAC-Adresse.
+  * `--welock-only`, `-w`: Zeigt ausschließlich erkannte WeLock-Geräte an.
+  * `--json`: Strukturierte JSON-Ausgabe.
+* **Typischer Aufruf:**
   ```bash
-  pip install -r tools/requirements-ble.txt
+  # Standard-Scan:
+  ./tools/run_ble_scan.sh
+
+  # Nur WeLock-Schlösser anzeigen:
+  python3 tools/ble_scan.py --welock-only
+
+  # Längerer Scan (15s):
+  python3 tools/ble_scan.py -t 15.0
   ```
 
-### 2. `ModuleNotFoundError: No module named 'tools'`
-- **Ursache**: Das Python-Skript wurde direkt mit `python tools/welock_command_probe.py` ohne gesetzten `PYTHONPATH` aufgerufen.
-- **Lösung**: Nutzen Sie stets die beigelegten Startskripte (`./tools/run_command_probe.sh` bzw. `.\tools\run_command_probe.ps1`), welche `PYTHONPATH` automatisch konfigurieren.
+---
 
-### 3. `BleakError: No Bluetooth adapter found` oder Berechtigungsfehler unter Linux
-- **Ursache**: Der Bluetooth-Dienst (BlueZ) läuft nicht oder der Benutzer hat keine Zugriffsrechte auf `/dev/rfkill` bzw. `hci0`.
-- **Lösung**:
+### 2. `ble_battery.py` — Akkustand & Challenge per BLE auslesen
+Verbindet sich direkt über Bluetooth mit dem Schloss, sendet die WeLock-Statusanfrage und liest den exakten Batteriestand in % sowie den aktuellen Challenge-Faktor aus.
+
+* **Parameter:**
+  * `<MAC-Adresse>`: BLE-MAC-Adresse des Schlosses (z. B. `AA:BB:CC:DD:EE:FF`).
+  * `--address`, `-a` (str): Alternative zur Positionsangabe.
+  * `--timeout`, `-t` (float, Standard `15.0`): Verbindungs-Timeout.
+  * `--json`: JSON-Ausgabe (`{"address": "...", "battery": 85, "random_factor": 114}`).
+* **Typischer Aufruf:**
   ```bash
-  # Bluetooth-Status prüfen:
-  sudo systemctl status bluetooth
-  sudo systemctl start bluetooth
-
-  # Benutzer zur Bluetooth-Gruppe hinzufügen:
-  sudo usermod -aG bluetooth $USER
+  ./tools/run_ble_battery.sh "AA:BB:CC:DD:EE:FF"
+  # oder:
+  python3 tools/ble_battery.py AA:BB:CC:DD:EE:FF
   ```
-
-### 4. `Device not found during scan`
-- **Ursache**: Das Schloss ist außer Reichweite (> 5–10 Meter), befindet sich im Energiesparmodus oder die Bluetooth-Schnittstelle ist blockiert.
-- **Lösung**: Knauf am Schloss berühren/aufwecken, näher herantreten und Timeout auf `--timeout 25` erhöhen.
-
-### 5. `Cloud-Login meldet die Smartphone-App ab`
-- **Ursache**: WeLock erlaubt serverseitig in der Regel nur eine aktive Benutzersitzung pro Konto.
-- **Hinweis**: Bei einer neuen Anmeldung über das Skript kann die mobile App abgemeldet werden. Nach Abschluss der Tests einfach in der App erneut einloggen.
-
-### 6. Mindestabstand zwischen Entriegelungen (30 Sekunden)
-- **Wichtig**: WeLock-Zylinder besitzen einen mechanischen und serverseitigen Schutz. Warten Sie nach jedem Entriegelungsvorgang mindestens 30 Sekunden, bevor Sie einen neuen Befehl anfordern.
 
 ---
 
-## 🔒 Sicherheits- & Entwicklerhinweise
+### 3. `ble_probe.py` — GATT-Dienste & Characteristics inspizieren
+Prüft, ob ein Gerät den WeLock Nordic UART Service (`6e400001-...`) sowie die TX/RX-Characteristics bereitstellt, ohne Applikationsbefehle zu senden.
 
-- **Keine Passwörter im Chat / Terminal**: Teilen Sie keine Passwörter, Client-Secrets, Tokens oder MAC-Adressen in öffentlichen Repositories oder Foren.
-- **Keine Cloud-Token-Speicherung**: Die Skripte unter `/tools` speichern aus Sicherheitsgründen bewusst keine Anmeldetokens auf der Festplatte.
-- **Home Assistant HACS Integration**: Wenn Sie die dauerhafte Steuerung über Home Assistant einrichten möchten, nutzen Sie die vollständige HACS-Integration unter [`custom_components/welock`](../custom_components/welock) in Verbindung mit einem WeLock WiFiBox Gateway. Weitere Details finden Sie in der [Haupt-Dokumentation](../README.md).
+* **Parameter:**
+  * `<MAC-Adresse>`: Adresse des Schlosses.
+  * `--connect`, `-c`: Verbindet sich und liest die GATT-Dienste aus.
+  * `--timeout`, `-t` (Standard `15.0`): Timeout in Sekunden.
+* **Typischer Aufruf:**
+  ```bash
+  ./tools/run_ble_probe.sh --address "AA:BB:CC:DD:EE:FF" --connect
+  ```
+
+---
+
+### 4. `welock_cloud_login.py` — Cloud-Konto & Geräteübersicht
+Authentifiziert sich gegen die offizielle WeLock Cloud API (`clientapi.welock.com.cn`), um die registrierten Schlösser, interne Schlosscodes (`deviceNumber`) und zugehörige BLE-Namen abzufragen. Es werden keine Passwörter oder Tokens im Dateisystem gespeichert.
+
+* **Typischer Aufruf:**
+  ```bash
+  ./tools/run_cloud_login.sh
+  # oder:
+  python3 tools/welock_cloud_login.py
+  ```
+
+---
+
+### 5. `welock_command_probe.py` — Hybrid Command-Probe (ohne Unlock)
+Führt den kompletten kryptografischen Vor-Ort-Ablauf durch:
+1. Liest per BLE den frischen Challenge-Faktor aus dem Schloss.
+2. Fragt mit diesem Challenge-Faktor bei der WeLock Cloud API den 15-Byte-Hex-Befehl an.
+3. Validiert den empfangenen Befehl.
+4. **WICHTIG:** Der Befehl wird **nicht** an das Schloss gesendet. Ideal zur risikofreien Verifikation von Kontodaten und Cloud-Kommunikation.
+
+* **Typischer Aufruf:**
+  ```bash
+  ./tools/run_command_probe.sh
+  ```
+
+---
+
+### 6. `welock_unlock.py` — Autorisierter Entriegelungstest
+Führt den vollständigen Entriegelungsvorgang vor Ort durch: Holt die BLE-Challenge, generiert den Cloud-Befehl und schreibt den 15-Byte-Befehl per BLE an das Schloss.
+
+* **Sicherheit:** Erfordert ausdrückliche Bestätigung mit `JA` und `ENTRIEGELN`.
+* **Typischer Aufruf:**
+  ```bash
+  ./tools/run_unlock.sh
+  ```
+
+---
+
+### 7. `dependency_check.py` — Systemprüfung
+Prüft, ob Python >= 3.10 installiert ist, ob das Modul `bleak` importiert werden kann und welche Betriebssystem-Voraussetzungen gelten.
+
+* **Aufruf:**
+  ```bash
+  python3 tools/dependency_check.py
+  # Mit automatischer Installation von bleak:
+  python3 tools/dependency_check.py --install
+  ```
+
+---
+
+## 🔄 Typische Arbeitsabläufe (Workflows)
+
+```
+┌────────────────────────────────────────────────────────┐
+│ 1. Schloss aufwecken & BLE-Scan                        │
+│    ./run_ble_scan.sh --welock-only                     │
+│    -> Liefert: BLE-MAC-Adresse & Signalstärke          │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 2. Batteriestatus & Funkverbindung prüfen              │
+│    ./run_ble_battery.sh <MAC-Adresse>                  │
+│    -> Liefert: Akkustand in % & Challenge-Faktor       │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 3. Cloud-Konto prüfen & Gerätenummer abrufen           │
+│    ./run_cloud_login.sh                                │
+│    -> Liefert: deviceNumber, deviceName, ble.deviceName│
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 4. Hybrid-Probe durchführen (Ohne Entriegeln)          │
+│    ./run_command_probe.sh                              │
+│    -> Prüft das Zusammenspiel aus BLE + Cloud API      │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🗄 Archivierung alter Skripte
+
+Frühere Entwicklungsstände aus `/toolsdev` sowie Vorversionen einzelner Skripte wurden revisionssicher in das Verzeichnis [`/archiv`](../archiv/README.md) überführt.

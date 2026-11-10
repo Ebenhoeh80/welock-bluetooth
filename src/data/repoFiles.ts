@@ -1378,7 +1378,33 @@ Dokumentation, Architektur und Anleitungen für alle Skripte unter tools/. Siehe
       es: 'Dependencias de Python para herramientas BLE (bleak>=0.22,<3)',
       fr: 'Dépendances Python pour les outils BLE (bleak>=0.22,<3)',
     },
-    content: `bleak>=0.22,<3`,
+    content: `bleak>=0.22.0,<3.0.0`,
+  },
+  {
+    path: 'tools/ble_scan.py',
+    name: 'tools/ble_scan.py',
+    category: 'python',
+    description: {
+      de: 'BLE-Gerätesuche & WeLock-Erkennung (Scan mit RSSI, MAC-Adresse und Identifikation)',
+      en: 'BLE device scanner & WeLock lock detection (scan with RSSI, MAC address, and identification)',
+      es: 'Escáner BLE y detección de cerraduras WeLock (con RSSI, dirección MAC e identificación)',
+      fr: 'Scanner BLE et détection de serrures WeLock (avec RSSI, adresse MAC et identification)',
+    },
+    content: `"""Suche nach Bluetooth Low Energy (BLE) Geräten und WeLock Smart Locks in Reichweite."""
+# Vollständiger Quellcode siehe tools/ble_scan.py`,
+  },
+  {
+    path: 'tools/ble_battery.py',
+    name: 'tools/ble_battery.py',
+    category: 'python',
+    description: {
+      de: 'Akkustand (%) und Challenge-Faktor per BLE direkt vom Schloss auslesen',
+      en: 'Read battery percentage and challenge factor via BLE directly from the lock',
+      es: 'Lectura de batería (%) y factor de desafío por BLE directamente desde la cerradura',
+      fr: 'Lecture du niveau de batterie (%) et du défi par BLE directement depuis la serrure',
+    },
+    content: `"""Liest den Akkustand und Challenge-Faktor eines WeLock-Schlosses direkt über BLE aus."""
+# Vollständiger Quellcode siehe tools/ble_battery.py`,
   },
   {
     path: 'tools/ble_probe.py',
@@ -1479,17 +1505,17 @@ if __name__ == "__main__":
 # Vollständiger Quellcode siehe tools/welock_command_probe.py`,
   },
   {
-    path: 'tools/welock_unlock_experiment.py',
-    name: 'tools/welock_unlock_experiment.py',
+    path: 'tools/welock_unlock.py',
+    name: 'tools/welock_unlock.py',
     category: 'python',
     description: {
-      de: 'Autorisiertes Vor-Ort Entriegelungsexperiment über BLE (sendet 15-Byte-Befehl nach doppelter Bestätigung)',
-      en: 'Authorized on-site unlock experiment via BLE (sends 15-byte command upon double confirmation)',
-      es: 'Experimento de desbloqueo autorizado in situ por BLE (envía comando de 15 bytes tras doble confirmación)',
-      fr: 'Expérience de déverrouillage autorisée sur site via BLE (envoie la commande de 15 octets après confirmation)',
+      de: 'Autorisierter Vor-Ort Entriegelungstest über BLE (sendet 15-Byte-Befehl nach doppelter Bestätigung)',
+      en: 'Authorized on-site unlock test via BLE (sends 15-byte command upon double confirmation)',
+      es: 'Test de desbloqueo autorizado in situ por BLE (envía comando de 15 bytes tras doble confirmación)',
+      fr: 'Test de déverrouillage autorisé sur site via BLE (envoie la commande de 15 octets après confirmation)',
     },
-    content: `"""One explicitly authorized cloud-assisted BLE unlock experiment."""
-# Vollständiger Quellcode siehe tools/welock_unlock_experiment.py`,
+    content: `"""Autorisierter Vor-Ort Entriegelungstest via BLE und WeLock Cloud API."""
+# Vollständiger Quellcode siehe tools/welock_unlock.py`,
   },
   {
     path: 'tools/welock_tools.sh',
