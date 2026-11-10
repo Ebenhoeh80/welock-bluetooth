@@ -123,20 +123,20 @@ python3 tools/welock_tools.py
 Sucht nach allen Bluetooth-Low-Energy-Geräten in Reichweite, hebt erkannte WeLock-Zylinder hervor und sortiert nach Signalstärke (RSSI).
 
 * **Parameter:**
+  * `[positional_filter]`: Optionaler Filterbegriff (z. B. `Touch` oder `C41`).
   * `--timeout`, `-t` (float, Standard `10.0`): Suchdauer in Sekunden.
   * `--filter`, `-f` (str): Filtert nach Name oder MAC-Adresse.
   * `--welock-only`, `-w`: Zeigt ausschließlich erkannte WeLock-Geräte an.
   * `--json`: Strukturierte JSON-Ausgabe.
-* **Typischer Aufruf:**
+* **Aufrufbeispiele (Linux / macOS & Windows):**
   ```bash
-  # Standard-Scan:
-  ./tools/run_ble_scan.sh
+  # Linux / macOS:
+  ./tools/run_ble_scan.sh --welock-only
+  ./tools/run_ble_scan.sh Touch -t 15.0 --json
 
-  # Nur WeLock-Schlösser anzeigen:
-  python3 tools/ble_scan.py --welock-only
-
-  # Längerer Scan (15s):
-  python3 tools/ble_scan.py -t 15.0
+  # Windows (PowerShell):
+  .\tools\run_ble_scan.ps1 --welock-only
+  .\tools\run_ble_scan.ps1 Touch -t 15.0 --json
   ```
 
 ---
@@ -149,11 +149,15 @@ Verbindet sich direkt über Bluetooth mit dem Schloss, sendet die WeLock-Statusa
   * `--address`, `-a` (str): Alternative zur Positionsangabe.
   * `--timeout`, `-t` (float, Standard `15.0`): Verbindungs-Timeout.
   * `--json`: JSON-Ausgabe (`{"address": "...", "battery": 85, "random_factor": 114}`).
-* **Typischer Aufruf:**
+* **Aufrufbeispiele:**
   ```bash
+  # Linux / macOS:
   ./tools/run_ble_battery.sh "AA:BB:CC:DD:EE:FF"
-  # oder:
-  python3 tools/ble_battery.py AA:BB:CC:DD:EE:FF
+  ./tools/run_ble_battery.sh -a "AA:BB:CC:DD:EE:FF" -t 20.0 --json
+
+  # Windows (PowerShell):
+  .\tools\run_ble_battery.ps1 "AA:BB:CC:DD:EE:FF"
+  .\tools\run_ble_battery.ps1 -a "AA:BB:CC:DD:EE:FF" -t 20.0 --json
   ```
 
 ---
@@ -163,11 +167,19 @@ Prüft, ob ein Gerät den WeLock Nordic UART Service (`6e400001-...`) sowie die 
 
 * **Parameter:**
   * `<MAC-Adresse>`: Adresse des Schlosses.
+  * `--address`, `-a` (str): Alternative zur Positionsangabe.
   * `--connect`, `-c`: Verbindet sich und liest die GATT-Dienste aus.
   * `--timeout`, `-t` (Standard `15.0`): Timeout in Sekunden.
-* **Typischer Aufruf:**
+  * `--json`: JSON-Ausgabe mit GATT-Struktur.
+* **Aufrufbeispiele:**
   ```bash
+  # Linux / macOS:
   ./tools/run_ble_probe.sh --address "AA:BB:CC:DD:EE:FF" --connect
+  ./tools/run_ble_probe.sh "AA:BB:CC:DD:EE:FF" -c --json
+
+  # Windows (PowerShell):
+  .\tools\run_ble_probe.ps1 --address "AA:BB:CC:DD:EE:FF" --connect
+  .\tools\run_ble_probe.ps1 "AA:BB:CC:DD:EE:FF" -c --json
   ```
 
 ---
@@ -175,11 +187,19 @@ Prüft, ob ein Gerät den WeLock Nordic UART Service (`6e400001-...`) sowie die 
 ### 4. `welock_cloud_login.py` — Cloud-Konto & Geräteübersicht
 Authentifiziert sich gegen die offizielle WeLock Cloud API (`clientapi.welock.com.cn`), um die registrierten Schlösser, interne Schlosscodes (`deviceNumber`) und zugehörige BLE-Namen abzufragen. Es werden keine Passwörter oder Tokens im Dateisystem gespeichert.
 
-* **Typischer Aufruf:**
+* **Parameter:**
+  * `[account]` / `--account`, `-u`: WeLock-Konto / E-Mail-Adresse.
+  * `--list-devices`, `-l`: Schlösser nach dem Login abrufen und auflisten.
+  * `--yes`, `-y`: Bestätigungsmeldung automatisch akzeptieren.
+  * `--json`: JSON-Ausgabe der Kontodaten und Schlossliste.
+* **Aufrufbeispiele:**
   ```bash
+  # Interaktiv:
   ./tools/run_cloud_login.sh
-  # oder:
-  python3 tools/welock_cloud_login.py
+
+  # Mit Parametern (Linux / Windows):
+  ./tools/run_cloud_login.sh -u "user@example.com" -l
+  .\tools\run_cloud_login.ps1 -u "user@example.com" -l --json
   ```
 
 ---
@@ -191,9 +211,20 @@ Führt den kompletten kryptografischen Vor-Ort-Ablauf durch:
 3. Validiert den empfangenen Befehl.
 4. **WICHTIG:** Der Befehl wird **nicht** an das Schloss gesendet. Ideal zur risikofreien Verifikation von Kontodaten und Cloud-Kommunikation.
 
-* **Typischer Aufruf:**
+* **Parameter:**
+  * `<MAC-Adresse>` / `--address`, `-a`: BLE-Adresse des Schlosses.
+  * `--account`, `-u`: WeLock E-Mail-Adresse.
+  * `--number`, `-n`: Schloss-Gerätenummer (`deviceNumber`).
+  * `--name`: Cloud-BLE-Gerätename.
+  * `--timeout`, `-t` (float, Standard 15.0): Timeout.
+  * `--yes`, `-y`: Bestätigungen automatisch mit JA beantworten.
+  * `--show-command`: 15-Byte Hex-Command im Terminal anzeigen.
+  * `--json`: Strukturierte JSON-Rückgabe.
+* **Aufrufbeispiele:**
   ```bash
   ./tools/run_command_probe.sh
+  ./tools/run_command_probe.sh -a "AA:BB:CC:DD:EE:FF" -u "user@example.com" -n "C41..."
+  .\tools\run_command_probe.ps1 -a "AA:BB:CC:DD:EE:FF" --show-command
   ```
 
 ---
@@ -201,10 +232,12 @@ Führt den kompletten kryptografischen Vor-Ort-Ablauf durch:
 ### 6. `welock_unlock.py` — Autorisierter Entriegelungstest
 Führt den vollständigen Entriegelungsvorgang vor Ort durch: Holt die BLE-Challenge, generiert den Cloud-Befehl und schreibt den 15-Byte-Befehl per BLE an das Schloss.
 
-* **Sicherheit:** Erfordert ausdrückliche Bestätigung mit `JA` und `ENTRIEGELN`.
-* **Typischer Aufruf:**
+* **Sicherheit:** Erfordert ausdrückliche Bestätigung mit `JA` und `ENTRIEGELN` (sofern nicht `--yes` übergeben wurde).
+* **Parameter:** Unterstützt die gleichen Parameter wie `welock_command_probe.py`.
+* **Aufrufbeispiele:**
   ```bash
   ./tools/run_unlock.sh
+  .\tools\run_unlock.ps1 -a "AA:BB:CC:DD:EE:FF" -t 20.0
   ```
 
 ---

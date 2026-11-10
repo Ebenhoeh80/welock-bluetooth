@@ -1,5 +1,6 @@
 """Experimental WELOCK cloud-login probe; it does not unlock a lock."""
 
+import argparse
 import base64
 import getpass
 import hashlib
@@ -193,25 +194,107 @@ def login(account: str, password: str) -> str:
 
 
 def main() -> int:
-    print("Experimenteller Cloud-Login; kein Unlock und kein Speichern von Zugangsdaten.")
-    print("Eine neue Anmeldung kann andere WELOCK-Sitzungen, einschliesslich der App, abmelden.")
-    if input("Fuer diesen Login ausdruecklich JA eingeben: ").strip() != "JA":
-        print("Abgebrochen; keine Anmeldung durchgefuehrt.")
+    parser = argparse.ArgumentParser(
+        description="WeLock Cloud-Login-Test und Abruf registrierter Schlösser."
+    )
+    parser.add_argument(
+        "positional_account",
+        nargs="?",
+        default=None,
+        help="WeLock-Konto / E-Mail-Adresse.",
+    )
+    parser.add_argument(
+        "--account",
+        "-u",
+        type=str,
+        default=None,
+        help="WeLock-Konto / E-Mail-Adresse.",
+    )
+    parser.add_argument(
+        "--list-devices",
+        "-l",
+        action="store_true",
+        help="Registrierte Schlösser und BLE-Namen nach dem Login abrufen und auflisten.",
+    )
+    parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Sicherheitsbestätigung automatisch akzeptieren.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Ausgabe als JSON-Datenstruktur.",
+    )
+
+    args = parser.parse_args()
+    account = args.account or args.positional_account
+
+    if not args.json:
+        print("Experimenteller Cloud-Login; kein Unlock und kein Speichern von Zugangsdaten.")
+        print("Hinweis: Eine neue Anmeldung kann bestehende WeLock-Sitzungen in der App abmelden.")
+
+    if not args.yes and not args.json:
+        if input("Für diesen Login ausdrücklich JA eingeben: ").strip() != "JA":
+            print("Abgebrochen; keine Anmeldung durchgeführt.")
+            return 1
+
+    if not account:
+        account = input("WeLock-E-Mail: ").strip()
+
+    if not account:
+        print("Fehler: E-Mail-Adresse darf nicht leer sein.", file=sys.stderr)
         return 1
-    account = input("WELOCK-E-Mail: ").strip()
+
+    session = CloudSession()
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
-            password = getpass.getpass("WELOCK-Passwort (verdeckte Eingabe): ")
-        token = login(account, password)
-        del password, token
+            password = getpass.getpass("WeLock-Passwort (verdeckte Eingabe): ")
+
+        session.authenticate(account, password)
+        del password
     except getpass.GetPassWarning:
-        print("Verdeckte Passworteingabe nicht verfuegbar; abgebrochen.", file=sys.stderr)
+        print("Fehler: Verdeckte Passworteingabe nicht verfügbar; abgebrochen.", file=sys.stderr)
         return 1
     except CloudError as exc:
-        print(f"Anmeldung fehlgeschlagen: {exc}", file=sys.stderr)
+        if args.json:
+            print(json.dumps({"success": False, "error": str(exc)}))
+        else:
+            print(f"Anmeldung fehlgeschlagen: {exc}", file=sys.stderr)
         return 1
-    print("Cloud-Anmeldung akzeptiert. Kein Token gespeichert und kein Unlock durchgefuehrt.")
+
+    devices_list = []
+    if args.list_devices or not args.json:
+        try:
+            raw_devices = session.list_devices()
+            for number, name, ble_name in raw_devices:
+                devices_list.append({
+                    "device_number": number,
+                    "device_name": name,
+                    "ble_name": ble_name,
+                })
+        except CloudError as exc:
+            if not args.json:
+                print(f"Hinweis beim Abruf der Geräteliste: {exc}")
+
+    if args.json:
+        print(json.dumps({
+            "success": True,
+            "account": account,
+            "devices": devices_list,
+        }, indent=2))
+        return 0
+
+    print("\nCloud-Anmeldung erfolgreich akzeptiert!")
+    if devices_list:
+        print(f"\nRegistrierte Schlösser ({len(devices_list)}):")
+        print("-" * 65)
+        for idx, dev in enumerate(devices_list, 1):
+            print(f"[{idx}] Schlossnummer: {dev['device_number']} | Name: {dev['device_name']} | BLE: {dev['ble_name']}")
+        print("-" * 65)
+    print("Kein Token gespeichert und kein Unlock-Befehl gesendet.")
     return 0
 
 

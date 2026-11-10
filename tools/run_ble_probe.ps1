@@ -1,25 +1,28 @@
 <#
 .SYNOPSIS
-    WeLock BLE Probe Runner (Windows PowerShell)
+    WeLock BLE Probe Runner (Windows PowerShell Wrapper)
 .DESCRIPTION
-    Startet ble_probe.py unter Windows, prueft Python und das Bleak-Modul automatisch
-    und setzt den PYTHONPATH korrekt auf das Repository-Root.
+    Startet ble_probe.py unter Windows zur Inspektion von GATT-Diensten und
+    Characteristics (Nordic UART Service) ohne Applikationsbefehle.
+    Leitet alle Parameter transparent und unverändert an ble_probe.py weiter.
 .EXAMPLE
     .\run_ble_probe.ps1 --address "AA:BB:CC:DD:EE:FF" --connect
+.EXAMPLE
+    .\run_ble_probe.ps1 "AA:BB:CC:DD:EE:FF" -c -t 20.0
+.EXAMPLE
+    .\run_ble_probe.ps1 "AA:BB:CC:DD:EE:FF" -c --json
+.EXAMPLE
+    .\run_ble_probe.ps1 --help
 #>
-[CmdletBinding()]
-param()
 
 $ErrorActionPreference = "Stop"
 
 # 1. Automatisches Erkennen des Projekt- und Tool-Verzeichnisses
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
+$env:PYTHONPATH = if ($env:PYTHONPATH) { "$RepoRoot;$ScriptDir;$env:PYTHONPATH" } else { "$RepoRoot;$ScriptDir" }
 
-# 2. PYTHONPATH auf das Repository-Root setzen
-$env:PYTHONPATH = if ($env:PYTHONPATH) { "$RepoRoot;$env:PYTHONPATH" } else { "$RepoRoot" }
-
-# 3. Python-Interpreter ermitteln
+# 2. Python-Interpreter ermitteln
 $PythonBin = $null
 if ($env:VIRTUAL_ENV -and (Test-Path "$env:VIRTUAL_ENV\Scripts\python.exe")) {
     $PythonBin = "$env:VIRTUAL_ENV\Scripts\python.exe"
@@ -42,28 +45,26 @@ if (-not $PythonBin) {
     exit 1
 }
 
-# 4. Mindestversion pruefen (Python >= 3.10)
+# 3. Mindestversion prüfen (Python >= 3.10)
 $VersionCheck = & $PythonBin -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "FEHLER: Python 3.10 oder neuer erforderlich. Gefunden: $(& $PythonBin --version)"
+    Write-Error "FEHLER: Python 3.10 oder neuer erforderlich. Gefundener Interpreter: $(& $PythonBin --version)"
     exit 1
 }
 
-# 5. Abhaengigkeit pruefen (bleak)
+# 4. Abhängigkeit prüfen (bleak)
 $BleakCheck = & $PythonBin -c "import bleak" 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "======================================================================" -ForegroundColor Red
     Write-Host "FEHLER: Das erforderliche Python-Paket 'bleak' ist nicht installiert!" -ForegroundColor Red
     Write-Host "======================================================================" -ForegroundColor Red
-    Write-Host "Bitte fuehren Sie folgenden Befehl aus:" -ForegroundColor Yellow
+    Write-Host "Bitte führen Sie folgenden Befehl aus:" -ForegroundColor Yellow
     Write-Host "  pip install -r `"$ScriptDir\requirements-ble.txt`"" -ForegroundColor Cyan
-    Write-Host "Oder in einer virtuellen Umgebung:" -ForegroundColor Yellow
-    Write-Host "  python -m venv .venv; .venv\Scripts\Activate.ps1; pip install -r tools\requirements-ble.txt" -ForegroundColor Cyan
     Write-Host "======================================================================" -ForegroundColor Red
     exit 1
 }
 
-# 6. Ausfuehren mit allen uebergebenen Parametern
+# 5. Zielskript ausführen und alle Argumente transparent übergeben
 $ScriptFile = Join-Path $ScriptDir "ble_probe.py"
 & $PythonBin $ScriptFile @args
 exit $LASTEXITCODE

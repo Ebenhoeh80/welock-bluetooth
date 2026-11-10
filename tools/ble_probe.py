@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import math
 import sys
 
@@ -23,37 +24,62 @@ except ImportError:
     from tools.welock_protocol import NOTIFY_UUID, SERVICE_UUID, WRITE_UUID
 
 
-async def inspect_device(address: str, timeout: float, connect: bool) -> int:
+async def inspect_device(
+    address: str, timeout: float, connect: bool, as_json: bool = False
+) -> int:
     """Sucht nach dem BLE-Gerät und inspiziert optional die GATT-Dienste."""
     if BleakScanner is None or BleakClient is None:
         _, msg = check_bleak_installed()
-        print(f"Fehler: {msg}", file=sys.stderr)
+        if as_json:
+            print(json.dumps({"error": "missing_dependency", "message": msg}))
+        else:
+            print(f"Fehler: {msg}", file=sys.stderr)
         return 1
 
-    print(f"Suche nach BLE-Gerät [{address}]...")
+    if not as_json:
+        print(f"Suche nach BLE-Gerät [{address}]...")
     device = await BleakScanner.find_device_by_address(address, timeout=timeout)
     if device is None:
-        print(
-            f"Gerät [{address}] wurde nicht gefunden. Stellen Sie sicher, dass es aufgeweckt und in Reichweite ist.",
-            file=sys.stderr,
-        )
+        if as_json:
+            print(json.dumps({"address": address, "found": False, "error": "device_not_found"}))
+        else:
+            print(
+                f"Gerät [{address}] wurde nicht gefunden. Stellen Sie sicher, dass es aufgeweckt und in Reichweite ist.",
+                file=sys.stderr,
+            )
         return 1
 
     name = device.name or "(unbekannt)"
-    print(f"Gerät gefunden: '{name}' [{device.address}].")
+    if not as_json:
+        print(f"Gerät gefunden: '{name}' [{device.address}].")
 
     if not connect:
-        print("Hinweis: Verbindungstest übersprungen (geben Sie --connect an, um GATT-Services zu prüfen).")
+        if as_json:
+            print(json.dumps({"address": device.address, "name": name, "found": True, "connected": False}))
+        else:
+            print("Hinweis: Verbindungstest übersprungen (geben Sie --connect an, um GATT-Services zu prüfen).")
         return 0
 
-    print("Verbinde mit Gerät zur GATT-Inspektion...")
+    if not as_json:
+        print("Verbinde mit Gerät zur GATT-Inspektion...")
     async with BleakClient(device, timeout=timeout) as client:
         service = client.services.get_service(SERVICE_UUID)
         if service is None:
-            print(f"Warnung: Der WeLock Nordic UART Service ({SERVICE_UUID}) wurde nicht gefunden.", file=sys.stderr)
-            print("Verfügbare Services auf diesem Gerät:", file=sys.stderr)
-            for s in client.services:
-                print(f"  - {s.uuid} ({s.description})", file=sys.stderr)
+            services_found = [s.uuid for s in client.services]
+            if as_json:
+                print(json.dumps({
+                    "address": device.address,
+                    "name": name,
+                    "found": True,
+                    "connected": True,
+                    "welock_service_found": False,
+                    "services": services_found,
+                }))
+            else:
+                print(f"Warnung: Der WeLock Nordic UART Service ({SERVICE_UUID}) wurde nicht gefunden.", file=sys.stderr)
+                print("Verfügbare Services auf diesem Gerät:", file=sys.stderr)
+                for s in client.services:
+                    print(f"  - {s.uuid} ({s.description})", file=sys.stderr)
             return 1
 
         characteristics = {
@@ -61,8 +87,33 @@ async def inspect_device(address: str, timeout: float, connect: bool) -> int:
         }
         missing = {WRITE_UUID.lower(), NOTIFY_UUID.lower()} - characteristics.keys()
         if missing:
-            print(f"Fehlende WeLock-Characteristics: {', '.join(sorted(missing))}", file=sys.stderr)
+            msg = f"Fehlende WeLock-Characteristics: {', '.join(sorted(missing))}"
+            if as_json:
+                print(json.dumps({
+                    "address": device.address,
+                    "name": name,
+                    "welock_service_found": True,
+                    "missing_characteristics": list(missing),
+                    "error": msg,
+                }))
+            else:
+                print(msg, file=sys.stderr)
             return 1
+
+        if as_json:
+            chars_info = {}
+            for uuid in (WRITE_UUID, NOTIFY_UUID):
+                char_obj = characteristics[uuid.lower()]
+                chars_info[uuid] = list(char_obj.properties)
+            print(json.dumps({
+                "address": device.address,
+                "name": name,
+                "found": True,
+                "connected": True,
+                "service": SERVICE_UUID,
+                "characteristics": chars_info,
+            }, indent=2))
+            return 0
 
         print("\n" + "=" * 65)
         print("  GATT-Service Inspektion (Nordic UART Service)")
@@ -109,6 +160,11 @@ def main() -> int:
         action="store_true",
         help="Verbinden und GATT-Services/Characteristics prüfen.",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Ausgabe als JSON-Datenstruktur.",
+    )
 
     args = parser.parse_args()
     target_address = args.address or args.positional_address
@@ -122,7 +178,11 @@ def main() -> int:
         parser.error("--timeout muss eine positive Zahl sein.")
 
     try:
-        return asyncio.run(inspect_device(target_address.strip(), args.timeout, args.connect))
+        return asyncio.run(
+            inspect_device(
+                target_address.strip(), args.timeout, args.connect, as_json=args.json
+            )
+        )
     except (BleakError, OSError, TimeoutError) as exc:
         print(f"Bluetooth-Inspektion fehlgeschlagen: {exc}", file=sys.stderr)
         return 1

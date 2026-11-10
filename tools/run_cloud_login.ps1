@@ -1,25 +1,28 @@
 <#
 .SYNOPSIS
-    WeLock Cloud Login Runner (Windows PowerShell)
+    WeLock Cloud Login Runner (Windows PowerShell Wrapper)
 .DESCRIPTION
-    Startet welock_cloud_login.py unter Windows.
-    Das Skript nutzt ausschliesslich die Python 3.10+ Standardbibliothek (kein pip noetig).
+    Startet welock_cloud_login.py unter Windows zur Prüfung von WeLock-Konten
+    und zum Abruf registrierter Schlösser (deviceNumber, BLE-Namen).
+    Leitet alle Parameter transparent und unverändert an welock_cloud_login.py weiter.
 .EXAMPLE
     .\run_cloud_login.ps1
+.EXAMPLE
+    .\run_cloud_login.ps1 -u "user@example.com" -l
+.EXAMPLE
+    .\run_cloud_login.ps1 -u "user@example.com" -l --json
+.EXAMPLE
+    .\run_cloud_login.ps1 --help
 #>
-[CmdletBinding()]
-param()
 
 $ErrorActionPreference = "Stop"
 
 # 1. Automatisches Erkennen des Projekt- und Tool-Verzeichnisses
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
+$env:PYTHONPATH = if ($env:PYTHONPATH) { "$RepoRoot;$ScriptDir;$env:PYTHONPATH" } else { "$RepoRoot;$ScriptDir" }
 
-# 2. PYTHONPATH auf das Repository-Root setzen
-$env:PYTHONPATH = if ($env:PYTHONPATH) { "$RepoRoot;$env:PYTHONPATH" } else { "$RepoRoot" }
-
-# 3. Python-Interpreter ermitteln
+# 2. Python-Interpreter ermitteln
 $PythonBin = $null
 if ($env:VIRTUAL_ENV -and (Test-Path "$env:VIRTUAL_ENV\Scripts\python.exe")) {
     $PythonBin = "$env:VIRTUAL_ENV\Scripts\python.exe"
@@ -42,14 +45,14 @@ if (-not $PythonBin) {
     exit 1
 }
 
-# 4. Mindestversion pruefen (Python >= 3.10)
+# 3. Mindestversion prüfen (Python >= 3.10)
 $VersionCheck = & $PythonBin -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "FEHLER: Python 3.10 oder neuer erforderlich. Gefunden: $(& $PythonBin --version)"
+    Write-Error "FEHLER: Python 3.10 oder neuer erforderlich. Gefundener Interpreter: $(& $PythonBin --version)"
     exit 1
 }
 
-# 5. Ausfuehren mit allen uebergebenen Parametern
+# 4. Zielskript ausführen und alle Argumente transparent übergeben (benötigt kein bleak)
 $ScriptFile = Join-Path $ScriptDir "welock_cloud_login.py"
 & $PythonBin $ScriptFile @args
 exit $LASTEXITCODE

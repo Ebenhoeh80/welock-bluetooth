@@ -5,7 +5,7 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-languages--sprachen--idiomas--langues)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
 
 Vollständige Suite für **WeLock Smart Door Locks** (Touch41, SECBN51, PCB41) und das **WeLock WiFiBox Gateway**:
 1. 🏠 **Home Assistant HACS Integration** (`custom_components/welock`): Integration in Home Assistant mit grafischem ConfigFlow, Sensorwerten (Batterie, Signal, letzte Entriegelung) und 4-Sprachen-Lokalisierung.
@@ -64,7 +64,7 @@ welock/
 ├── hacs.json                     # HACS / Marketplace Metadaten
 ├── info.md                       # HACS Store-Beschreibung
 ├── README.md                     # Hauptdokumentation (diese Datei)
-└── LICENSE                       # Apache 2.0 Lizenz
+└── LICENSE                       # MIT-Lizenz
 ```
 
 ---
@@ -234,4 +234,4 @@ mode: restart
 
 ## 📄 Lizenz
 
-Lizenziert unter der Apache License 2.0. Siehe [LICENSE](LICENSE) für Details.
+Lizenziert unter der MIT-Lizenz. Siehe [LICENSE](LICENSE) für Details.

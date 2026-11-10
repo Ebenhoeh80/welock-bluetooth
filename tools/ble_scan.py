@@ -124,6 +124,12 @@ def main() -> int:
         description="BLE-Suchlauf zur Erkennung von WeLock Smart Locks und BLE-Geräten."
     )
     parser.add_argument(
+        "positional_filter",
+        nargs="?",
+        default=None,
+        help="Optionaler Suchbegriff für Gerätenamen oder MAC-Adresse (z. B. Touch oder C41).",
+    )
+    parser.add_argument(
         "--timeout",
         "-t",
         type=float,
@@ -154,11 +160,13 @@ def main() -> int:
     if not math.isfinite(args.timeout) or args.timeout <= 0:
         parser.error("--timeout muss eine positive Zahl sein.")
 
+    active_filter = args.filter or args.positional_filter
+
     try:
         return asyncio.run(
             scan_ble_devices(
                 timeout=args.timeout,
-                filter_term=args.filter,
+                filter_term=active_filter,
                 welock_only=args.welock_only,
                 as_json=args.json,
             )
