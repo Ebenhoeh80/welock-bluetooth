@@ -8,45 +8,22 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import (
-    CONF_CLIENT_ID,
-    CONF_CLIENT_SECRET,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    DOMAIN,
-)
+from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
 
-TO_REDACT = {
-    CONF_CLIENT_ID,
-    CONF_CLIENT_SECRET,
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    "password",
-    "access_token",
-    "accessToken",
-    "token",
-    "mac",
-    "macAddress",
-    "wifiBoxId",
-    "gatewayId",
-}
+TO_REDACT = {CONF_USERNAME, CONF_PASSWORD, "access_token", "refresh_token", "token"}
 
 
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
-    """Return diagnostics for a config entry."""
-    data = hass.data[DOMAIN][entry.entry_id]
-    coordinator = data["coordinator"]
-
+    """Return diagnostics for a config entry (password and account redacted)."""
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     return {
         "entry": {
-            "entry_id": entry.entry_id,
             "version": entry.version,
-            "domain": entry.domain,
             "title": entry.title,
             "data": async_redact_data(dict(entry.data), TO_REDACT),
-            "options": async_redact_data(dict(entry.options), TO_REDACT),
+            "options": dict(entry.options),
         },
-        "coordinator_data": async_redact_data(coordinator.data, TO_REDACT),
+        "state": coordinator.data,
     }

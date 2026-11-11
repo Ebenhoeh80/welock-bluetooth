@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Config flow follows the WeLock workflow**: cloud login (with warning that it ends app sessions) → lock/BLE module selection from `/Device/GetDevices` → Bluetooth reachability and status/challenge check (no unlock). One config entry per BLE module (unique id = BLE address). Bluetooth discovery for `WeLock*` devices. Proper reauth step.
+- **Unlocking works via BLE**: challenge `55 30` → cloud `/Command/UnLock` with `deviceNumber`, `deviceName`, `randomFactor`, `battery` → 15-byte `U1…` command written over the Nordic UART service through the Home Assistant Bluetooth stack (adapters / ESPHome proxies). Minimum 30 s between unlocks.
+- **No cloud polling**: presence and RSSI from HA Bluetooth, battery read over BLE (configurable interval). The cloud is only contacted during setup/reauth and for unlock.
+- Password is no longer stored twice (`client_id`/`client_secret` aliases removed) and no longer stripped.
+- Minimum Home Assistant version raised to 2024.11.0.
+
+### Removed
+- WiFiBox gateway sensor, last-unlock-type sensor and the cloud-only unlock call (not supported by the WeLock cloud).
+
+### Migration
+- Config entries from 1.3.0 and earlier have no lock selection and must be removed and added again.
+
 ## [1.3.0] - 2026-11-11
 
 ### Changed

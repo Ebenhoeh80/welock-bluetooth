@@ -1,63 +1,70 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
-        "title": "Configuration de WeLock Smart Lock",
-        "description": "Connectez-vous avec vos identifiants de l'application mobile WeLock (adresse e-mail et mot de passe).",
+        "title": "Étape 1/3 : Connexion au cloud WeLock",
+        "description": "Connectez-vous avec votre compte de l'app WeLock. Le cloud sert uniquement à charger vos serrures et, lors du déverrouillage, à calculer la commande à usage unique.\n\n**Remarque :** chaque connexion met fin aux autres sessions du compte, p. ex. l'app WeLock du téléphone. Assurez-vous que l'app n'est pas utilisée en ce moment.",
         "data": {
-          "username": "E-mail / Compte WeLock",
+          "username": "E-mail / compte WeLock",
           "password": "Mot de passe"
         }
       },
-      "reauth": {
-        "title": "Réauthentifier le compte WeLock",
-        "description": "Veuillez saisir votre adresse e-mail et votre mot de passe WeLock pour rétablir la connexion.",
+      "select": {
+        "title": "Étape 2/3 : Choisir la serrure",
+        "description": "Choisissez le module BLE de votre serrure. « À portée » signifie qu'un adaptateur Bluetooth ou un proxy Bluetooth ESPHome de Home Assistant peut s'y connecter maintenant.",
         "data": {
-          "username": "E-mail / Compte WeLock",
+          "address": "Serrure / module BLE"
+        }
+      },
+      "verify": {
+        "title": "Étape 3/3 : Vérification Bluetooth",
+        "description": "Home Assistant va se connecter à **{name}** ({address}, serrure {device_number}) et demander la batterie et le défi. **Aucune commande de déverrouillage n'est envoyée.**\n\nRéveillez la serrure (touchez le bouton) puis cliquez sur Valider.",
+        "data": {}
+      },
+      "reauth_confirm": {
+        "title": "Réauthentifier le compte WeLock",
+        "description": "Le cloud WeLock a refusé la connexion pour {username}. Saisissez le mot de passe actuel. Cela met fin aux autres sessions du compte (p. ex. l'app WeLock).",
+        "data": {
           "password": "Mot de passe"
         }
       }
     },
     "error": {
-      "cannot_connect": "Impossible de se connecter au Cloud WeLock. Veuillez vérifier votre connexion réseau.",
-      "invalid_auth": "Adresse e-mail ou mot de passe invalide. Veuillez vérifier dans l'application WeLock.",
-      "unknown": "Une erreur inattendue est survenue. Veuillez réessayer."
+      "cannot_connect": "Impossible de se connecter au cloud WeLock (clientapi.welock.com.cn).",
+      "invalid_auth": "E-mail ou mot de passe incorrect.",
+      "cloud_error": "Le cloud WeLock a refusé la requête.",
+      "no_locks": "Aucune serrure avec module Bluetooth trouvée dans ce compte.",
+      "not_in_range": "Aucun adaptateur ou proxy Bluetooth de Home Assistant n'atteint la serrure. Rapprochez un proxy Bluetooth ou réveillez la serrure et réessayez.",
+      "ble_failed": "La serrure n'a pas répondu à la demande d'état. Réveillez-la et réessayez.",
+      "lock_not_found": "Cette serrure ne fait plus partie du compte WeLock.",
+      "unknown": "Une erreur inattendue s'est produite."
     },
     "abort": {
-      "already_configured": "Ce compte WeLock est déjà configuré dans Home Assistant."
+      "already_configured": "Cette serrure est déjà configurée.",
+      "not_in_account": "La serrure détectée ne fait pas partie de ce compte WeLock.",
+      "reauth_successful": "Réauthentification réussie."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Options de l'intégration WeLock",
-        "description": "Configurez l'intervalle d'actualisation et le comportement de la serrure.",
+        "title": "Options WeLock",
         "data": {
-          "scan_interval": "Intervalle d'interrogation (secondes)",
-          "auto_relock_delay": "Délai de reverrouillage mécanique (secondes)"
+          "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
+          "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
+          "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": {
-        "name": "Batterie"
-      },
-      "signal_strength": {
-        "name": "Puissance du signal"
-      },
-      "last_unlock_type": {
-        "name": "Dernière méthode de déverrouillage"
-      }
+      "battery": { "name": "Batterie" },
+      "signal_strength": { "name": "Force du signal" }
     },
     "binary_sensor": {
-      "connectivity": {
-        "name": "État de la serrure"
-      },
-      "gateway_connectivity": {
-        "name": "État de la passerelle"
-      }
+      "connectivity": { "name": "Bluetooth accessible" }
     }
   }
 }

@@ -1,27 +1,33 @@
-"""API client for WeLock Cloud Services."""
+"""API client for the WeLock mobile cloud (clientapi.welock.com.cn).
+
+The cloud is only used for two things:
+- listing the locks / BLE modules of the account (during setup and reauth),
+- turning a fresh BLE challenge into a one-time 15-byte unlock command.
+
+Every login ends other sessions of the account (e.g. the WeLock app), so the
+client never polls; it logs in only when one of the two calls above is needed.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import base64
-from datetime import datetime
 import hashlib
 import logging
 import secrets
 import time
-from typing import Any
 import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 import aiohttp
 
-from .const import (
-    BASE_API_URL,
-    ENDPOINT_AUTH,
-    ENDPOINT_DEVICES,
-    ENDPOINT_UNLOCK,
-)
+from .const import BASE_API_URL, ENDPOINT_AUTH, ENDPOINT_DEVICES, ENDPOINT_UNLOCK
+from .protocol import format_mac
 
 _LOGGER = logging.getLogger(__name__)
+_TIMEOUT = aiohttp.ClientTimeout(total=20)
 
 
 def md5_hex(value: str) -> str:
@@ -73,211 +79,229 @@ class WeLockApiError(Exception):
 
 
 class CannotConnect(WeLockApiError):
-    """Exception to indicate network connection error."""
+    """Network, TLS or timeout error."""
 
 
 class InvalidAuth(WeLockApiError):
-    """Exception to indicate invalid credentials (email / password)."""
+    """Invalid credentials (email / password)."""
 
 
 class LockUnavailable(WeLockApiError):
-    """Exception to indicate that the lock or gateway is unreachable."""
+    """The cloud refused to issue an unlock command."""
+
+
+@dataclass(frozen=True)
+class WeLockBleModule:
+    """A BLE module of a lock as listed by the cloud (``ble[]`` entry)."""
+
+    name: str  # ble[].deviceName, e.g. "WeLockABCDE" - required for /Command/UnLock
+    address: str | None  # ble[].deviceMac formatted as AA:BB:CC:DD:EE:FF
+    battery: int | None  # ble[].power
+    position: int | None
+
+
+@dataclass(frozen=True)
+class WeLockDevice:
+    """A lock as listed by ``/Device/GetDevices``."""
+
+    device_number: str
+    name: str
+    model: str | None
+    ble: tuple[WeLockBleModule, ...] = field(default_factory=tuple)
+
+
+def parse_envelope(payload: Any) -> Any:
+    """Return ``data`` of a ``{"code": 0, "data": ...}`` envelope or raise."""
+    if not isinstance(payload, dict) or type(payload.get("code")) is not int:
+        raise WeLockApiError("Invalid response format from WeLock Cloud")
+    if payload["code"] != 0:
+        # Do not include the message text: it is not needed and may echo request data.
+        raise WeLockApiError(f"WeLock Cloud rejected the request (code {payload['code']})")
+    if "data" not in payload:
+        raise WeLockApiError("WeLock Cloud response has no data field")
+    return payload["data"]
+
+
+def _as_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_device_list(data: Any) -> list[WeLockDevice]:
+    """Parse the ``data`` list of ``/Device/GetDevices``."""
+    if not isinstance(data, list):
+        raise WeLockApiError("Device list has an unknown format")
+    devices: list[WeLockDevice] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        number = item.get("deviceNumber")
+        if not isinstance(number, str) or not number.strip():
+            continue
+        modules: list[WeLockBleModule] = []
+        for entry in item.get("ble") or []:
+            if not isinstance(entry, dict):
+                continue
+            ble_name = entry.get("deviceName")
+            if not isinstance(ble_name, str) or not ble_name.strip():
+                continue
+            modules.append(
+                WeLockBleModule(
+                    name=ble_name.strip(),
+                    address=format_mac(str(entry.get("deviceMac") or "")),
+                    battery=_as_int(entry.get("power")),
+                    position=_as_int(entry.get("position")),
+                )
+            )
+        name = item.get("deviceName")
+        devices.append(
+            WeLockDevice(
+                device_number=number.strip(),
+                name=name.strip() if isinstance(name, str) and name.strip() else number.strip(),
+                model=item.get("model") if isinstance(item.get("model"), str) else None,
+                ble=tuple(modules),
+            )
+        )
+    return devices
+
+
+def parse_unlock_command(data: Any) -> bytes:
+    """Turn the ``data`` of ``/Command/UnLock`` into the raw command bytes."""
+    if not isinstance(data, dict):
+        raise LockUnavailable("Unlock command response has an unknown format")
+    command = data.get("command")
+    if not isinstance(command, str) or not command or len(command) % 2:
+        raise LockUnavailable("Unlock command is not a valid hex string")
+    try:
+        return bytes.fromhex(command)
+    except ValueError as err:
+        raise LockUnavailable("Unlock command is not a valid hex string") from err
 
 
 class WeLockApiClient:
-    """WeLock Cloud REST API Client."""
+    """WeLock mobile cloud client."""
 
     def __init__(
         self,
-        username: str | None = None,
-        password: str | None = None,
-        session: aiohttp.ClientSession | None = None,
+        username: str,
+        password: str,
+        session: aiohttp.ClientSession | None,
         base_url: str = BASE_API_URL,
-        *,
-        client_id: str | None = None,
-        client_secret: str | None = None,
     ) -> None:
         """Initialize the API client."""
-        user = username or client_id or ""
-        pwd = password or client_secret or ""
-        self._username = user.strip()
-        self._password = pwd.strip()
+        self._username = (username or "").strip()
+        self._password = password or ""  # never strip: spaces may be part of it
         self._session = session
         self._base_url = base_url.rstrip("/")
         self._device_id = str(uuid.uuid4()).upper()
         self._access_token: str | None = None
-        self._login_data: dict[str, Any] | None = None
 
     @property
     def username(self) -> str:
         """Return the account username / email."""
         return self._username
 
-    @property
-    def client_id(self) -> str:
-        """Return backward-compatible client_id alias."""
-        return self._username
-
     def __repr__(self) -> str:
         """Return safe string representation redacting secrets."""
-        is_auth = bool(self._access_token)
-        return f"<WeLockApiClient account={self._username!r} authenticated={is_auth}>"
+        return (
+            f"<WeLockApiClient account={self._username!r} "
+            f"authenticated={bool(self._access_token)}>"
+        )
 
-    async def async_authenticate(self) -> bool:
-        """Authenticate with the WeLock Cloud API and acquire an access token."""
-        if not self._username or not self._password:
-            raise InvalidAuth("E-Mail-Adresse und Passwort dürfen nicht leer sein.")
-
+    async def _post(
+        self, path: str, form: dict[str, str], token: str | None = None
+    ) -> tuple[int, Any]:
         if self._session is None:
             raise CannotConnect("ClientSession is not available")
+        headers = build_request_headers(self._device_id, str(time.time_ns() // 1_000_000))
+        if token:
+            headers["Authorization"] = token
+        try:
+            async with self._session.post(
+                f"{self._base_url}{path}",
+                data=form,
+                headers=headers,
+                timeout=_TIMEOUT,
+                allow_redirects=False,
+            ) as response:
+                if response.status != 200:
+                    return response.status, None
+                return 200, await response.json(content_type=None)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            raise CannotConnect("Connection to WeLock Cloud failed") from err
+        except ValueError as err:
+            raise CannotConnect("WeLock Cloud returned invalid JSON") from err
 
+    async def async_authenticate(self) -> None:
+        """Log in and keep the access token in memory only."""
+        if not self._username or not self._password:
+            raise InvalidAuth("Email and password must not be empty")
         offset = datetime.now().astimezone().utcoffset()
         time_offset = int(offset.total_seconds()) if offset else 0
-        form = build_login_form(self._username, self._password, self._device_id, time_offset)
-        timestamp = str(time.time_ns() // 1_000_000)
-        headers = build_request_headers(self._device_id, timestamp)
-        url = f"{self._base_url}{ENDPOINT_AUTH}"
-
+        self._access_token = None
+        status, payload = await self._post(
+            ENDPOINT_AUTH,
+            build_login_form(self._username, self._password, self._device_id, time_offset),
+        )
+        if status in (401, 403):
+            raise InvalidAuth("Invalid email or password")
+        if status != 200:
+            raise CannotConnect(f"Unexpected HTTP status {status} during login")
         try:
-            timeout = aiohttp.ClientTimeout(total=20)
-            async with self._session.post(
-                url, data=form, headers=headers, timeout=timeout
-            ) as response:
-                if response.status in (401, 403):
-                    _LOGGER.error("WeLock authentication failed: HTTP %s", response.status)
-                    raise InvalidAuth("Ungültige E-Mail-Adresse oder Passwort")
+            data = parse_envelope(payload)
+        except WeLockApiError as err:
+            raise InvalidAuth(str(err)) from None
+        token = data.get("access_token") if isinstance(data, dict) else None
+        if not isinstance(token, str) or not token:
+            raise InvalidAuth("No access_token in login response")
+        self._access_token = token
+        _LOGGER.debug("Logged in to WeLock Cloud as %s", self._username)
 
-                if response.status != 200:
-                    text = await response.text()
-                    _LOGGER.error("WeLock auth unexpected status %s: %s", response.status, text)
-                    raise CannotConnect(f"Unexpected status: {response.status}")
+    async def _authorized(self, path: str, form: dict[str, str]) -> Any:
+        """Log in, send one request and drop the token again.
 
-                data = await response.json(content_type=None)
-                if not isinstance(data, dict):
-                    raise CannotConnect("Invalid response format from WeLock Cloud")
-
-                code = data.get("code")
-                if code != 0:
-                    msg = data.get("msg") or data.get("message") or f"Auth failed (code {code})"
-                    _LOGGER.error("WeLock auth response error: %s", msg)
-                    raise InvalidAuth(msg)
-
-                token_data = data.get("data")
-                if not isinstance(token_data, dict):
-                    raise InvalidAuth("No data field in authentication response")
-
-                self._login_data = token_data
-                token = token_data.get("access_token")
-                if not isinstance(token, str) or not token:
-                    raise InvalidAuth("No access_token found in response")
-
-                self._access_token = token
-                _LOGGER.info(
-                    "Successfully authenticated with WeLock Cloud API for %s", self._username
-                )
-                return True
-
-        except (aiohttp.ClientConnectorError, asyncio.TimeoutError) as err:
-            _LOGGER.error("Connection error communicating with WeLock: %s", err)
-            raise CannotConnect from err
-
-    async def _post_cloud(self, path: str, form: dict[str, str]) -> dict[str, Any]:
-        """Send an authenticated POST request to WeLock Cloud."""
-        if not self._access_token:
-            await self.async_authenticate()
-
-        if self._session is None:
-            raise CannotConnect("ClientSession is not available")
-
-        timestamp = str(time.time_ns() // 1_000_000)
-        headers = build_request_headers(self._device_id, timestamp)
-        if self._access_token:
-            headers["Authorization"] = self._access_token
-        url = f"{self._base_url}{path}"
-
+        The token is treated as single-use: any app login invalidates it anyway.
+        """
+        await self.async_authenticate()
         try:
-            timeout = aiohttp.ClientTimeout(total=20)
-            async with self._session.post(
-                url, data=form, headers=headers, timeout=timeout
-            ) as response:
-                if response.status in (401, 403):
-                    _LOGGER.info("WeLock token expired, re-authenticating...")
-                    await self.async_authenticate()
-                    headers["Authorization"] = self._access_token or ""
-                    async with self._session.post(
-                        url, data=form, headers=headers, timeout=timeout
-                    ) as retry_response:
-                        if retry_response.status != 200:
-                            raise WeLockApiError(f"HTTP {retry_response.status} on retry")
-                        return await retry_response.json(content_type=None)
+            status, payload = await self._post(path, form, self._access_token)
+        finally:
+            self._access_token = None
+        if status in (401, 403):
+            raise InvalidAuth(f"WeLock Cloud rejected the token (HTTP {status})")
+        if status != 200:
+            raise CannotConnect(f"Unexpected HTTP status {status}")
+        return parse_envelope(payload)
 
-                if response.status != 200:
-                    text = await response.text()
-                    raise WeLockApiError(f"HTTP {response.status}: {text}")
+    async def async_get_devices(self) -> list[WeLockDevice]:
+        """Return the locks of the account including their BLE modules."""
+        data = await self._authorized(ENDPOINT_DEVICES, {"pageSize": "40", "pageNo": "1"})
+        return parse_device_list(data)
 
-                return await response.json(content_type=None)
-
-        except (aiohttp.ClientConnectorError, asyncio.TimeoutError) as err:
-            raise CannotConnect from err
-
-    async def async_get_locks(self) -> list[dict[str, Any]]:
-        """Retrieve the list of smart locks associated with this account."""
-        resp = await self._post_cloud(ENDPOINT_DEVICES, {"pageSize": "40", "pageNo": "1"})
-        data = resp.get("data")
-        if not isinstance(data, list):
-            return []
-
-        locks: list[dict[str, Any]] = []
-        for item in data:
-            if not isinstance(item, dict):
-                continue
-            number = item.get("deviceNumber") or item.get("lockSn") or item.get("sn") or ""
-            name = item.get("deviceName") or item.get("lockName") or f"WeLock {str(number)[-4:]}"
-
-            ble_name = None
-            ble_list = item.get("ble")
-            if isinstance(ble_list, list) and ble_list and isinstance(ble_list[0], dict):
-                ble_name = ble_list[0].get("deviceName")
-
-            model = ble_name or item.get("model") or item.get("deviceType") or "Smart Lock"
-            battery = item.get("battery", 100)
-            status = item.get("status", 1)
-
-            lock_entry: dict[str, Any] = {
-                **item,
-                "lockSn": str(number),
-                "deviceNumber": str(number),
-                "lockName": name,
-                "deviceName": name,
-                "model": model,
-                "battery": battery,
-                "status": status,
-                "ble_name": ble_name,
-            }
-            locks.append(lock_entry)
-
-        return locks
-
-    async def async_get_lock_detail(self, lock_sn: str) -> dict[str, Any]:
-        """Retrieve detailed lock status."""
-        return {}
-
-    async def async_unlock(self, lock_sn: str) -> bool:
-        """Send unlock command via WeLock Cloud."""
-        payload = {"deviceNumber": lock_sn, "lockSn": lock_sn}
+    async def async_request_unlock_command(
+        self, device_number: str, ble_name: str, random_factor: int, battery: int
+    ) -> bytes:
+        """Ask the cloud for a one-time unlock command for a fresh BLE challenge."""
+        if not device_number.strip() or not ble_name.strip():
+            raise LockUnavailable("Device number and BLE name are required")
+        if not 0 <= random_factor <= 255 or not 0 <= battery <= 255:
+            raise LockUnavailable("BLE challenge values are out of range")
         try:
-            resp = await self._post_cloud(ENDPOINT_UNLOCK, payload)
-            code = resp.get("code")
-            if code in (0, 200, "0", "200"):
-                _LOGGER.info("Unlock command accepted for lock %s", lock_sn)
-                return True
-            msg = resp.get("msg") or resp.get("message") or f"Unlock failed (code {code})"
-            _LOGGER.error("WeLock unlock failed for %s: %s", lock_sn, msg)
-            raise LockUnavailable(msg)
-        except Exception as err:
-            _LOGGER.error("Exception during unlock of %s: %s", lock_sn, err)
-            raise LockUnavailable(str(err)) from err
-
-    async def async_get_gateways(self) -> list[dict[str, Any]]:
-        """Retrieve gateways connected to this account."""
-        return []
+            data = await self._authorized(
+                ENDPOINT_UNLOCK,
+                {
+                    "deviceNumber": device_number,
+                    "deviceName": ble_name,
+                    "randomFactor": str(random_factor),
+                    "battery": str(battery),
+                },
+            )
+        except InvalidAuth:
+            raise
+        except CannotConnect:
+            raise
+        except WeLockApiError as err:
+            raise LockUnavailable(str(err)) from None
+        return parse_unlock_command(data)

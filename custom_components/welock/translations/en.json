@@ -1,63 +1,70 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
-        "title": "WeLock Smart Lock Setup",
-        "description": "Log in with your WeLock mobile app credentials (Email address and Password).",
+        "title": "Step 1/3: WeLock cloud login",
+        "description": "Log in with your WeLock app account. The cloud is only used to load your locks and, when unlocking, to compute the one-time unlock command.\n\n**Note:** every login ends other sessions of this account, e.g. the WeLock app on your phone. Make sure the app is not in use right now.",
         "data": {
-          "username": "Email / WeLock Account",
+          "username": "Email / WeLock account",
           "password": "Password"
         }
       },
-      "reauth": {
-        "title": "Re-authenticate WeLock Account",
-        "description": "Please enter your WeLock account email and password to restore connection.",
+      "select": {
+        "title": "Step 2/3: Select lock",
+        "description": "Choose the BLE module of your lock. 'In range' means a Bluetooth adapter or ESPHome Bluetooth proxy of Home Assistant can currently connect to it.",
         "data": {
-          "username": "Email / WeLock Account",
+          "address": "Lock / BLE module"
+        }
+      },
+      "verify": {
+        "title": "Step 3/3: Bluetooth check",
+        "description": "Home Assistant will now connect to **{name}** ({address}, lock {device_number}) and request battery and challenge. **No unlock command is sent.**\n\nWake the lock up (touch the knob) and press Submit.",
+        "data": {}
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate WeLock account",
+        "description": "The WeLock cloud rejected the login for {username}. Enter the current password. This ends other sessions of the account (e.g. the WeLock app).",
+        "data": {
           "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to WeLock Cloud (clientapi.welock.com.cn). Please verify your internet connection.",
-      "invalid_auth": "Invalid Email or Password. Please check your credentials from the WeLock mobile app.",
-      "unknown": "An unexpected error occurred. Please try again."
+      "cannot_connect": "Failed to connect to the WeLock cloud (clientapi.welock.com.cn).",
+      "invalid_auth": "Invalid email or password.",
+      "cloud_error": "The WeLock cloud rejected the request.",
+      "no_locks": "No lock with a Bluetooth module was found in this account.",
+      "not_in_range": "No Bluetooth adapter or proxy of Home Assistant can reach the lock. Move a Bluetooth proxy closer or wake the lock up and try again.",
+      "ble_failed": "The lock did not answer the status request. Wake the lock up and try again.",
+      "lock_not_found": "This lock is no longer part of the WeLock account.",
+      "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "already_configured": "This WeLock account is already configured in Home Assistant."
+      "already_configured": "This lock is already configured.",
+      "not_in_account": "The discovered lock is not part of this WeLock account.",
+      "reauth_successful": "Re-authentication was successful."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "WeLock Integration Options",
-        "description": "Configure update polling frequency and lock behavior.",
+        "title": "WeLock options",
         "data": {
-          "scan_interval": "Data polling interval (seconds)",
-          "auto_relock_delay": "Mechanical relock reset delay (seconds)"
+          "auto_relock_delay": "Show as unlocked for (seconds)",
+          "battery_interval": "Read battery over Bluetooth every (hours, 0 = only when unlocking)",
+          "scan_interval": "Check Bluetooth reachability every (seconds)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": {
-        "name": "Battery"
-      },
-      "signal_strength": {
-        "name": "Signal Strength"
-      },
-      "last_unlock_type": {
-        "name": "Last Unlock Method"
-      }
+      "battery": { "name": "Battery" },
+      "signal_strength": { "name": "Signal strength" }
     },
     "binary_sensor": {
-      "connectivity": {
-        "name": "Lock Status"
-      },
-      "gateway_connectivity": {
-        "name": "Gateway Status"
-      }
+      "connectivity": { "name": "Bluetooth reachable" }
     }
   }
 }

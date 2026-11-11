@@ -23,6 +23,8 @@ class TestManifests(unittest.TestCase):
         self.assertEqual(data.get("iot_class"), "cloud_polling")
         self.assertEqual(data.get("version"), "1.3.0")
         self.assertIn("aiohttp>=3.9.0", data.get("requirements", []))
+        self.assertIn("bluetooth_adapters", data.get("dependencies", []))
+        self.assertTrue(any(m.get("local_name") == "WeLock*" for m in data.get("bluetooth", [])))
 
     def test_hacs_manifest(self) -> None:
         """Validate hacs.json fields."""
@@ -34,7 +36,7 @@ class TestManifests(unittest.TestCase):
 
         self.assertEqual(data.get("name"), "WeLock Smart Lock")
         self.assertTrue(data.get("render_readme"))
-        self.assertEqual(data.get("homeassistant"), "2024.1.0")
+        self.assertEqual(data.get("homeassistant"), "2024.11.0")
 
 
 if __name__ == "__main__":

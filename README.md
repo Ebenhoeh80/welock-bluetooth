@@ -85,9 +85,9 @@ Damit Sie sowohl die **Home Assistant Integration** als auch die **BLE-Diagnoset
   - **Betriebssystem- & Adapterberechtigungen:** Host-Adapter muss aktiv sein (z. B. `rfkill unblock bluetooth` unter Linux, Terminal-Berechtigungen unter macOS/Windows).
 * **🔋 Batteriezustand:** Mindestens 3 frische AAA Alkaline- oder Lithium-Batterien (1.5V). Bei niedrigem Batteriestand (< 20%) deaktiviert die Firmware oft Funkbefehle.
 
-### 2. 🌐 WeLock WiFiBox Gateway (für Home Assistant)
-* Für die dauerhafte, zuverlässige Steuerung in Home Assistant (auch wenn der Home Assistant Host nicht in BLE-Reichweite der Haustür steht) wird das offizielle **WeLock WiFiBox Gateway (2.4 GHz WLAN)** benötigt.
-* Das Schloss muss in der offiziellen WeLock Smartphone-App mit dieser WiFiBox gekoppelt sein.
+### 2. 📶 Bluetooth in Home Assistant
+* Home Assistant entriegelt per Bluetooth. Ein Bluetooth-Adapter am HA-Host oder ein **ESPHome-Bluetooth-Proxy** (mit aktiver Verbindungsfunktion) muss in Reichweite der Tür sein.
+* Die WeLock WiFiBox wird von dieser Integration nicht verwendet.
 
 ### 3. 🐍 Software- & Betriebssystem-Voraussetzungen
 * **Python-Version:** Mindestens **Python 3.10** oder neuer (getestet unter Python 3.10, 3.11 und 3.12).
@@ -173,25 +173,21 @@ pip install -r tools/requirements-ble.txt
 
 ---
 
-## 🔑 Zugangsdaten aus der WeLock Mobile-App abrufen
-
-Für die permanente Anbindung über Home Assistant benötigen Sie eine `Client-ID` und ein `Client-Secret`:
-
-1. Öffnen Sie die offizielle **WeLock App** auf Ihrem Smartphone (iOS oder Android).
-2. Stellen Sie sicher, dass Ihr Schloss mit einer **WeLock WiFiBox** verbunden ist.
-3. Öffnen Sie das Seitenmenü (☰) in der App.
-4. Tippen Sie auf das **Home Assistant** Symbol.
-5. Kopieren Sie Ihre generierte **Client-ID** und das **Client-Secret**.
-
----
-
 ## 🚀 Einrichtung in Home Assistant
 
-1. In Home Assistant öffnen Sie **Einstellungen** -> **Geräte & Dienste**.
-2. Klicken Sie unten rechts auf **Integration hinzufügen**.
-3. Suchen Sie nach **WeLock Smart Lock**.
-4. Geben Sie Ihre `Client-ID` und Ihr `Client-Secret` ein.
-5. Ihre WeLock-Schlösser und die WiFiBox werden automatisch erkannt und eingerichtet!
+Die Einrichtung folgt dem WeLock-Workflow und prüft jeden Schritt, bevor es weitergeht. Ein Eintrag entspricht einem BLE-Modul eines Schlosses.
+
+0. **Start:** Home Assistant erkennt `WeLock*`-Geräte per Bluetooth automatisch und bietet die Einrichtung an. Alternativ: **Einstellungen → Geräte & Dienste → Integration hinzufügen → WeLock Smart Lock**.
+1. **Cloud-Anmeldung:** E-Mail und Passwort der WeLock-App. ⚠️ Jede Anmeldung beendet andere Sitzungen des Kontos (z. B. die App). Die App sollte dabei nicht benutzt werden.
+2. **Schloss auswählen:** Liste aus der Cloud (`deviceNumber`, `ble[].deviceName`, `ble[].deviceMac`), jeweils mit Akkustand laut Cloud und ob HA das Modul gerade in Reichweite hat. Bei Bluetooth-Discovery muss das gefundene Modul zum Konto gehören.
+3. **Bluetooth-Prüfung:** HA verbindet sich und fragt Akkustand und Challenge ab (`55 30`). **Es wird nicht entriegelt.** Nur wenn das Schloss antwortet, wird der Eintrag angelegt.
+
+**Betrieb:**
+* Die Cloud wird **nicht abgefragt**. Erreichbarkeit und RSSI kommen aus dem HA-Bluetooth-Stack, der Akkustand wird per BLE gelesen (Intervall einstellbar, Standard 24 h, 0 = nur beim Entriegeln).
+* **Entriegeln:** BLE-Challenge → Cloud-Login und `/Command/UnLock` → 15-Byte-Befehl `U1…` per BLE ans Schloss. Mindestens 30 s zwischen zwei Entriegelungen. Auch dieser Login beendet die App-Sitzung.
+* Der Schlosszustand wird nicht vom Schloss gemeldet. Nach dem Entriegeln zeigt HA für die eingestellte Zeit „entriegelt“ an (Standard 7 s).
+* Lehnt die Cloud das Passwort ab, startet HA die erneute Anmeldung.
+* Einträge der Version 1.3.0 und älter (ohne Schlossauswahl) müssen gelöscht und neu angelegt werden.
 
 ---
 

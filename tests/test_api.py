@@ -1,4 +1,4 @@
-"""Unit tests for WeLockApiClient."""
+"""Unit tests for the WeLock cloud client and BLE protocol helpers (no network, no HA)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-# Mock homeassistant modules so tests can run without homeassistant core installed
+# The integration package imports Home Assistant in __init__; stub it for pure-logic tests.
 for mod in [
     "homeassistant",
     "homeassistant.config_entries",
@@ -16,61 +16,121 @@ for mod in [
     "homeassistant.helpers.aiohttp_client",
     "homeassistant.helpers.update_coordinator",
     "homeassistant.components",
+    "homeassistant.components.bluetooth",
     "homeassistant.components.diagnostics",
+    "homeassistant.exceptions",
+    "bleak",
+    "bleak.exc",
+    "bleak_retry_connector",
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-try:
-    from custom_components.welock.api import (  # noqa: E402
-        CannotConnect,
-        InvalidAuth,
-        LockUnavailable,
-        WeLockApiClient,
-        WeLockApiError,
-    )
+from custom_components.welock.api import (  # noqa: E402
+    CannotConnect,
+    InvalidAuth,
+    LockUnavailable,
+    WeLockApiClient,
+    WeLockApiError,
+    parse_device_list,
+    parse_envelope,
+    parse_unlock_command,
+)
+from custom_components.welock.protocol import (  # noqa: E402
+    BATTERY_REQUEST,
+    format_mac,
+    parse_battery_response,
+    validate_unlock_command,
+)
 
-    HAVE_API = True
-except ImportError:
-    HAVE_API = False
+# Shape of a real /Device/GetDevices answer; values are made up.
+SAMPLE_DEVICES = [
+    {
+        "type": 1,
+        "model": "SECBREBL01",
+        "deviceName": "12345678",
+        "deviceNumber": "12345678",
+        "devicePassword": "x",
+        "ble": [
+            {
+                "position": 1,
+                "deviceName": "WeLockABCDE",
+                "deviceMac": "AABBCCDDEEFF",
+                "devicePassword": None,
+                "power": 100,
+                "version": None,
+            },
+            {"position": 2, "deviceName": "WeLockXYZ", "deviceMac": "", "power": 0},
+        ],
+        "gatewayModel": None,
+    },
+    {"deviceNumber": "", "ble": []},
+    "garbage",
+]
 
 
-class TestWeLockApiClient(unittest.TestCase):
-    """Test API client behaviors."""
+class TestApi(unittest.TestCase):
+    def test_exceptions_inherit(self) -> None:
+        for exc in (InvalidAuth, CannotConnect, LockUnavailable):
+            self.assertTrue(issubclass(exc, WeLockApiError))
 
-    def test_custom_exceptions_inheritance(self) -> None:
-        """Verify custom exceptions inherit from WeLockApiError."""
-        if not HAVE_API:
-            self.skipTest("API client dependencies not available")
-        self.assertTrue(issubclass(InvalidAuth, WeLockApiError))
-        self.assertTrue(issubclass(CannotConnect, WeLockApiError))
-        self.assertTrue(issubclass(LockUnavailable, WeLockApiError))
-
-    def test_repr_masks_secrets(self) -> None:
-        """Verify __repr__ does not expose client_secret."""
-        if not HAVE_API:
-            self.skipTest("API client dependencies not available")
-        client = WeLockApiClient(
-            client_id="demo_user_123",
-            client_secret="SUPER_SECRET_VALUE",
-            session=None,  # type: ignore[arg-type]
-        )
-        repr_str = repr(client)
-        self.assertIn("demo_user_123", repr_str)
-        self.assertNotIn("SUPER_SECRET_VALUE", repr_str)
-
-    def test_username_password_init(self) -> None:
-        """Verify initialization with email and password."""
-        if not HAVE_API:
-            self.skipTest("API client dependencies not available")
-        client = WeLockApiClient(
-            username="user@example.com",
-            password="my_secret_password",
-            session=None,  # type: ignore[arg-type]
-        )
+    def test_repr_hides_password_and_password_not_stripped(self) -> None:
+        client = WeLockApiClient("user@example.com", " secret ", session=None)
+        self.assertNotIn("secret", repr(client))
+        self.assertEqual(client._password, " secret ")
         self.assertEqual(client.username, "user@example.com")
-        self.assertEqual(client.client_id, "user@example.com")
-        self.assertIn("user@example.com", repr(client))
-        self.assertNotIn("my_secret_password", repr(client))
+
+    def test_parse_device_list(self) -> None:
+        devices = parse_device_list(SAMPLE_DEVICES)
+        self.assertEqual(len(devices), 1)
+        dev = devices[0]
+        self.assertEqual(dev.device_number, "12345678")
+        self.assertEqual(dev.model, "SECBREBL01")
+        self.assertEqual([m.name for m in dev.ble], ["WeLockABCDE", "WeLockXYZ"])
+        self.assertEqual(dev.ble[0].address, "AA:BB:CC:DD:EE:FF")
+        self.assertEqual(dev.ble[0].battery, 100)
+        self.assertIsNone(dev.ble[1].address)
+
+    def test_parse_device_list_rejects_non_list(self) -> None:
+        with self.assertRaises(WeLockApiError):
+            parse_device_list({"list": []})
+
+    def test_parse_envelope(self) -> None:
+        self.assertEqual(parse_envelope({"code": 0, "data": [1]}), [1])
+        for bad in ({"code": 5, "data": None, "msg": "pw=abc"}, {"code": "0"}, [], {"code": 0}):
+            with self.assertRaises(WeLockApiError) as ctx:
+                parse_envelope(bad)
+            self.assertNotIn("pw=abc", str(ctx.exception))
+
+    def test_parse_unlock_command(self) -> None:
+        cmd = b"U1ABCDEFGHIJKLM"
+        self.assertEqual(parse_unlock_command({"command": cmd.hex()}), cmd)
+        for bad in (None, {}, {"command": "abc"}, {"command": "zz"}):
+            with self.assertRaises(LockUnavailable):
+                parse_unlock_command(bad)
+
+
+class TestProtocol(unittest.TestCase):
+    def test_battery_request(self) -> None:
+        self.assertEqual(len(BATTERY_REQUEST), 15)
+        self.assertEqual(BATTERY_REQUEST[:2], b"\x55\x30")
+
+    def test_parse_battery_response(self) -> None:
+        state = parse_battery_response(bytes((0x55, 0x30, 0x2A, 0x5F)))
+        self.assertEqual((state.random_factor, state.battery), (42, 95))
+        with self.assertRaises(ValueError):
+            parse_battery_response(b"\x55\x31\x00\x00")
+
+    def test_validate_unlock_command(self) -> None:
+        self.assertEqual(validate_unlock_command(b"U1ABCDEFGHIJKLM"), b"U1ABCDEFGHIJKLM")
+        for bad in (b"U1SHORT", b"X1ABCDEFGHIJKLM", b"U1ABCDEFGHIJK-M"):
+            with self.assertRaises(ValueError):
+                validate_unlock_command(bad)
+
+    def test_format_mac(self) -> None:
+        self.assertEqual(format_mac("aabbccddeeff"), "AA:BB:CC:DD:EE:FF")
+        self.assertEqual(format_mac("AA-BB-CC-DD-EE-FF"), "AA:BB:CC:DD:EE:FF")
+        self.assertIsNone(format_mac(""))
+        self.assertIsNone(format_mac("AABB"))
 
 
 if __name__ == "__main__":

@@ -1,63 +1,70 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
-        "title": "WeLock Smart Lock Einrichtung",
-        "description": "Melden Sie sich mit Ihren Zugangsdaten der WeLock Smartphone-App an (E-Mail-Adresse und Passwort).",
+        "title": "Schritt 1/3: WeLock-Cloud-Anmeldung",
+        "description": "Melde dich mit deinem Konto der WeLock-App an. Die Cloud wird nur genutzt, um deine Schlösser zu laden und beim Entriegeln den einmaligen Befehl zu berechnen.\n\n**Hinweis:** Jede Anmeldung beendet andere Sitzungen dieses Kontos, z. B. die WeLock-App auf dem Handy. Stelle sicher, dass die App gerade nicht benutzt wird.",
         "data": {
           "username": "E-Mail / WeLock-Konto",
           "password": "Passwort"
         }
       },
-      "reauth": {
-        "title": "WeLock-Konto erneut authentifizieren",
-        "description": "Bitte geben Sie Ihre E-Mail-Adresse und Ihr Passwort erneut ein, um die Verbindung wiederherzustellen.",
+      "select": {
+        "title": "Schritt 2/3: Schloss auswählen",
+        "description": "Wähle das BLE-Modul deines Schlosses. „In Reichweite“ heißt: Ein Bluetooth-Adapter oder ESPHome-Bluetooth-Proxy von Home Assistant kann sich gerade damit verbinden.",
         "data": {
-          "username": "E-Mail / WeLock-Konto",
+          "address": "Schloss / BLE-Modul"
+        }
+      },
+      "verify": {
+        "title": "Schritt 3/3: Bluetooth-Prüfung",
+        "description": "Home Assistant verbindet sich jetzt mit **{name}** ({address}, Schloss {device_number}) und fragt Akkustand und Challenge ab. **Es wird kein Entriegelungsbefehl gesendet.**\n\nWecke das Schloss auf (Knauf berühren) und klicke auf Senden.",
+        "data": {}
+      },
+      "reauth_confirm": {
+        "title": "WeLock-Konto erneut anmelden",
+        "description": "Die WeLock-Cloud hat die Anmeldung für {username} abgelehnt. Gib das aktuelle Passwort ein. Das beendet andere Sitzungen des Kontos (z. B. die WeLock-App).",
+        "data": {
           "password": "Passwort"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zur WeLock Cloud fehlgeschlagen. Bitte prüfen Sie Ihre Netzwerkverbindung.",
-      "invalid_auth": "Ungültige E-Mail-Adresse oder falsches Passwort. Bitte überprüfen Sie Ihre WeLock-App-Zugangsdaten.",
-      "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+      "cannot_connect": "Verbindung zur WeLock-Cloud (clientapi.welock.com.cn) fehlgeschlagen.",
+      "invalid_auth": "E-Mail-Adresse oder Passwort ist falsch.",
+      "cloud_error": "Die WeLock-Cloud hat die Anfrage abgelehnt.",
+      "no_locks": "In diesem Konto wurde kein Schloss mit Bluetooth-Modul gefunden.",
+      "not_in_range": "Kein Bluetooth-Adapter oder -Proxy von Home Assistant erreicht das Schloss. Bluetooth-Proxy näher platzieren oder Schloss aufwecken und erneut versuchen.",
+      "ble_failed": "Das Schloss hat nicht auf die Statusabfrage geantwortet. Schloss aufwecken und erneut versuchen.",
+      "lock_not_found": "Dieses Schloss gehört nicht mehr zum WeLock-Konto.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten."
     },
     "abort": {
-      "already_configured": "Dieses WeLock-Konto ist in Home Assistant bereits eingerichtet."
+      "already_configured": "Dieses Schloss ist bereits eingerichtet.",
+      "not_in_account": "Das gefundene Schloss gehört nicht zu diesem WeLock-Konto.",
+      "reauth_successful": "Erneute Anmeldung erfolgreich."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "WeLock Integrations-Optionen",
-        "description": "Konfigurieren Sie das Abfrageintervall und das Schlossverhalten.",
+        "title": "WeLock-Optionen",
         "data": {
-          "scan_interval": "Abfrageintervall (Sekunden)",
-          "auto_relock_delay": "Mechanische Rückstellverzögerung (Sekunden)"
+          "auto_relock_delay": "Als entriegelt anzeigen für (Sekunden)",
+          "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
+          "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": {
-        "name": "Batterie"
-      },
-      "signal_strength": {
-        "name": "Signalstärke"
-      },
-      "last_unlock_type": {
-        "name": "Letzte Entriegelungsmethode"
-      }
+      "battery": { "name": "Batterie" },
+      "signal_strength": { "name": "Signalstärke" }
     },
     "binary_sensor": {
-      "connectivity": {
-        "name": "Schloss-Verbindung"
-      },
-      "gateway_connectivity": {
-        "name": "Gateway-Verbindung"
-      }
+      "connectivity": { "name": "Bluetooth erreichbar" }
     }
   }
 }

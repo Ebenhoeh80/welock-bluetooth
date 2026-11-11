@@ -1,63 +1,70 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
-        "title": "Configuración de WeLock Smart Lock",
-        "description": "Inicia sesión con tus credenciales de la aplicación móvil de WeLock (correo electrónico y contraseña).",
+        "title": "Paso 1/3: Inicio de sesión en la nube WeLock",
+        "description": "Inicie sesión con su cuenta de la app WeLock. La nube solo se usa para cargar sus cerraduras y, al abrir, para calcular el comando de apertura de un solo uso.\n\n**Nota:** cada inicio de sesión cierra otras sesiones de la cuenta, p. ej. la app WeLock del móvil. Asegúrese de que la app no se esté usando ahora.",
         "data": {
-          "username": "Correo / Cuenta WeLock",
+          "username": "Correo / cuenta WeLock",
           "password": "Contraseña"
         }
       },
-      "reauth": {
-        "title": "Volver a autenticar cuenta de WeLock",
-        "description": "Introduce tu correo electrónico y contraseña de WeLock para restablecer la conexión.",
+      "select": {
+        "title": "Paso 2/3: Seleccionar cerradura",
+        "description": "Elija el módulo BLE de su cerradura. «En alcance» significa que un adaptador Bluetooth o un proxy Bluetooth de ESPHome de Home Assistant puede conectarse a ella ahora.",
         "data": {
-          "username": "Correo / Cuenta WeLock",
+          "address": "Cerradura / módulo BLE"
+        }
+      },
+      "verify": {
+        "title": "Paso 3/3: Comprobación Bluetooth",
+        "description": "Home Assistant se conectará ahora a **{name}** ({address}, cerradura {device_number}) y pedirá batería y desafío. **No se envía ningún comando de apertura.**\n\nDespierte la cerradura (toque el pomo) y pulse Enviar.",
+        "data": {}
+      },
+      "reauth_confirm": {
+        "title": "Volver a autenticar la cuenta WeLock",
+        "description": "La nube WeLock rechazó el inicio de sesión de {username}. Introduzca la contraseña actual. Esto cierra otras sesiones de la cuenta (p. ej. la app WeLock).",
+        "data": {
           "password": "Contraseña"
         }
       }
     },
     "error": {
-      "cannot_connect": "No se pudo conectar a la nube de WeLock. Comprueba tu conexión de red.",
-      "invalid_auth": "Correo o contraseña no válidos. Comprueba los datos en la aplicación WeLock.",
-      "unknown": "Se ha producido un error inesperado. Inténtalo de nuevo."
+      "cannot_connect": "No se pudo conectar con la nube WeLock (clientapi.welock.com.cn).",
+      "invalid_auth": "Correo o contraseña incorrectos.",
+      "cloud_error": "La nube WeLock rechazó la solicitud.",
+      "no_locks": "No se encontró ninguna cerradura con módulo Bluetooth en esta cuenta.",
+      "not_in_range": "Ningún adaptador o proxy Bluetooth de Home Assistant alcanza la cerradura. Acerque un proxy Bluetooth o despierte la cerradura e inténtelo de nuevo.",
+      "ble_failed": "La cerradura no respondió a la consulta de estado. Despiértela e inténtelo de nuevo.",
+      "lock_not_found": "Esta cerradura ya no pertenece a la cuenta WeLock.",
+      "unknown": "Se produjo un error inesperado."
     },
     "abort": {
-      "already_configured": "Esta cuenta de WeLock ya está configurada en Home Assistant."
+      "already_configured": "Esta cerradura ya está configurada.",
+      "not_in_account": "La cerradura encontrada no pertenece a esta cuenta WeLock.",
+      "reauth_successful": "La nueva autenticación se realizó correctamente."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Opciones de integración de WeLock",
-        "description": "Configura la frecuencia de actualización y el comportamiento de la cerradura.",
+        "title": "Opciones de WeLock",
         "data": {
-          "scan_interval": "Intervalo de sondeo de datos (segundos)",
-          "auto_relock_delay": "Tiempo de restablecimiento del bloqueo mecánico (segundos)"
+          "auto_relock_delay": "Mostrar como abierta durante (segundos)",
+          "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
+          "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": {
-        "name": "Batería"
-      },
-      "signal_strength": {
-        "name": "Intensidad de señal"
-      },
-      "last_unlock_type": {
-        "name": "Último método de desbloqueo"
-      }
+      "battery": { "name": "Batería" },
+      "signal_strength": { "name": "Intensidad de señal" }
     },
     "binary_sensor": {
-      "connectivity": {
-        "name": "Estado de la cerradura"
-      },
-      "gateway_connectivity": {
-        "name": "Estado del gateway"
-      }
+      "connectivity": { "name": "Bluetooth accesible" }
     }
   }
 }
