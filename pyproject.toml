@@ -51,3 +51,6 @@ minversion = "7.0"
 addopts = "-ra -q"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "live: echter WELOCK-Cloud-Smoke-Test; nur mit WELOCK_LIVE_TEST=1, nie in CI",
+]

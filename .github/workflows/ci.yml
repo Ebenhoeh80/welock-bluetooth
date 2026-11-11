@@ -38,5 +38,8 @@ jobs:
           black --check custom_components/ tools/ tests/
 
       - name: Run Unit Tests
+        # Live tests against the real WELOCK cloud never run in CI.
+        env:
+          WELOCK_LIVE_TEST: "0"
         run: |
-          pytest
+          pytest -m "not live"
