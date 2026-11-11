@@ -98,9 +98,10 @@ Damit Sie sowohl die **Home Assistant Integration** als auch die **BLE-Diagnoset
   * **Windows:** Windows 10 (ab Build 1809) oder Windows 11 mit aktiviertem Bluetooth und erteilten App-Berechtigungen für Bluetooth und Standortdienste.
 * **Home Assistant:** Version **2024.1.0** oder neuer mit installiertem **HACS** (Home Assistant Community Store) oder Dateizugriff auf `/config/custom_components/`.
 
-### 4. 🔑 WeLock-Konto & API-Schlüssel
+### 4. 🔑 WeLock-Konto (E-Mail & Passwort)
 * Ein aktives Benutzerkonto in der offiziellen **WeLock App** (iOS / Android).
-* Ihre persönliche **Client-ID** und Ihr **Client-Secret** (abrufbar in der WeLock App unter: *Menü ➔ Home Assistant*).
+* Ihre reguläre **WeLock E-Mail-Adresse** und Ihr **Passwort** (dieselben Zugangsdaten, mit denen Sie sich in der WeLock Smartphone-App anmelden).
+* *Hinweis:* Es wird keine separate „Client ID“ benötigt; die Integration verbindet sich direkt mit der offiziellen WeLock Cloud API (`clientapi.welock.com.cn`).
 
 ---
 

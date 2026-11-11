@@ -16,7 +16,9 @@ from .const import (
     CONF_AUTO_RELOCK_DELAY,
     CONF_CLIENT_ID,
     CONF_CLIENT_SECRET,
+    CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
     DEFAULT_AUTO_RELOCK_DELAY,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -26,8 +28,8 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_CLIENT_ID): str,
-        vol.Required(CONF_CLIENT_SECRET): str,
+        vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_PASSWORD): str,
     }
 )
 
@@ -42,32 +44,36 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            client_id = user_input[CONF_CLIENT_ID].strip()
-            client_secret = user_input[CONF_CLIENT_SECRET].strip()
+            username = (
+                user_input.get(CONF_USERNAME) or user_input.get(CONF_CLIENT_ID) or ""
+            ).strip()
+            password = (
+                user_input.get(CONF_PASSWORD) or user_input.get(CONF_CLIENT_SECRET) or ""
+            ).strip()
 
-            await self.async_set_unique_id(client_id.lower())
+            await self.async_set_unique_id(username.lower())
             self._abort_if_unique_id_configured()
 
             session = async_get_clientsession(self.hass)
-            api = WeLockApiClient(client_id, client_secret, session)
+            api = WeLockApiClient(username=username, password=password, session=session)
 
             try:
                 await api.async_authenticate()
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except WeLockApiError:
+            except (CannotConnect, WeLockApiError):
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception during WeLock config flow")
                 errors["base"] = "unknown"
             else:
                 return self.async_create_entry(
-                    title=f"WeLock ({client_id[:8]}...)",
+                    title=f"WeLock ({username})",
                     data={
-                        CONF_CLIENT_ID: client_id,
-                        CONF_CLIENT_SECRET: client_secret,
+                        CONF_USERNAME: username,
+                        CONF_PASSWORD: password,
+                        CONF_CLIENT_ID: username,
+                        CONF_CLIENT_SECRET: password,
                     },
                 )
 

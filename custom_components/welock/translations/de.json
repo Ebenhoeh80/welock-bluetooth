@@ -3,24 +3,24 @@
     "step": {
       "user": {
         "title": "WeLock Smart Lock Einrichtung",
-        "description": "Geben Sie Ihre WeLock API-Zugangsdaten ein, die Sie in der WeLock Mobile-App finden (Seitenmenü -> Home Assistant).",
+        "description": "Melden Sie sich mit Ihren Zugangsdaten der WeLock Smartphone-App an (E-Mail-Adresse und Passwort).",
         "data": {
-          "client_id": "Client-ID",
-          "client_secret": "Client-Secret"
+          "username": "E-Mail / WeLock-Konto",
+          "password": "Passwort"
         }
       },
       "reauth": {
         "title": "WeLock-Konto erneut authentifizieren",
-        "description": "Bitte aktualisieren Sie Ihre Zugangsdaten, um die Verbindung zu Ihren WeLock-Geräten wiederherzustellen.",
+        "description": "Bitte geben Sie Ihre E-Mail-Adresse und Ihr Passwort erneut ein, um die Verbindung wiederherzustellen.",
         "data": {
-          "client_id": "Client-ID",
-          "client_secret": "Client-Secret"
+          "username": "E-Mail / WeLock-Konto",
+          "password": "Passwort"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zur WeLock Cloud (api.welockglobal.com) fehlgeschlagen. Bitte prüfen Sie Ihre Netzwerkverbindung.",
-      "invalid_auth": "Ungültige Client-ID oder ungültiges Client-Secret. Bitte überprüfen Sie die Eingabe in der WeLock-App.",
+      "cannot_connect": "Verbindung zur WeLock Cloud fehlgeschlagen. Bitte prüfen Sie Ihre Netzwerkverbindung.",
+      "invalid_auth": "Ungültige E-Mail-Adresse oder falsches Passwort. Bitte überprüfen Sie Ihre WeLock-App-Zugangsdaten.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
     },
     "abort": {

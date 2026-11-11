@@ -5,6 +5,8 @@ from typing import Final
 DOMAIN: Final = "welock"
 
 # Configuration keys
+CONF_USERNAME: Final = "username"
+CONF_PASSWORD: Final = "password"
 CONF_CLIENT_ID: Final = "client_id"
 CONF_CLIENT_SECRET: Final = "client_secret"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
@@ -14,13 +16,15 @@ CONF_AUTO_RELOCK_DELAY: Final = "auto_relock_delay"
 DEFAULT_SCAN_INTERVAL: Final = 30  # seconds
 DEFAULT_AUTO_RELOCK_DELAY: Final = 7  # seconds (WeLock locks mechanically lock after turning)
 
-# API endpoints
-BASE_API_URL: Final = "https://api.welockglobal.com"
-ENDPOINT_AUTH: Final = "/app/v1/open/oauth/token"
-ENDPOINT_LOCK_LIST: Final = "/app/v1/open/lock/list"
-ENDPOINT_LOCK_DETAIL: Final = "/app/v1/open/lock/detail"
-ENDPOINT_UNLOCK: Final = "/app/v1/open/lock/unlock"
-ENDPOINT_GATEWAY_LIST: Final = "/app/v1/open/gateway/list"
+# API endpoints (Official WeLock Mobile Cloud API)
+DEFAULT_CLOUD_API_URL: Final = "https://clientapi.welock.com.cn/api"
+BASE_API_URL: Final = DEFAULT_CLOUD_API_URL
+ENDPOINT_AUTH: Final = "/Account/token/welock"
+ENDPOINT_DEVICES: Final = "/Device/GetDevices"
+ENDPOINT_LOCK_LIST: Final = ENDPOINT_DEVICES
+ENDPOINT_LOCK_DETAIL: Final = ENDPOINT_DEVICES
+ENDPOINT_UNLOCK: Final = "/Command/UnLock"
+ENDPOINT_GATEWAY_LIST: Final = ENDPOINT_DEVICES
 
 # Device attributes
 ATTR_LOCK_SN: Final = "lock_sn"

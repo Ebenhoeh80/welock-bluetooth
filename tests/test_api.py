@@ -58,6 +58,20 @@ class TestWeLockApiClient(unittest.TestCase):
         self.assertIn("demo_user_123", repr_str)
         self.assertNotIn("SUPER_SECRET_VALUE", repr_str)
 
+    def test_username_password_init(self) -> None:
+        """Verify initialization with email and password."""
+        if not HAVE_API:
+            self.skipTest("API client dependencies not available")
+        client = WeLockApiClient(
+            username="user@example.com",
+            password="my_secret_password",
+            session=None,  # type: ignore[arg-type]
+        )
+        self.assertEqual(client.username, "user@example.com")
+        self.assertEqual(client.client_id, "user@example.com")
+        self.assertIn("user@example.com", repr(client))
+        self.assertNotIn("my_secret_password", repr(client))
+
 
 if __name__ == "__main__":
     unittest.main()

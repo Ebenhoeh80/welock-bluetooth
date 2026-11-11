@@ -16,7 +16,9 @@ from .api import CannotConnect, InvalidAuth, WeLockApiClient, WeLockApiError
 from .const import (
     CONF_CLIENT_ID,
     CONF_CLIENT_SECRET,
+    CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -75,15 +77,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WeLock Smart Lock from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    client_id = entry.data[CONF_CLIENT_ID]
-    client_secret = entry.data[CONF_CLIENT_SECRET]
+    username = entry.data.get(CONF_USERNAME) or entry.data.get(CONF_CLIENT_ID) or ""
+    password = entry.data.get(CONF_PASSWORD) or entry.data.get(CONF_CLIENT_SECRET) or ""
     scan_interval = entry.options.get(
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
 
     session = async_get_clientsession(hass)
-    api = WeLockApiClient(client_id=client_id, client_secret=client_secret, session=session)
+    api = WeLockApiClient(username=username, password=password, session=session)
 
     # Initial authentication test
     try:

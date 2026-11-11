@@ -3,24 +3,24 @@
     "step": {
       "user": {
         "title": "WeLock Smart Lock Setup",
-        "description": "Enter your WeLock API credentials obtained from the WeLock mobile application (Sidebar Menu -> Home Assistant).",
+        "description": "Log in with your WeLock mobile app credentials (Email address and Password).",
         "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
+          "username": "Email / WeLock Account",
+          "password": "Password"
         }
       },
       "reauth": {
         "title": "Re-authenticate WeLock Account",
-        "description": "Please update your credentials to restore the connection to your WeLock devices.",
+        "description": "Please enter your WeLock account email and password to restore connection.",
         "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
+          "username": "Email / WeLock Account",
+          "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to WeLock Cloud (api.welockglobal.com). Please verify internet connection.",
-      "invalid_auth": "Invalid Client ID or Client Secret. Please verify in the WeLock mobile app.",
+      "cannot_connect": "Failed to connect to WeLock Cloud (clientapi.welock.com.cn). Please verify your internet connection.",
+      "invalid_auth": "Invalid Email or Password. Please check your credentials from the WeLock mobile app.",
       "unknown": "An unexpected error occurred. Please try again."
     },
     "abort": {
