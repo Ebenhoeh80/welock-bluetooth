@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import unittest
+
 from tools.ble_scan import is_likely_welock
 from tools.dependency_check import check_bluetooth_system, check_python_version
 from tools.welock_command_probe import build_arg_parser
 from tools.welock_protocol import (
-    BATTERY_REQUEST,
     NOTIFY_UUID,
     SERVICE_UUID,
     WRITE_UUID,
-    BatteryResponse,
-    parse_battery_response,
 )
 
 
@@ -35,9 +33,7 @@ class TestWeLockTools(unittest.TestCase):
 
     def test_welock_service_uuid_detection(self) -> None:
         """Verify Nordic UART Service UUID is detected."""
-        self.assertTrue(
-            is_likely_welock("Unknown Device", [SERVICE_UUID.lower()])
-        )
+        self.assertTrue(is_likely_welock("Unknown Device", [SERVICE_UUID.lower()]))
         self.assertFalse(
             is_likely_welock("Unknown Device", ["0000180f-0000-1000-8000-00805f9b34fb"])
         )
@@ -65,16 +61,23 @@ class TestWeLockTools(unittest.TestCase):
         parser = build_arg_parser("Test Probe Parser")
 
         # Test long options with values
-        args1 = parser.parse_args([
-            "--address", "AA:BB:CC:DD:EE:FF",
-            "--account", "test@example.com",
-            "--number", "C411234",
-            "--name", "Touch41_1234",
-            "--timeout", "25.5",
-            "--yes",
-            "--show-command",
-            "--json",
-        ])
+        args1 = parser.parse_args(
+            [
+                "--address",
+                "AA:BB:CC:DD:EE:FF",
+                "--account",
+                "test@example.com",
+                "--number",
+                "C411234",
+                "--name",
+                "Touch41_1234",
+                "--timeout",
+                "25.5",
+                "--yes",
+                "--show-command",
+                "--json",
+            ]
+        )
         self.assertEqual(args1.address, "AA:BB:CC:DD:EE:FF")
         self.assertEqual(args1.account, "test@example.com")
         self.assertEqual(args1.number, "C411234")
@@ -85,13 +88,18 @@ class TestWeLockTools(unittest.TestCase):
         self.assertTrue(args1.json)
 
         # Test short options and positional address
-        args2 = parser.parse_args([
-            "11:22:33:44:55:66",
-            "-u", "user@domain.de",
-            "-n", "SEC5199",
-            "-t", "10",
-            "-y",
-        ])
+        args2 = parser.parse_args(
+            [
+                "11:22:33:44:55:66",
+                "-u",
+                "user@domain.de",
+                "-n",
+                "SEC5199",
+                "-t",
+                "10",
+                "-y",
+            ]
+        )
         self.assertEqual(args2.positional_address, "11:22:33:44:55:66")
         self.assertEqual(args2.account, "user@domain.de")
         self.assertEqual(args2.number, "SEC5199")

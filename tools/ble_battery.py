@@ -38,9 +38,7 @@ except ImportError:
     )
 
 
-async def read_lock_battery(
-    address: str, timeout: float = 15.0, as_json: bool = False
-) -> int:
+async def read_lock_battery(address: str, timeout: float = 15.0, as_json: bool = False) -> int:
     """Verbindet sich mit dem WeLock-Schloss und liest den Akkustand aus."""
     if BleakScanner is None or BleakClient is None:
         _, msg = check_bleak_installed()

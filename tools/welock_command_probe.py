@@ -69,9 +69,7 @@ async def probe(
         print(f"Suche nach BLE-Schloss [{address}]...")
     device = await BleakScanner.find_device_by_address(address, timeout=timeout)
     if device is None:
-        raise RuntimeError(
-            f"Das BLE-Gerät [{address}] nicht gefunden (Reichweite/Adapter prüfen)."
-        )
+        raise RuntimeError(f"Das BLE-Gerät [{address}] nicht gefunden (Reichweite/Adapter prüfen).")
 
     async with BleakClient(device, timeout=timeout) as client:
         service = client.services.get_service(SERVICE_UUID)

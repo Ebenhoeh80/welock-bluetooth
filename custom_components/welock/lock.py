@@ -1,4 +1,5 @@
 """Support for WeLock smart locks."""
+
 from __future__ import annotations
 
 import asyncio
@@ -81,6 +82,7 @@ class WeLockLock(CoordinatorEntity, LockEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information for Home Assistant device registry."""
+        model = self.lock_data.get("model") or self.lock_data.get("deviceType") or "Smart Lock"
         name_field = self.lock_data.get("lockName") or self.lock_data.get("name")
         custom_name = name_field or f"WeLock {self._lock_sn[-4:]}"
         fw = self.lock_data.get("firmwareVersion") or self.lock_data.get("firmware") or "1.0"

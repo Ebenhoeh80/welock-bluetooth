@@ -1,4 +1,5 @@
 """Unit tests for Home Assistant and HACS manifests."""
+
 import json
 import unittest
 from pathlib import Path

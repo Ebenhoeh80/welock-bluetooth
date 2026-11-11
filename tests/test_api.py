@@ -1,4 +1,5 @@
 """Unit tests for WeLockApiClient."""
+
 from __future__ import annotations
 
 import sys
@@ -27,6 +28,7 @@ try:
         WeLockApiClient,
         WeLockApiError,
     )
+
     HAVE_API = True
 except ImportError:
     HAVE_API = False

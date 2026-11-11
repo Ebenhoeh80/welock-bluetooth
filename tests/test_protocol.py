@@ -1,5 +1,7 @@
 """Unit tests for WeLock BLE protocol module (supports pytest and standard unittest)."""
+
 import unittest
+
 from tools.welock_protocol import (
     BATTERY_REQUEST,
     BatteryResponse,

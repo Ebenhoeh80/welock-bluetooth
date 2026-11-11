@@ -1,4 +1,5 @@
 """Constants for the WeLock Smart Lock integration."""
+
 from typing import Final
 
 DOMAIN: Final = "welock"

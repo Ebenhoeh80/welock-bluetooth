@@ -24,9 +24,7 @@ except ImportError:
     from tools.welock_protocol import NOTIFY_UUID, SERVICE_UUID, WRITE_UUID
 
 
-async def inspect_device(
-    address: str, timeout: float, connect: bool, as_json: bool = False
-) -> int:
+async def inspect_device(address: str, timeout: float, connect: bool, as_json: bool = False) -> int:
     """Sucht nach dem BLE-Gerät und inspiziert optional die GATT-Dienste."""
     if BleakScanner is None or BleakClient is None:
         _, msg = check_bleak_installed()
@@ -96,20 +94,22 @@ async def inspect_device(
                     print(f"  - {s.uuid} ({s.description})", file=sys.stderr)
             return 1
 
-        characteristics = {
-            char.uuid.lower(): char for char in service.characteristics
-        }
+        characteristics = {char.uuid.lower(): char for char in service.characteristics}
         missing = {WRITE_UUID.lower(), NOTIFY_UUID.lower()} - characteristics.keys()
         if missing:
             msg = f"Fehlende WeLock-Characteristics: {', '.join(sorted(missing))}"
             if as_json:
-                print(json.dumps({
-                    "address": device.address,
-                    "name": name,
-                    "welock_service_found": True,
-                    "missing_characteristics": list(missing),
-                    "error": msg,
-                }))
+                print(
+                    json.dumps(
+                        {
+                            "address": device.address,
+                            "name": name,
+                            "welock_service_found": True,
+                            "missing_characteristics": list(missing),
+                            "error": msg,
+                        }
+                    )
+                )
             else:
                 print(msg, file=sys.stderr)
             return 1
@@ -119,14 +119,19 @@ async def inspect_device(
             for uuid in (WRITE_UUID, NOTIFY_UUID):
                 char_obj = characteristics[uuid.lower()]
                 chars_info[uuid] = list(char_obj.properties)
-            print(json.dumps({
-                "address": device.address,
-                "name": name,
-                "found": True,
-                "connected": True,
-                "service": SERVICE_UUID,
-                "characteristics": chars_info,
-            }, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "address": device.address,
+                        "name": name,
+                        "found": True,
+                        "connected": True,
+                        "service": SERVICE_UUID,
+                        "characteristics": chars_info,
+                    },
+                    indent=2,
+                )
+            )
             return 0
 
         print("\n" + "=" * 65)
@@ -196,9 +201,7 @@ def main() -> int:
 
     try:
         return asyncio.run(
-            inspect_device(
-                target_address.strip(), args.timeout, args.connect, as_json=args.json
-            )
+            inspect_device(target_address.strip(), args.timeout, args.connect, as_json=args.json)
         )
     except (BleakError, OSError, TimeoutError) as exc:
         print(f"Bluetooth-Inspektion fehlgeschlagen: {exc}", file=sys.stderr)

@@ -93,9 +93,7 @@ def install_bleak() -> bool:
     """Versucht bleak automatisch zu installieren."""
     print("Versuche automatische Installation von 'bleak>=0.22.0,<3.0.0'...")
     try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "bleak>=0.22.0,<3.0.0"]
-        )
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "bleak>=0.22.0,<3.0.0"])
         print("Installation erfolgreich abgeschlossen!")
         return True
     except subprocess.CalledProcessError as exc:

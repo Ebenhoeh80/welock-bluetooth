@@ -1,10 +1,11 @@
 """Config flow for WeLock Smart Lock integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
-import voluptuous as vol
 
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
@@ -36,9 +37,7 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
@@ -78,9 +77,7 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(
-        self, entry_data: dict[str, Any]
-    ) -> FlowResult:
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauth upon invalid authentication."""
         return await self.async_step_user()
 
@@ -100,9 +97,7 @@ class WeLockOptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

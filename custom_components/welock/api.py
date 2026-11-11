@@ -1,18 +1,20 @@
 """API client for WeLock Cloud Services."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 from typing import Any
+
 import aiohttp
 
 from .const import (
     BASE_API_URL,
     ENDPOINT_AUTH,
-    ENDPOINT_LOCK_LIST,
-    ENDPOINT_LOCK_DETAIL,
-    ENDPOINT_UNLOCK,
     ENDPOINT_GATEWAY_LIST,
+    ENDPOINT_LOCK_DETAIL,
+    ENDPOINT_LOCK_LIST,
+    ENDPOINT_UNLOCK,
 )
 
 _LOGGER = logging.getLogger(__name__)
