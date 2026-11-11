@@ -12,7 +12,7 @@ body:
     attributes:
       label: Integration & Home Assistant Version
       description: What version of this integration and Home Assistant are you using?
-      placeholder: "Integration v1.3.0, Home Assistant 2024.1.0"
+      placeholder: "Integration v2.0.0, Home Assistant 2024.11.0, Bluetooth: local adapter / ESPHome proxy"
     validations:
       required: true
   - type: dropdown
@@ -23,8 +23,7 @@ body:
         - "Touch41 (Fingerprint)"
         - "PCB41 (Passcode)"
         - "SECBN51"
-        - "WiFiBox 2"
-        - "WiFiBox 3"
+        - "SECBREBL01"
         - "Other"
     validations:
       required: true

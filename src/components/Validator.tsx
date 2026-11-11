@@ -27,7 +27,7 @@ export const Validator: React.FC<ValidatorProps> = ({ currentLang }) => {
       desc: t.validator.checkManifestDesc,
       status: 'pass',
       tag: 'manifest.json',
-      details: 'Domain: "welock", Version: "1.3.0", IoT: "cloud_polling", Codeowners: ["@Ebenhoeh80"]',
+      details: 'Domain: "welock", Version: "2.0.0", IoT: "cloud_polling", Codeowners: ["@Ebenhoeh80"]',
     },
     {
       id: 'hacs_json',

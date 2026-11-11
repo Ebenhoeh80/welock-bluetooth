@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="font-semibold text-white">{t.forkOf}</span>
           <span className="text-slate-400">•</span>
           <span className="text-cyan-300 font-mono text-[11px] bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/50">
-            v1.3.0 (HACS Ready)
+            v2.0.0 (HACS Ready)
           </span>
         </div>
         <div className="flex items-center gap-3 text-slate-300">

@@ -16,5 +16,5 @@
   "issue_tracker": "https://github.com/Ebenhoeh80/welock-aistudio/issues",
   "loggers": ["custom_components.welock"],
   "requirements": ["aiohttp>=3.9.0", "bleak-retry-connector>=3.1.0"],
-  "version": "1.3.0"
+  "version": "2.0.0"
 }

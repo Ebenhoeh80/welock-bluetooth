@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-11-11
+
+> **Breaking change:** config entries from 1.x cannot be migrated. Remove them and add the integration again. Minimum Home Assistant version is now 2024.11.0.
+
+### Added
+- Bluetooth discovery for `WeLock*` BLE modules (`manifest.json` `bluetooth` matcher, dependency `bluetooth_adapters`).
+- New modules `ble.py` (BLE transport via HA Bluetooth / `bleak-retry-connector`), `protocol.py` (Nordic UART protocol helpers), `coordinator.py`, `entity.py`.
+- "Bluetooth reachable" binary sensor, RSSI sensor from HA Bluetooth advertisements, battery read directly from the lock.
+- Options for the relock display time, the BLE battery read interval and the reachability check interval.
+- Optional read-only live smoke test against the real WELOCK cloud (`tests/test_live_smoke.py`, marker `live`, opt-in via `WELOCK_LIVE_TEST=1`, never in CI).
+- Documentation: setup workflow, entities, options, troubleshooting, upgrade guide, privacy notes and live test in `README.md`; updated `info.md`, `CONTRIBUTING.md`, `SECURITY.md`.
 
 ### Changed
 - **Config flow follows the WeLock workflow**: cloud login (with warning that it ends app sessions) → lock/BLE module selection from `/Device/GetDevices` → Bluetooth reachability and status/challenge check (no unlock). One config entry per BLE module (unique id = BLE address). Bluetooth discovery for `WeLock*` devices. Proper reauth step.
@@ -13,9 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **No cloud polling**: presence and RSSI from HA Bluetooth, battery read over BLE (configurable interval). The cloud is only contacted during setup/reauth and for unlock.
 - Password is no longer stored twice (`client_id`/`client_secret` aliases removed) and no longer stripped.
 - Minimum Home Assistant version raised to 2024.11.0.
+- CI runs `pytest -m "not live"`.
 
 ### Removed
 - WiFiBox gateway sensor, last-unlock-type sensor and the cloud-only unlock call (not supported by the WeLock cloud).
+- Legacy `client_id` / `client_secret` configuration keys.
 
 ### Migration
 - Config entries from 1.3.0 and earlier have no lock selection and must be removed and added again.

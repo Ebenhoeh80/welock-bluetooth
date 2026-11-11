@@ -4,6 +4,8 @@ Dieses Verzeichnis enthält die konsolidierte, produktionsreife Werkzeugsammlung
 
 Alle Werkzeuge sind plattformunabhängig geschrieben und verfügen über passende Shell-Startskripte (`.sh` für Linux/macOS, `.ps1` für Windows) sowie ein interaktives Python-Hauptmenü (`welock_tools.py`), das direkt ohne Shell-Skripte gestartet werden kann.
 
+> 🏠 **Bezug zur Home-Assistant-Integration (ab 2.0.0):** Die Integration nutzt genau den hier beschriebenen Challenge-Response-Ablauf. Die Werkzeuge eignen sich, um vor der Einrichtung zu prüfen, ob Konto, Schlossnummer, BLE-Name und Funkstrecke passen. `ble_battery.py` entspricht Schritt 3 der HA-Einrichtung, `welock_cloud_login.py` den Schritten 1–2. ⚠️ Jeder Cloud-Login, auch aus den Tools, beendet andere Sitzungen des Kontos, also die App und die HA-Integration. Beim nächsten Entriegeln meldet sich die Integration selbstständig neu an.
+
 ---
 
 ## 📑 Inhaltsverzeichnis

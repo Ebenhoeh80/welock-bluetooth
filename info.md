@@ -1,13 +1,23 @@
-# WeLock Smart Lock Home Assistant Integration
+# WeLock Smart Lock
 
-This integration connects your **WeLock Smart Locks** (Touch41, PCB41, SECBN51) to Home Assistant via the **WeLock WiFiBox Gateway**.
+Unlock **WeLock smart cylinders** (Touch41, SECBN51, PCB41, SECBREBL01, …) from Home Assistant over **Bluetooth**, using a local adapter or an **ESPHome Bluetooth proxy**. The WeLock cloud is only used to compute the one-time unlock command for a fresh challenge from the lock. The cloud is never polled.
 
-## Supported Features
-- 🔓 Remote Lock / Unlock with mechanical auto-relock reset
-- 🔋 Battery Level sensor (`sensor.<name>_battery`)
-- 📶 Connectivity & Gateway status (`binary_sensor`)
-- 🕒 Last Unlock mechanism (Fingerprint, Code, RFID, App)
-- 🌐 4 Languages: **Deutsch**, **English**, **Español**, **Français**
-- ⚙️ Native Home Assistant Config Flow & Options Flow UI
-- 🛡️ Downloadable Diagnostics with automatic token & credential redaction
-- 🔬 Local BLE diagnostic tools included in repository (`tools/`)
+## Features
+- 🔓 Unlock: BLE challenge → cloud command → BLE write (state is assumed, the knob relocks mechanically)
+- 🧭 Guided setup that enforces the workflow: Bluetooth discovery → cloud login → lock selection → Bluetooth check (no unlock)
+- 🔋 Battery read directly from the lock, 📶 RSSI, 🟢 "Bluetooth reachable" sensor
+- 🔁 Reauthentication flow, options for relock display, battery interval and reachability interval
+- 🛡️ Password and token never logged; diagnostics redact account and password
+- 🌐 Deutsch · English · Español · Français
+
+## Requirements
+- Home Assistant **2024.11** or newer
+- Bluetooth adapter or ESPHome Bluetooth proxy (active connections) within reach of the door
+- WeLock app account (email + password). No WiFiBox and no client ID required.
+
+## Notes
+- ⚠️ Every cloud login (setup and **every unlock**) ends other sessions of the account, e.g. the WeLock app.
+- Minimum 30 s between two unlocks.
+- **2.0.0 is a breaking change:** remove entries from 1.x and add the integration again.
+
+Full documentation: [README](https://github.com/Ebenhoeh80/welock-aistudio#readme)

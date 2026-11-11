@@ -22,7 +22,7 @@ export async function downloadIntegrationZip(): Promise<void> {
   const blobUrl = URL.createObjectURL(content);
   const anchor = document.createElement('a');
   anchor.href = blobUrl;
-  anchor.download = 'welock-home-assistant-hacs-v1.3.0.zip';
+  anchor.download = 'welock-home-assistant-hacs-v2.0.0.zip';
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
