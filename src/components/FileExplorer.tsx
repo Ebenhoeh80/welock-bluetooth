@@ -256,7 +256,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ currentLang }) => {
           {/* Status footer */}
           <div className="mt-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
             <span className="text-emerald-400 font-medium">✓ {t.explorer.allFilesValid}</span>
-            <span className="font-mono text-slate-500 text-[10px]">v1.2.0</span>
+            <span className="font-mono text-slate-500 text-[10px]">v1.3.0</span>
           </div>
         </div>
 

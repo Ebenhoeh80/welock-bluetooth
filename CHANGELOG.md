@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-11-11
+
+### Changed
+- **License Migration**: Converted the entire project license from Apache 2.0 to the **MIT License** for maximum compatibility with Home Assistant and the HACS open source ecosystem.
+- **Eliminated Wake-Up / Manual Touch Assumptions**: Removed all outdated requirements and prompts assuming the lock needs to be manually touched or woken up. WeLock smart locks continuously broadcast standard BLE advertisements. Updated all error handling and documentation to focus on actual connection diagnostics (advertising intervals, single-client Nordic UART Service limitations, RF attenuation through metal doors, and OS Bluetooth permissions).
+- **PowerShell Wrapper Argument Splatting**: Fixed all `.ps1` wrappers under `tools/` to transparently pass positional parameters, short options (`-a`, `-u`, `-t`), and long flags (`--address`, `--timeout`, `--json`) without PowerShell parameter binder errors.
+- **HACS Action Validation**: Updated `.github/workflows/hacs.yml` to use `hacs/action@main` with `category: integration`.
+
+### Added
+- **Consolidated Tools Collection**: Unified `/toolsdev` and `/tools` into a cohesive, standardized CLI suite under `/tools/` with uniform parameter handling and dependency checking. Historical and superseded scripts safely archived under `/archiv/`.
+- **Extended Cloud Diagnostics**: Enhanced `tools/welock_cloud_login.py` with `--show-data` (`-s`) and JSON `login_response_data` to inspect raw cloud server payloads without storing credentials.
+- **CI Matrix Resiliency**: Added `strategy: fail-fast: false` to `.github/workflows/ci.yml` so that all Python versions (3.10, 3.11, 3.12) execute independently.
+- **Diagnostic Tool Unit Tests**: Added unit test suite in `tests/test_tools.py` covering CLI argument parsing, Bluetooth system checks, and device identification heuristics.
+
+### Fixed
+- **Fatal NameError in `lock.py`**: Resolved `F821 Undefined name 'model'` in `custom_components/welock/lock.py`.
+- **CI Linter & Formatter Compliance**: Fixed all Ruff (E402, F401, I001) and Black formatting checks across `custom_components/`, `tools/`, and `tests/`, strictly adhering to PEP 8 and 100-character line lengths.
+- **Cleaned Up Dependencies**: Removed unused protocol imports from `tests/test_tools.py`.
+
 ## [1.2.0] - 2026-11-09
 
 ### Added

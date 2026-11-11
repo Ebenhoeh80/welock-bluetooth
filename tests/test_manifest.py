@@ -21,7 +21,7 @@ class TestManifests(unittest.TestCase):
         self.assertTrue(data.get("config_flow"))
         self.assertIn("@Ebenhoeh80", data.get("codeowners", []))
         self.assertEqual(data.get("iot_class"), "cloud_polling")
-        self.assertEqual(data.get("version"), "1.2.0")
+        self.assertEqual(data.get("version"), "1.3.0")
         self.assertIn("aiohttp>=3.9.0", data.get("requirements", []))
 
     def test_hacs_manifest(self) -> None:

@@ -75,7 +75,7 @@ class WeLockApiClient:
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "HomeAssistant-WeLock/1.2.0",
+            "User-Agent": "HomeAssistant-WeLock/1.3.0",
         }
 
         try:
@@ -128,7 +128,7 @@ class WeLockApiClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "Authorization": f"Bearer {self._access_token}",
-            "User-Agent": "HomeAssistant-WeLock/1.2.0",
+            "User-Agent": "HomeAssistant-WeLock/1.3.0",
         }
 
         try:

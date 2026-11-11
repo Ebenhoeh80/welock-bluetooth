@@ -46,7 +46,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="font-semibold text-white">WeLock Home Assistant HACS Integration</span>
             <span>•</span>
-            <span className="text-slate-500">v1.2.0</span>
+            <span className="text-slate-500">v1.3.0</span>
             <span>•</span>
             <span className="text-cyan-400 font-mono">@Ebenhoeh80</span>
           </div>

@@ -12,7 +12,7 @@ body:
     attributes:
       label: Integration & Home Assistant Version
       description: What version of this integration and Home Assistant are you using?
-      placeholder: "Integration v1.2.0, Home Assistant 2024.1.0"
+      placeholder: "Integration v1.3.0, Home Assistant 2024.1.0"
     validations:
       required: true
   - type: dropdown
