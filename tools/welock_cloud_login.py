@@ -1,5 +1,7 @@
 """Experimental WELOCK cloud-login probe; it does not unlock a lock."""
 
+from __future__ import annotations
+
 import argparse
 import base64
 import getpass
@@ -14,8 +16,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request, build_opener
-
+from urllib.request import (
+    HTTPRedirectHandler,
+    HTTPSHandler,
+    ProxyHandler,
+    Request,
+    build_opener,
+)
 
 BASE_URL = "https://clientapi.welock.com.cn/api"
 LOGIN_PATH = "/Account/token/welock"
@@ -29,6 +36,8 @@ class CloudError(Exception):
 
 
 class NoRedirect(HTTPRedirectHandler):
+    """Prevent automated HTTP redirects."""
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
 
@@ -84,18 +93,6 @@ def parse_response(raw: bytes) -> object:
     return envelope["data"]
 
 
-def parse_login_response(raw: bytes) -> str:
-    data = parse_response(raw)
-    if not isinstance(data, dict):
-        raise CloudError("Das Anmeldeergebnis hat ein unbekanntes Datenformat.")
-    token = data.get("access_token")
-    if not isinstance(token, str) or not token:
-        raise CloudError("Die erfolgreiche Antwort enthaelt kein access_token.")
-    if any(ord(c) < 32 or ord(c) > 126 for c in token):
-        raise CloudError("Das access_token ist kein gueltiger HTTP-Headerwert.")
-    return token
-
-
 def post_form(path: str, form: dict[str, str], device_id: str, token: str | None = None) -> bytes:
     if path not in (LOGIN_PATH, UNLOCK_PATH, DEVICES_PATH):
         raise CloudError("Nicht erlaubter Cloud-Endpunkt.")
@@ -104,13 +101,15 @@ def post_form(path: str, form: dict[str, str], device_id: str, token: str | None
         if not token or any(ord(c) < 32 or ord(c) > 126 for c in token):
             raise CloudError("Das access_token ist kein gueltiger HTTP-Headerwert.")
         headers["Authorization"] = token
-    request = Request(BASE_URL + path, data=urlencode(form).encode("utf-8"), headers=headers, method="POST")
+    data_bytes = urlencode(form).encode("utf-8")
+    request = Request(BASE_URL + path, data=data_bytes, headers=headers, method="POST")
     opener = build_opener(ProxyHandler({}), NoRedirect(), HTTPSHandler())
     try:
         with opener.open(request, timeout=20) as response:
             raw = response.read(MAX_RESPONSE_BYTES + 1)
     except HTTPError as exc:
-        raise CloudError(f"Die Cloud-Anfrage schlug fehl (HTTP {exc.code}); Weiterleitungen sind gesperrt.") from exc
+        msg = f"Die Cloud-Anfrage schlug fehl (HTTP {exc.code}); Weiterleitungen sind gesperrt."
+        raise CloudError(msg) from exc
     except (URLError, TimeoutError, OSError) as exc:
         raise CloudError("Die Cloud-Anfrage scheiterte an Verbindung, TLS oder Zeitlimit.") from exc
     if len(raw) > MAX_RESPONSE_BYTES:
@@ -122,6 +121,7 @@ def post_form(path: str, form: dict[str, str], device_id: str, token: str | None
 class CloudSession:
     device_id: str = field(default_factory=lambda: str(uuid.uuid4()).upper())
     access_token: str | None = field(default=None, repr=False)
+    login_data: dict[str, object] | None = field(default=None, repr=False)
 
     def authenticate(self, account: str, password: str) -> None:
         if not account.strip() or not password:
@@ -130,15 +130,28 @@ class CloudSession:
         if offset is None:
             raise CloudError("Die lokale Zeitzonenabweichung konnte nicht ermittelt werden.")
         self.access_token = None
+        self.login_data = None
         form = login_form(account, password, self.device_id, int(offset.total_seconds()))
-        self.access_token = parse_login_response(post_form(LOGIN_PATH, form, self.device_id))
+        raw_resp = post_form(LOGIN_PATH, form, self.device_id)
+        data = parse_response(raw_resp)
+        if not isinstance(data, dict):
+            raise CloudError("Das Anmeldeergebnis hat ein unbekanntes Datenformat.")
+        self.login_data = data
+        token = data.get("access_token")
+        if not isinstance(token, str) or not token:
+            raise CloudError("Die erfolgreiche Antwort enthaelt kein access_token.")
+        if any(ord(c) < 32 or ord(c) > 126 for c in token):
+            raise CloudError("Das access_token ist kein gueltiger HTTP-Headerwert.")
+        self.access_token = token
 
     def list_devices(self) -> list[tuple[str, str, str]]:
         if self.access_token is None:
             raise CloudError("Keine aktive Cloud-Anmeldung.")
-        data = parse_response(post_form(
-            DEVICES_PATH, {"pageSize": "40", "pageNo": "1"}, self.device_id, self.access_token
-        ))
+        data = parse_response(
+            post_form(
+                DEVICES_PATH, {"pageSize": "40", "pageNo": "1"}, self.device_id, self.access_token
+            )
+        )
         if not isinstance(data, list):
             raise CloudError("Die Cloud-Geraeteliste hat ein unbekanntes Datenformat.")
         devices = []
@@ -146,8 +159,10 @@ class CloudSession:
             if not isinstance(item, dict):
                 raise CloudError("Die Cloud-Geraeteliste enthaelt einen ungueltigen Eintrag.")
             number, name = item.get("deviceNumber"), item.get("deviceName")
-            if not isinstance(number, str) or not number.strip() or not isinstance(name, str) or not name.strip():
-                raise CloudError("Ein Cloud-Geraet hat keine gueltige Nummer oder keinen gueltigen Namen.")
+            invalid_num = not isinstance(number, str) or not number.strip()
+            invalid_name = not isinstance(name, str) or not name.strip()
+            if invalid_num or invalid_name:
+                raise CloudError("Cloud-Geraet hat keine gueltige Nummer oder keinen Namen.")
             ble = item.get("ble")
             if ble is None:
                 continue
@@ -162,7 +177,9 @@ class CloudSession:
                 devices.append((number, name, ble_name))
         return devices
 
-    def request_unlock_command(self, device_number: str, device_name: str, random_factor: int, battery: int) -> bytes:
+    def request_unlock_command(
+        self, device_number: str, device_name: str, random_factor: int, battery: int
+    ) -> bytes:
         if self.access_token is None:
             raise CloudError("Keine aktive Cloud-Anmeldung.")
         if not device_number.strip() or not device_name.strip():
@@ -215,6 +232,12 @@ def main() -> int:
         "-l",
         action="store_true",
         help="Registrierte Schlösser und BLE-Namen nach dem Login abrufen und auflisten.",
+    )
+    parser.add_argument(
+        "--show-data",
+        "-s",
+        action="store_true",
+        help="Vollständige Login-Antwortdaten (Data-Payload) im Terminal anzeigen.",
     )
     parser.add_argument(
         "--yes",
@@ -270,30 +293,50 @@ def main() -> int:
         try:
             raw_devices = session.list_devices()
             for number, name, ble_name in raw_devices:
-                devices_list.append({
-                    "device_number": number,
-                    "device_name": name,
-                    "ble_name": ble_name,
-                })
+                devices_list.append(
+                    {
+                        "device_number": number,
+                        "device_name": name,
+                        "ble_name": ble_name,
+                    }
+                )
         except CloudError as exc:
             if not args.json:
                 print(f"Hinweis beim Abruf der Geräteliste: {exc}")
 
     if args.json:
-        print(json.dumps({
-            "success": True,
-            "account": account,
-            "devices": devices_list,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "success": True,
+                    "account": account,
+                    "login_response_data": session.login_data,
+                    "devices": devices_list,
+                },
+                indent=2,
+            )
+        )
         return 0
 
     print("\nCloud-Anmeldung erfolgreich akzeptiert!")
+
+    if session.login_data and (args.show_data or not devices_list):
+        print("\nLogin-Antwortdaten (Data-Objekt):")
+        print("-" * 65)
+        for key, value in session.login_data.items():
+            print(f"  {key}: {value}")
+        print("-" * 65)
+
     if devices_list:
         print(f"\nRegistrierte Schlösser ({len(devices_list)}):")
         print("-" * 65)
         for idx, dev in enumerate(devices_list, 1):
-            print(f"[{idx}] Schlossnummer: {dev['device_number']} | Name: {dev['device_name']} | BLE: {dev['ble_name']}")
+            num = dev["device_number"]
+            dname = dev["device_name"]
+            bname = dev["ble_name"]
+            print(f"[{idx}] Schlossnummer: {num} | Name: {dname} | BLE: {bname}")
         print("-" * 65)
+
     print("Kein Token gespeichert und kein Unlock-Befehl gesendet.")
     return 0
 

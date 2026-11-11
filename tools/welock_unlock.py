@@ -13,7 +13,7 @@ except ImportError:
 
 def main() -> int:
     parser = build_arg_parser(
-        "Autorisierter Vor-Ort Entriegelungstest: Sendet echten 15-Byte-Befehl per BLE an das Schloss."
+        "Autorisierter Vor-Ort Entriegelungstest: Sendet 15-Byte-Befehl per BLE an das Schloss."
     )
     args = parser.parse_args()
 

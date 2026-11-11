@@ -49,7 +49,6 @@ async def read_lock_battery(
 
     if not as_json:
         print(f"Suche nach WeLock-Schloss [{address}]...")
-        print("Tipp: Berühren Sie kurz das Schloss-Tastfeld, um es aus dem Ruhezustand aufzuwecken.\n")
 
     device = await BleakScanner.find_device_by_address(address, timeout=timeout)
     if device is None:
@@ -61,9 +60,22 @@ async def read_lock_battery(
                 file=sys.stderr,
             )
             print("Mögliche Ursachen:", file=sys.stderr)
-            print("  - Schloss schläft -> Tastatur berühren", file=sys.stderr)
-            print("  - Entfernung zu groß (> 3-5m)", file=sys.stderr)
-            print("  - Falsche MAC-Adresse (nutzen Sie ./run_ble_scan.sh)", file=sys.stderr)
+            print(
+                "  - Entfernung zu groß (> 3-5m) oder Dämpfung durch massive Türen",
+                file=sys.stderr,
+            )
+            print(
+                "  - Schloss ist bereits mit WeLock-App oder WiFiBox verbunden (1 Client max)",
+                file=sys.stderr,
+            )
+            print(
+                "  - BLE-Advertising-Intervall verpasst (Timeout erhöhen, z. B. -t 25)",
+                file=sys.stderr,
+            )
+            print(
+                "  - Falsche MAC-Adresse (nutzen Sie ./run_ble_scan.sh)",
+                file=sys.stderr,
+            )
         return 1
 
     if not as_json:

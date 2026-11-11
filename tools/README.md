@@ -76,8 +76,13 @@ WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy (BL
 ### Hardware-Voraussetzungen:
 - **Bluetooth-Empfänger:** Rechner oder USB-Dongle mit **Bluetooth 4.0 Low Energy (BLE)** oder neuer.
 - **Funkreichweite:** Das Schloss muss sich in direkter Nähe befinden (optimal **< 3 bis 5 Meter**). Metalltüren dämpfen das Funksignal stark.
-- **⚠️ Schloss aufwecken (Wake-Up-Prozedur):**
-  WeLock-Schlösser gehen zur Schonung der AAA-Batterien in einen tiefen Ruhezustand (*Deep Sleep*). **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden**, indem Sie die Tastatur oder den Fingerabdrucksensor kurz berühren (Beleuchtung geht an).
+- **📡 Kontinuierliches BLE-Advertising & Verbindungsverhalten:**
+  WeLock-Schlösser senden kontinuierlich standardkonforme BLE-Advertising-Pakete aus und sind **jederzeit ohne physische Interaktion, Tastendruck oder Berührung** über Bluetooth erreichbar und ansprechbar.
+  Sollte eine Verbindung oder Erkennung dennoch fehlschlagen, liegt dies in der Praxis an:
+  - **Advertising-Intervall & Timing:** Das Schloss sendet Pakete in zyklischen Intervallen. Ein zu kurzer Scan (z. B. unter 5–10 s) kann das Zeitfenster verfehlen. Erhöhen Sie den Scan-Timeout mit `--timeout 15` oder `20`.
+  - **Single-Client-Limitierung (Nordic UART Service):** Der BLE-Chip des Schlosses akzeptiert nur **eine einzige aktive Client-Verbindung gleichzeitig**. Ist Ihr Smartphone (WeLock-App im Vordergrund) oder eine aktive WeLock WiFiBox verbunden, lehnt das Schloss jede weitere BLE-Verbindung ab.
+  - **Signaldämpfung & Hindernisse:** Massive Metalltüren, Sicherheitszylinder oder dicke Wände dämpfen 2.4-GHz-Signale; ein Bluetooth-Empfänger sollte im Abstand von unter 3–5 Metern platziert sein.
+  - **Betriebssystem- & Adapterberechtigungen:** Host-Adapter muss aktiv und freigegeben sein (z. B. `rfkill unblock bluetooth` unter Linux, Bluetooth-Erlaubnis für das Terminal unter macOS/Windows).
 - **Batterieladestand:** Mindestens 3x frische AAA-Batterien mit stabiler Spannung (bei < 20% verweigert die Firmware oft Funkbefehle).
 
 ### Systemvoraussetzungen & Berechtigungen:
@@ -258,7 +263,7 @@ Prüft, ob Python >= 3.10 installiert ist, ob das Modul `bleak` importiert werde
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ 1. Schloss aufwecken & BLE-Scan                        │
+│ 1. BLE-Scan & Schlosserkennung                         │
 │    ./run_ble_scan.sh --welock-only                     │
 │    -> Liefert: BLE-MAC-Adresse & Signalstärke          │
 └──────────────────────────┬─────────────────────────────┘

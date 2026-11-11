@@ -69,7 +69,9 @@ async def probe(
         print(f"Suche nach BLE-Schloss [{address}]...")
     device = await BleakScanner.find_device_by_address(address, timeout=timeout)
     if device is None:
-        raise RuntimeError(f"Das BLE-Gerät [{address}] wurde nicht gefunden (in Reichweite? aufgeweckt?).")
+        raise RuntimeError(
+            f"Das BLE-Gerät [{address}] nicht gefunden (Reichweite/Adapter prüfen)."
+        )
 
     async with BleakClient(device, timeout=timeout) as client:
         service = client.services.get_service(SERVICE_UUID)
@@ -102,7 +104,7 @@ async def probe(
 
         state = await asyncio.wait_for(response, timeout)
         if not as_json:
-            print(f"BLE-Antwort empfangen: Akkustand {state.battery}%, Challenge {state.random_factor}")
+            print(f"BLE-Antwort: Akkustand {state.battery}%, Challenge {state.random_factor}")
             print("Fordere autorisierten Befehl von der WeLock Cloud API an...")
 
         command = await asyncio.to_thread(
@@ -115,10 +117,10 @@ async def probe(
 
         if send_unlock:
             if len(command) != 15 or not command.startswith(b"U1") or not command.isalnum():
-                raise RuntimeError("Cloud-Command hat nicht die erwartete 15-Byte-Form (U1...); kein Write.")
+                raise RuntimeError("Cloud-Command hat nicht erwartetes Format (U1...); kein Write.")
             waiting_for_followup = True
             if not as_json:
-                print("\n[Achtung] Frischer Cloud-Befehl wird einmalig an das Schloss geschrieben...")
+                print("\n[Achtung] Frischer Befehl wird einmalig an das Schloss geschrieben...")
                 print("Hinweis: Zwischen Entriegelungen mindestens 30 Sekunden Abstand halten.")
             await client.write_gatt_char(chars[WRITE_UUID], command, response=False)
             if not as_json:
@@ -185,7 +187,8 @@ def run_interactive(
             print("Abgebrochen; keine Aktion durchgeführt.")
             return 1
 
-        if send_unlock and input("Einmaligen Unlock-Befehl senden? ENTRIEGELN eingeben: ").strip() != "ENTRIEGELN":
+        confirm_prompt = "Einmaligen Unlock-Befehl senden? ENTRIEGELN eingeben: "
+        if send_unlock and input(confirm_prompt).strip() != "ENTRIEGELN":
             print("Abgebrochen; Schloss wird nicht entriegelt.")
             return 1
 
@@ -203,7 +206,10 @@ def run_interactive(
                 return 1
 
             if not devices:
-                print("Keine BLE-Geräte gefunden. Schloss aufwecken und wiederholen.", file=sys.stderr)
+                print(
+                    "Keine BLE-Geräte gefunden. Funkreichweite oder Timeout prüfen.",
+                    file=sys.stderr,
+                )
                 return 1
 
             print("\nGefundene BLE-Geräte:")
@@ -248,7 +254,11 @@ def run_interactive(
             else:
                 print("\nRegistrierte Schlösser im Konto:")
                 for index, (candidate_number, candidate_name, ble_name) in enumerate(dev_list, 1):
-                    print(f"  [{index}] Nummer: {candidate_number} | Name: {candidate_name} | BLE: {ble_name}")
+                    msg_item = (
+                        f"  [{index}] Schloss: {candidate_number} | "
+                        f"Name: {candidate_name} | BLE: {ble_name}"
+                    )
+                    print(msg_item)
                 selection = input("\nNummer des zugehörigen Schlosses: ").strip()
                 if not selection.isdecimal() or not 1 <= int(selection) <= len(dev_list):
                     raise CloudError("Kein Schloss ausgewählt.")
@@ -302,7 +312,8 @@ def run_interactive(
 
     print(f"\nErfolg: Cloud lieferte einen gültigen Befehl mit {len(command)} Bytes.")
     print("Der Befehl wurde absichtlich NICHT an das Schloss gesendet.")
-    if show_command or input("Hex-Befehl lokal im Terminal anzeigen? [j/N]: ").strip().lower() in ("j", "ja", "y"):
+    prompt_show = "Hex-Befehl lokal im Terminal anzeigen? [j/N]: "
+    if show_command or input(prompt_show).strip().lower() in ("j", "ja", "y"):
         print(f"Befehl: {command.hex()}")
     return 0
 

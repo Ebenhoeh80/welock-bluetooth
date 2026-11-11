@@ -76,9 +76,14 @@ Damit Sie sowohl die **Home Assistant Integration** als auch die **BLE-Diagnoset
 ### 1. 📡 Bluetooth-Hardware & Reichweite (für BLE-Tools)
 * **Bluetooth-Empfänger:** Ein Rechner oder Bluetooth-Adapter mit Unterstützung für mindestens **Bluetooth 4.0 Low Energy (BLE)** (integriertes Modul oder USB-BLE-Dongle).
 * **Funkreichweite:** Das Schloss muss sich in direkter Funkreichweite des BLE-Empfängers befinden (optimal **unter 3 bis 5 Metern**). Massive Brandschutztüren, Stahlarmierungen oder dicke Außenmauern dämpfen das 2.4-GHz-BLE-Signal stark.
-* **⚠️ Schloss aufwecken (Wake-Up-Prozedur):**
-  WeLock Smart Locks schalten ihr Funkmodul in einen stromsparenden Tiefschlaf (*Deep Sleep*), um die 3x AAA-Batterien zu schonen. **Vor jedem BLE-Scan oder Verbindungsaufruf muss das Schloss manuell aufgeweckt werden** durch kurzes Berühren der Zifferntastatur oder des Fingerabdrucksensors (die Tastaturbeleuchtung oder das OLED-Display leuchtet auf).
-* **🔋 Batteriezustand:** Mindestens 3 frische AAA Alkaline- oder Lithium-Batterien (1.5V). Bei niedrigem Batteriestand (< 20%) deaktiviert die interne Firmware häufig die BLE-Antenne oder schlägt die mechanische Kupplung fehl.
+* **📡 Kontinuierliches BLE-Advertising & Verbindungsverhalten:**
+  WeLock Smart Locks senden kontinuierlich standardkonforme BLE-Advertising-Pakete aus und sind **jederzeit ohne physische Interaktion, Tastendruck oder Berührung** ansprechbar.
+  Sollte eine Verbindung oder Erkennung fehlschlagen, liegt dies an folgenden technischen Ursachen:
+  - **Advertising-Intervall & Timing:** Das Schloss sendet Pakete in Intervallen. Ein kurzer Scan (unter 5–10 s) kann das Zeitfenster verfehlen. Erhöhen Sie den Scan-Timeout mit `--timeout 15` oder `20`.
+  - **Single-Client-Limitierung:** Der BLE-Chip des Schlosses akzeptiert nur **eine einzige aktive Verbindung gleichzeitig**. Ist ein Smartphone (WeLock-App im Vordergrund) oder eine aktive WeLock WiFiBox verbunden, lehnt das Schloss neue Verbindungen ab.
+  - **Signaldämpfung & Hindernisse:** Brandschutztüren, Metallbeschläge oder dicke Wände dämpfen 2.4-GHz-Funk; der Empfänger sollte in 3–5 m Reichweite stehen.
+  - **Betriebssystem- & Adapterberechtigungen:** Host-Adapter muss aktiv sein (z. B. `rfkill unblock bluetooth` unter Linux, Terminal-Berechtigungen unter macOS/Windows).
+* **🔋 Batteriezustand:** Mindestens 3 frische AAA Alkaline- oder Lithium-Batterien (1.5V). Bei niedrigem Batteriestand (< 20%) deaktiviert die Firmware oft Funkbefehle.
 
 ### 2. 🌐 WeLock WiFiBox Gateway (für Home Assistant)
 * Für die dauerhafte, zuverlässige Steuerung in Home Assistant (auch wenn der Home Assistant Host nicht in BLE-Reichweite der Haustür steht) wird das offizielle **WeLock WiFiBox Gateway (2.4 GHz WLAN)** benötigt.

@@ -59,7 +59,8 @@ class WeLockApiClient:
 
     def __repr__(self) -> str:
         """Return safe string representation redacting secrets."""
-        return f"<WeLockApiClient client_id={self._client_id!r} authenticated={bool(self._access_token)}>"
+        is_auth = bool(self._access_token)
+        return f"<WeLockApiClient client_id={self._client_id!r} authenticated={is_auth}>"
 
     async def async_authenticate(self) -> bool:
         """Authenticate with the WeLock Open Cloud API and acquire an access token."""
@@ -91,8 +92,9 @@ class WeLockApiClient:
                 data = await response.json(content_type=None)
                 code = data.get("code")
                 # WeLock APIs typically return code 200 or 0 on success
-                if code not in (200, 0, "200", "0") and "data" not in data and "access_token" not in data:
-                    msg = data.get("msg") or data.get("message") or "Unknown authentication failure"
+                has_token = "data" in data or "access_token" in data
+                if code not in (200, 0, "200", "0") and not has_token:
+                    msg = data.get("msg") or data.get("message") or "Unknown auth failure"
                     _LOGGER.error("WeLock auth response error: %s", msg)
                     raise InvalidAuth(msg)
 
@@ -128,15 +130,16 @@ class WeLockApiClient:
         }
 
         try:
+            req_timeout = aiohttp.ClientTimeout(total=20)
             async with self._session.request(
-                method, url, json=json_data, headers=headers, timeout=aiohttp.ClientTimeout(total=20)
+                method, url, json=json_data, headers=headers, timeout=req_timeout
             ) as response:
                 if response.status in (401, 403):
                     _LOGGER.info("WeLock token expired or unauthorized. Refreshing token...")
                     await self.async_authenticate()
                     headers["Authorization"] = f"Bearer {self._access_token}"
                     async with self._session.request(
-                        method, url, json=json_data, headers=headers, timeout=aiohttp.ClientTimeout(total=20)
+                        method, url, json=json_data, headers=headers, timeout=req_timeout
                     ) as retry_response:
                         if retry_response.status != 200:
                             raise WeLockApiError(f"HTTP {retry_response.status} on retried request")

@@ -1,4 +1,4 @@
-"""Inspiziert ein bekanntes BLE-Gerät (GATT-Dienste und Characteristics) ohne Applikationsbefehle."""
+"""Inspiziert ein bekanntes BLE-Gerät (GATT-Dienste) ohne Befehle."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ async def inspect_device(
             print(json.dumps({"address": address, "found": False, "error": "device_not_found"}))
         else:
             print(
-                f"Gerät [{address}] wurde nicht gefunden. Stellen Sie sicher, dass es aufgeweckt und in Reichweite ist.",
+                f"Gerät [{address}] nicht gefunden. Bluetooth, Reichweite und Clients prüfen.",
                 file=sys.stderr,
             )
         return 1
@@ -55,9 +55,16 @@ async def inspect_device(
 
     if not connect:
         if as_json:
-            print(json.dumps({"address": device.address, "name": name, "found": True, "connected": False}))
+            print(
+                json.dumps(
+                    {"address": device.address, "name": name, "found": True, "connected": False}
+                )
+            )
         else:
-            print("Hinweis: Verbindungstest übersprungen (geben Sie --connect an, um GATT-Services zu prüfen).")
+            print(
+                "Hinweis: Verbindungstest übersprungen "
+                "(--connect angeben für GATT-Service-Prüfung)."
+            )
         return 0
 
     if not as_json:
@@ -67,16 +74,23 @@ async def inspect_device(
         if service is None:
             services_found = [s.uuid for s in client.services]
             if as_json:
-                print(json.dumps({
-                    "address": device.address,
-                    "name": name,
-                    "found": True,
-                    "connected": True,
-                    "welock_service_found": False,
-                    "services": services_found,
-                }))
+                print(
+                    json.dumps(
+                        {
+                            "address": device.address,
+                            "name": name,
+                            "found": True,
+                            "connected": True,
+                            "welock_service_found": False,
+                            "services": services_found,
+                        }
+                    )
+                )
             else:
-                print(f"Warnung: Der WeLock Nordic UART Service ({SERVICE_UUID}) wurde nicht gefunden.", file=sys.stderr)
+                print(
+                    f"Warnung: WeLock Nordic UART Service ({SERVICE_UUID}) nicht gefunden.",
+                    file=sys.stderr,
+                )
                 print("Verfügbare Services auf diesem Gerät:", file=sys.stderr)
                 for s in client.services:
                     print(f"  - {s.uuid} ({s.description})", file=sys.stderr)
@@ -171,7 +185,10 @@ def main() -> int:
 
     if not target_address:
         parser.print_help(sys.stderr)
-        print("\nFehler: Bitte geben Sie eine BLE-Adresse an (--address oder als Argument).", file=sys.stderr)
+        print(
+            "\nFehler: Bitte geben Sie eine BLE-Adresse an (--address oder als Argument).",
+            file=sys.stderr,
+        )
         return 1
 
     if not math.isfinite(args.timeout) or args.timeout <= 0:

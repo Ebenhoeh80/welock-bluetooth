@@ -29,7 +29,10 @@ def check_bleak_installed() -> tuple[bool, str]:
     except ImportError:
         return (
             False,
-            "Das Python-Modul 'bleak' fehlt. Installieren mit: pip install -r tools/requirements-ble.txt",
+            (
+                "Das Python-Modul 'bleak' fehlt. "
+                "Installieren mit: pip install -r tools/requirements-ble.txt"
+            ),
         )
 
 
@@ -37,12 +40,17 @@ def check_bluetooth_system() -> tuple[bool, str]:
     """Prüft betriebssystemspezifische Bluetooth-Voraussetzungen."""
     os_name = platform.system()
     if os_name == "Linux":
-        # Prüfen auf rfkill oder systemctl bluetooth
-        return True, "Linux (BlueZ-Stack erforderlich; prüfen mit 'systemctl status bluetooth')"
-    elif os_name == "Darwin":
-        return True, "macOS (CoreBluetooth; Terminal-Berechtigung unter Datenschutz & Sicherheit erforderlich)"
-    elif os_name == "Windows":
-        return True, "Windows (WinRT-Bluetooth-Stack erforderlich; Bluetooth in Einstellungen aktivieren)"
+        return True, "Linux (BlueZ-Stack erforderlich; 'systemctl status bluetooth' prüfen)"
+    if os_name == "Darwin":
+        return (
+            True,
+            "macOS (CoreBluetooth; Terminal-Berechtigung unter Datenschutz & Sicherheit)",
+        )
+    if os_name == "Windows":
+        return (
+            True,
+            "Windows (WinRT-Bluetooth-Stack erforderlich; Bluetooth aktivieren)",
+        )
     return True, f"Betriebssystem {os_name} erkannt"
 
 
@@ -92,7 +100,10 @@ def install_bleak() -> bool:
         return True
     except subprocess.CalledProcessError as exc:
         print(f"Installation fehlgeschlagen (Exit-Code {exc.returncode}).", file=sys.stderr)
-        print("Bitte führen Sie manuell aus: pip install -r tools/requirements-ble.txt", file=sys.stderr)
+        print(
+            "Bitte manuell ausführen: pip install -r tools/requirements-ble.txt",
+            file=sys.stderr,
+        )
         return False
 
 

@@ -1,4 +1,6 @@
 """Unit tests for WeLockApiClient."""
+from __future__ import annotations
+
 import sys
 import unittest
 from unittest.mock import MagicMock
@@ -18,7 +20,7 @@ for mod in [
     sys.modules.setdefault(mod, MagicMock())
 
 try:
-    from custom_components.welock.api import (
+    from custom_components.welock.api import (  # noqa: E402
         CannotConnect,
         InvalidAuth,
         LockUnavailable,

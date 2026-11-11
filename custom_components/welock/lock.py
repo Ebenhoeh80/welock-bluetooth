@@ -81,8 +81,8 @@ class WeLockLock(CoordinatorEntity, LockEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information for Home Assistant device registry."""
-        model = self.lock_data.get("model") or self.lock_data.get("deviceType") or "Smart Lock"
-        custom_name = self.lock_data.get("lockName") or self.lock_data.get("name") or f"WeLock {self._lock_sn[-4:]}"
+        name_field = self.lock_data.get("lockName") or self.lock_data.get("name")
+        custom_name = name_field or f"WeLock {self._lock_sn[-4:]}"
         fw = self.lock_data.get("firmwareVersion") or self.lock_data.get("firmware") or "1.0"
         wifi_box = self.lock_data.get("wifiBoxId") or self.lock_data.get("gatewayId")
 

@@ -51,7 +51,10 @@ async def scan_ble_devices(
 
     if not as_json:
         print(f"Starte BLE-Suchlauf für {timeout:.1f} Sekunden...")
-        print("Hinweis: Stellen Sie sicher, dass das Schloss aufgeweckt ist (Touchpad kurz berühren).\n")
+        print(
+            "Hinweis: Stellen Sie sicher, dass Bluetooth aktiv ist und"
+            " sich das Schloss in Funkreichweite befindet.\n"
+        )
 
     try:
         discovered = await BleakScanner.discover(timeout=timeout, return_adv=True)
@@ -95,9 +98,10 @@ async def scan_ble_devices(
     if not results:
         print("Keine BLE-Geräte gefunden.")
         print("Mögliche Ursachen:")
-        print("  1. Das Schloss schläft (Deep Sleep) -> Berühren Sie kurz die Tastatur oder den Sensor.")
-        print("  2. Entfernung zu groß (> 3-5 Meter).")
-        print("  3. Bluetooth am Host deaktiviert oder nicht freigegeben.")
+        print("  1. Entfernung zu groß (> 3-5m) oder Dämpfung durch Brandschutztüren.")
+        print("  2. BLE-Advertising-Intervall verpasst -> Scan-Dauer erhöhen (z. B. -t 20).")
+        print("  3. Eine andere App oder WeLock WiFiBox hält bereits eine aktive BLE-Verbindung.")
+        print("  4. Bluetooth-Adapter am Host deaktiviert oder fehlende Rechte (BlueZ, rfkill).")
         return 0
 
     print("=" * 78)
@@ -107,7 +111,9 @@ async def scan_ble_devices(
     for item in results:
         type_badge = "🔐 WeLock" if item["is_welock"] else "   BLE"
         rssi_str = f"{item['rssi']} dBm" if item["rssi"] > -999 else "n/a"
-        print(f"{type_badge:<10} | {item['name'][:25]:<25} | {item['address'][:24]:<24} | {rssi_str:<12}")
+        name_col = item["name"][:25]
+        addr_col = item["address"][:24]
+        print(f"{type_badge:<10} | {name_col:<25} | {addr_col:<24} | {rssi_str:<12}")
 
     print("-" * 78)
     print(f"Gesamt gefunden: {len(results)} Gerät(e).")
@@ -115,7 +121,7 @@ async def scan_ble_devices(
     if welock_count > 0:
         print(f"Davon {welock_count} WeLock Smart Lock(s) identifiziert.")
     else:
-        print("Tipp: Wenn Ihr Schloss nicht erscheint, wecken Sie es durch Berühren des Tastfelds auf.")
+        print("Tipp: Bei schwachem Signal Scan-Dauer erhöhen (-t 20) oder Abstand verringern.")
     return 0
 
 
