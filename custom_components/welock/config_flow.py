@@ -31,12 +31,14 @@ from .const import (
     CONF_BATTERY_INTERVAL,
     CONF_BLE_NAME,
     CONF_DEVICE_NUMBER,
+    CONF_LOCAL_UNLOCK,
     CONF_MODEL,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     DEFAULT_AUTO_RELOCK_DELAY,
     DEFAULT_BATTERY_INTERVAL,
+    DEFAULT_LOCAL_UNLOCK,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -268,6 +270,10 @@ class WeLockOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_SCAN_INTERVAL,
                     default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
                 ): vol.All(vol.Coerce(int), vol.Range(min=10, max=600)),
+                vol.Optional(
+                    CONF_LOCAL_UNLOCK,
+                    default=opts.get(CONF_LOCAL_UNLOCK, DEFAULT_LOCAL_UNLOCK),
+                ): bool,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

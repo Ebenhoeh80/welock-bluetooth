@@ -53,18 +53,28 @@
         "data": {
           "auto_relock_delay": "Show as unlocked for (seconds)",
           "battery_interval": "Read battery over Bluetooth every (hours, 0 = only when unlocking)",
-          "scan_interval": "Check Bluetooth reachability every (seconds)"
+          "scan_interval": "Check Bluetooth reachability every (seconds)",
+          "local_unlock": "Build and use the local command cache for offline unlocking (experimental)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": { "name": "Battery" },
-      "signal_strength": { "name": "Signal strength" }
+      "battery": {
+        "name": "Battery"
+      },
+      "signal_strength": {
+        "name": "Signal strength"
+      },
+      "learned_commands": {
+        "name": "Learned offline commands"
+      }
     },
     "binary_sensor": {
-      "connectivity": { "name": "Bluetooth reachable" }
+      "connectivity": {
+        "name": "Bluetooth reachable"
+      }
     }
   }
 }

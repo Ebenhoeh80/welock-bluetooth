@@ -53,18 +53,28 @@
         "data": {
           "auto_relock_delay": "Mostrar como abierta durante (segundos)",
           "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
-          "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)"
+          "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)",
+          "local_unlock": "Crear y usar la caché local de comandos para el desbloqueo sin conexión (experimental)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": { "name": "Batería" },
-      "signal_strength": { "name": "Intensidad de señal" }
+      "battery": {
+        "name": "Batería"
+      },
+      "signal_strength": {
+        "name": "Intensidad de señal"
+      },
+      "learned_commands": {
+        "name": "Comandos sin conexión aprendidos"
+      }
     },
     "binary_sensor": {
-      "connectivity": { "name": "Bluetooth accesible" }
+      "connectivity": {
+        "name": "Bluetooth accesible"
+      }
     }
   }
 }

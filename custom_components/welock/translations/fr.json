@@ -53,18 +53,28 @@
         "data": {
           "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
           "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
-          "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)"
+          "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)",
+          "local_unlock": "Constituer et utiliser le cache local de commandes pour le déverrouillage hors ligne (expérimental)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": { "name": "Batterie" },
-      "signal_strength": { "name": "Force du signal" }
+      "battery": {
+        "name": "Batterie"
+      },
+      "signal_strength": {
+        "name": "Force du signal"
+      },
+      "learned_commands": {
+        "name": "Commandes hors ligne apprises"
+      }
     },
     "binary_sensor": {
-      "connectivity": { "name": "Bluetooth accessible" }
+      "connectivity": {
+        "name": "Bluetooth accessible"
+      }
     }
   }
 }

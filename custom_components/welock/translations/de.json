@@ -53,18 +53,28 @@
         "data": {
           "auto_relock_delay": "Als entriegelt anzeigen für (Sekunden)",
           "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
-          "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)"
+          "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)",
+          "local_unlock": "Lokalen Befehls-Cache für Offline-Entriegelung aufbauen und nutzen (experimentell)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "battery": { "name": "Batterie" },
-      "signal_strength": { "name": "Signalstärke" }
+      "battery": {
+        "name": "Batterie"
+      },
+      "signal_strength": {
+        "name": "Signalstärke"
+      },
+      "learned_commands": {
+        "name": "Gelernte Offline-Befehle"
+      }
     },
     "binary_sensor": {
-      "connectivity": { "name": "Bluetooth erreichbar" }
+      "connectivity": {
+        "name": "Bluetooth erreichbar"
+      }
     }
   }
 }

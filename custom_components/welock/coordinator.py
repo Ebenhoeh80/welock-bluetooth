@@ -16,13 +16,16 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .api import CannotConnect, InvalidAuth, LockUnavailable, WeLockApiClient
 from .ble import LockNotInRange, WeLockBleError, async_exchange
+from .cache import CommandCache
 from .const import (
     CONF_ADDRESS,
     CONF_BATTERY_INTERVAL,
     CONF_BLE_NAME,
     CONF_DEVICE_NUMBER,
+    CONF_LOCAL_UNLOCK,
     CONF_SCAN_INTERVAL,
     DEFAULT_BATTERY_INTERVAL,
+    DEFAULT_LOCAL_UNLOCK,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MIN_UNLOCK_INTERVAL,
@@ -35,7 +38,13 @@ _LOGGER = logging.getLogger(__name__)
 class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Tracks one WeLock BLE module and serialises all BLE access to it."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, api: WeLockApiClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        api: WeLockApiClient,
+        cache: CommandCache,
+    ) -> None:
         """Initialize the coordinator."""
         scan = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         super().__init__(
@@ -45,10 +54,12 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=scan),
         )
         self.api = api
+        self.cache = cache
         self._entry = entry
         self.address: str = entry.data[CONF_ADDRESS]
         self.device_number: str = entry.data[CONF_DEVICE_NUMBER]
         self.ble_name: str = entry.data[CONF_BLE_NAME]
+        self._local_unlock: bool = entry.options.get(CONF_LOCAL_UNLOCK, DEFAULT_LOCAL_UNLOCK)
         hours = entry.options.get(CONF_BATTERY_INTERVAL, DEFAULT_BATTERY_INTERVAL)
         self._battery_interval = hours * 3600
         self._ble_lock = asyncio.Lock()
@@ -93,9 +104,23 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         async def _command(state: BatteryResponse) -> bytes:
-            return await self.api.async_request_unlock_command(
+            # Use a locally learned command when the feature is enabled and the
+            # challenge value is already known - no cloud round-trip, no app logout.
+            if self._local_unlock:
+                cached = self.cache.get(state.random_factor)
+                if cached is not None:
+                    _LOGGER.debug(
+                        "Local unlock command for randomFactor=%d (cache hit)",
+                        state.random_factor,
+                    )
+                    return cached
+            # Otherwise ask the cloud and always learn the result (shadow filling),
+            # so the table keeps growing even while the feature is off.
+            command = await self.api.async_request_unlock_command(
                 self.device_number, self.ble_name, state.random_factor, state.battery
             )
+            await self.cache.async_put(state.random_factor, command)
+            return command
 
         try:
             async with self._ble_lock:
