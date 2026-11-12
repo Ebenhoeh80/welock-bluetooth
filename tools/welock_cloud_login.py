@@ -28,6 +28,15 @@ BASE_URL = "https://clientapi.welock.com.cn/api"
 LOGIN_PATH = "/Account/token/welock"
 UNLOCK_PATH = "/Command/UnLock"
 DEVICES_PATH = "/Device/GetDevices"
+# Nur lesende Endpunkte (keine Geraete- oder Kontomutation).
+RECORD_PATH = "/device/GetUnlockRecord"
+PERMISSION_PATH = "/device/PermissionList"
+DEVICE_INFO_PATH = "/device/GetDeivceInfo"
+# Alle fuer post_form erlaubten Pfade. Mutierende Endpunkte sind bewusst NICHT
+# enthalten, damit dieses Modul keine Schloss- oder Kontoaenderung ausloesen kann.
+ALLOWED_PATHS = frozenset(
+    {LOGIN_PATH, UNLOCK_PATH, DEVICES_PATH, RECORD_PATH, PERMISSION_PATH, DEVICE_INFO_PATH}
+)
 MAX_RESPONSE_BYTES = 1024 * 1024
 
 
@@ -93,8 +102,21 @@ def parse_response(raw: bytes) -> object:
     return envelope["data"]
 
 
+def parse_login_response(raw: bytes) -> dict[str, object]:
+    """Wie parse_response, verlangt aber ein Login-Datenobjekt mit access_token."""
+    data = parse_response(raw)
+    if not isinstance(data, dict):
+        raise CloudError("Das Anmeldeergebnis hat ein unbekanntes Datenformat.")
+    token = data.get("access_token")
+    if not isinstance(token, str) or not token:
+        raise CloudError("Die erfolgreiche Antwort enthaelt kein access_token.")
+    if any(ord(c) < 32 or ord(c) > 126 for c in token):
+        raise CloudError("Das access_token ist kein gueltiger HTTP-Headerwert.")
+    return data
+
+
 def post_form(path: str, form: dict[str, str], device_id: str, token: str | None = None) -> bytes:
-    if path not in (LOGIN_PATH, UNLOCK_PATH, DEVICES_PATH):
+    if path not in ALLOWED_PATHS:
         raise CloudError("Nicht erlaubter Cloud-Endpunkt.")
     headers = request_headers(device_id, str(time.time_ns() // 1_000_000))
     if token is not None:
@@ -132,17 +154,35 @@ class CloudSession:
         self.access_token = None
         self.login_data = None
         form = login_form(account, password, self.device_id, int(offset.total_seconds()))
-        raw_resp = post_form(LOGIN_PATH, form, self.device_id)
-        data = parse_response(raw_resp)
-        if not isinstance(data, dict):
-            raise CloudError("Das Anmeldeergebnis hat ein unbekanntes Datenformat.")
+        data = parse_login_response(post_form(LOGIN_PATH, form, self.device_id))
         self.login_data = data
-        token = data.get("access_token")
-        if not isinstance(token, str) or not token:
-            raise CloudError("Die erfolgreiche Antwort enthaelt kein access_token.")
-        if any(ord(c) < 32 or ord(c) > 126 for c in token):
-            raise CloudError("Das access_token ist kein gueltiger HTTP-Headerwert.")
-        self.access_token = token
+        self.access_token = data["access_token"]  # von parse_login_response validiert
+
+    def _get(self, path: str, form: dict[str, str]) -> object:
+        """Fuehrt eine authentifizierte, lesende Cloud-Abfrage aus."""
+        if self.access_token is None:
+            raise CloudError("Keine aktive Cloud-Anmeldung.")
+        return parse_response(post_form(path, form, self.device_id, self.access_token))
+
+    def get_unlock_record(
+        self, device_number: str, *, page_no: int = 1, page_size: int = 30
+    ) -> list[dict]:
+        """Zutrittsprotokoll (wer, wann, Methode, Ergebnis) einer Seite."""
+        data = self._get(
+            RECORD_PATH,
+            {"deviceNumber": device_number, "pageNo": str(page_no), "pageSize": str(page_size)},
+        )
+        return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+
+    def permission_list(self, device_number: str) -> list[dict]:
+        """Berechtigte Nutzer eines Schlosses (Rolle, Gueltigkeit)."""
+        data = self._get(PERMISSION_PATH, {"deviceNumber": device_number})
+        return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+
+    def get_device_info(self, device_number: str) -> dict:
+        """Geraeteinfo inkl. BLE-Module, Firmware und permission[]."""
+        data = self._get(DEVICE_INFO_PATH, {"deviceNumber": device_number})
+        return data if isinstance(data, dict) else {}
 
     def list_devices(self) -> list[tuple[str, str, str]]:
         if self.access_token is None:
@@ -210,7 +250,7 @@ def login(account: str, password: str) -> str:
     return session.access_token
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="WeLock Cloud-Login-Test und Abruf registrierter Schlösser."
     )
@@ -251,7 +291,7 @@ def main() -> int:
         help="Ausgabe als JSON-Datenstruktur.",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     account = args.account or args.positional_account
 
     if not args.json:

@@ -36,6 +36,10 @@ def print_menu() -> None:
     print("  [5] Hybrid-Test: Challenge & Cloud-Befehl  (welock_command_probe.py)")
     print("  [6] Autorisierter Entriegelungstest        (welock_unlock.py)")
     print("  [7] System- & Abhängigkeitsprüfung        (dependency_check.py)")
+    print("  [8] Read-only Cloud-Audit: Zutritt & Rechte (welock_cloud_audit.py)")
+    print("  [9] Offline: Kommunikationsschlüssel-Analyse (welock_offline_keyinfo.py)")
+    print("  [10] Offline: Differential-Experiment       (welock_offline_experiment.py)")
+    print("  [11] Offline: Befehls-Oracle rf→command     (welock_offline_oracle.py)")
     print("  [0] Beenden")
     print("-" * 65)
 
@@ -84,8 +88,20 @@ def handle_choice(choice: str, *extra_args: str) -> int:
     elif choice == "7":
         return run_script("dependency_check.py", *extra_args)
 
+    elif choice == "8":
+        return run_script("welock_cloud_audit.py", *extra_args)
+
+    elif choice == "9":
+        return run_script("welock_offline_keyinfo.py", *extra_args)
+
+    elif choice == "10":
+        return run_script("welock_offline_experiment.py", *extra_args)
+
+    elif choice == "11":
+        return run_script("welock_offline_oracle.py", *extra_args)
+
     else:
-        print("Ungültige Eingabe. Bitte wählen Sie eine Zahl zwischen 0 und 7.")
+        print("Ungültige Eingabe. Bitte wählen Sie eine Zahl zwischen 0 und 11.")
         return 1
 
 
@@ -94,16 +110,16 @@ def main() -> int:
     if len(sys.argv) > 1:
         first_arg = sys.argv[1]
         if first_arg in ("--help", "-h"):
-            print("Verwendung: python welock_tools.py [Option 0-7] [Zusatzargumente...]")
+            print("Verwendung: python welock_tools.py [Option 0-11] [Zusatzargumente...]")
             print_menu()
             return 0
-        if first_arg in [str(i) for i in range(8)]:
+        if first_arg in [str(i) for i in range(12)]:
             return handle_choice(first_arg, *sys.argv[2:])
 
     while True:
         print_menu()
         try:
-            choice = input("Option auswählen [0-7]: ").strip()
+            choice = input("Option auswählen [0-11]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nProgramm beendet.")
             return 0

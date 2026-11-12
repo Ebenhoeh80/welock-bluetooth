@@ -70,6 +70,35 @@ WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy (BL
 | `welock_tools.py` | `welock_tools.sh` | `welock_tools.ps1` | Interaktives Konsolen-Hauptmenü mit allen Funktionen. |
 | `dependency_check.py` | — | — | Prüft Python-Version, Bleak-Installation und Bluetooth-Stack. |
 | `welock_protocol.py` | — | — | Gemeinsames Protokollmodul (Konstanten, UUIDs, Parser). |
+| `welock_ui.py` | — | — | Gemeinsame Konsolen-Helfer (Einwilligung, verdeckte Passworteingabe, Auswahl, Maskierung). |
+| `welock_cloud_audit.py` | — | — | **Read-only** Zutrittsprotokoll & Berechtigungen (wer/wann/wie). E-Mail/MAC im Klartext, Telefon/Schlüssel maskiert. |
+| `welock_offline.py` | — | — | Bibliothek: Differential-Analyse des Cloud-Befehls (`command` als Funktion von `randomFactor`). |
+| `welock_offline_keyinfo.py` | — | — | **Read-only** Analyse des BLE-Kommunikationsschlüssels (`devicePassword`). |
+| `welock_offline_experiment.py` | — | — | Differential-Experiment: Determinismus & Struktur des Befehls (**kein Unlock**). |
+| `welock_offline_oracle.py` | — | — | Erntet die Tabelle `randomFactor→command` (256 Werte) und erzeugt Befehle rein offline. |
+
+---
+
+## 🔬 Offline-Forschung & Audit (Beleg zum lokalen Unlock)
+
+Diese Werkzeuge belegen reproduzierbar, **wie** der lokale Offline-Unlock der
+Integration (ab 2.1.0) funktioniert. Kernbefund: Der Cloud-Unlock-Befehl hängt
+**allein vom `randomFactor`-Byte** der BLE-Challenge ab (nicht von Akkustand oder
+BLE-Schlüssel), es gibt also höchstens **256 verschiedene Befehle** pro Schloss.
+
+* `welock_offline_experiment.py --differential` variiert einzelne Eingabebits und
+  zeigt, dass `battery` keinen Einfluss hat und die Positionen deterministisch von
+  `randomFactor` abhängen.
+* `welock_offline_oracle.py --harvest` erntet die Tabelle `randomFactor→command`
+  einmalig aus der Cloud (**kein BLE-Write**); danach erzeugt `--table … --rf N`
+  Befehle rein offline. Die Integration lernt dieselbe Tabelle im Betrieb selbst.
+* `welock_cloud_audit.py` liest das Zutrittsprotokoll (entspricht dem Dienst
+  `welock.fetch_access_log` der Integration).
+
+> ⚠️ Geerntete Tabellen/Berichte sind **schloss-spezifisch** und landen im
+> **git-ignorierten** Ordner `tools/offline-data/`. Niemals committen. Diese
+> Cloud-Anfragen werden serverseitig als Unlock-Command-Anfragen verarbeitet;
+> es wird **nichts** ans Schloss geschrieben.
 
 ---
 
