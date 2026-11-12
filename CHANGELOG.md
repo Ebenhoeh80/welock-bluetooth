@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-11-12
+
+### Fixed
+- Corrected the manifest `iot_class` from `cloud_polling` to `local_polling`:
+  the integration never polls the cloud; its entity states (Bluetooth presence,
+  RSSI, battery) are polled locally over BLE.
+- Unified the remaining user-facing runtime strings to English (unlock/access-log
+  error messages and the lock-selection labels in the config flow), matching the
+  English base language. German, Spanish and French stay available via the
+  translation files.
+
 ## [2.1.0] - 2026-11-12
 
 ### Added

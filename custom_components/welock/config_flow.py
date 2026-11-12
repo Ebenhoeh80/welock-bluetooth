@@ -147,10 +147,10 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         for address, cand in self._candidates.items():
             in_range = lock_in_range(self.hass, address)
             battery = f"{cand['battery']} %" if cand["battery"] is not None else "?"
-            reach = "in Reichweite" if in_range else "nicht in Reichweite"
+            reach = "in range" if in_range else "out of range"
             options[address] = (
-                f"{cand[CONF_BLE_NAME]} ({address}) - Schloss {cand[CONF_DEVICE_NUMBER]}, "
-                f"Akku laut Cloud {battery}, {reach}"
+                f"{cand[CONF_BLE_NAME]} ({address}) - lock {cand[CONF_DEVICE_NUMBER]}, "
+                f"battery per cloud {battery}, {reach}"
             )
             if in_range and default is None:
                 default = address

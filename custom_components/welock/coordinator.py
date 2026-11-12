@@ -104,13 +104,11 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         wait = MIN_UNLOCK_INTERVAL - (time.monotonic() - self._last_unlock)
         if wait > 0:
             raise HomeAssistantError(
-                f"Bitte {int(wait) + 1} s warten: zwischen zwei Entriegelungen "
-                f"liegen mindestens {MIN_UNLOCK_INTERVAL} s."
+                f"Please wait {int(wait) + 1} s: at least {MIN_UNLOCK_INTERVAL} s "
+                f"must pass between two unlocks."
             )
         if self._ble_lock.locked():
-            raise HomeAssistantError(
-                "Das Schloss ist gerade mit einem anderen Vorgang beschäftigt."
-            )
+            raise HomeAssistantError("The lock is currently busy with another operation.")
 
         async def _command(state: BatteryResponse) -> bytes:
             # Use a locally learned command when the feature is enabled and the
@@ -136,13 +134,11 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 state = await async_exchange(self.hass, self.address, _command)
         except LockNotInRange as err:
             raise HomeAssistantError(
-                "Kein Bluetooth-Adapter oder -Proxy erreicht das Schloss gerade."
+                "No Bluetooth adapter or proxy of Home Assistant can reach the lock right now."
             ) from err
         except InvalidAuth as err:
             self._entry.async_start_reauth(self.hass)
-            raise HomeAssistantError(
-                "WeLock-Anmeldung fehlgeschlagen; bitte neu anmelden."
-            ) from err
+            raise HomeAssistantError("WeLock login failed; please re-authenticate.") from err
         except (CannotConnect, LockUnavailable) as err:
             raise HomeAssistantError(f"WeLock Cloud: {err}") from err
         except WeLockBleError as err:
@@ -162,9 +158,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             records = await self.api.async_get_access_log(self.device_number, page_size=page_size)
         except InvalidAuth as err:
             self._entry.async_start_reauth(self.hass)
-            raise HomeAssistantError(
-                "WeLock-Anmeldung fehlgeschlagen; bitte neu anmelden."
-            ) from err
+            raise HomeAssistantError("WeLock login failed; please re-authenticate.") from err
         except (CannotConnect, WeLockApiError) as err:
             raise HomeAssistantError(f"WeLock Cloud: {err}") from err
 
