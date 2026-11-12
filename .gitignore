@@ -78,3 +78,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# Private local archive (non-public research tools / captures kept out of
+# the public repo but preserved locally). Never commit these.
+private-archiv/
