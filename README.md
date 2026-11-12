@@ -151,6 +151,10 @@ Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
 > standardmäßig **aus** und die Cloud bleibt der Standardpfad. Schalte sie erst
 > ein, wenn du einen lokal erzeugten Befehl vor Ort erfolgreich getestet hast.
 
+> 📚 **Wie das herausgefunden wurde:** Die vollständige Reverse-Engineering-
+> Methodik (BLE-Protokoll, Cloud-API, differenzielle Analyse, Rechtsgrundlage
+> § 69e UrhG) ist unter [`docs/`](docs/README.md) dokumentiert.
+
 ## 📜 Zutrittsprotokoll (Dienst)
 
 Der Dienst **`welock.fetch_access_log`** holt das Zutrittsprotokoll (wer, wann,
@@ -334,6 +338,7 @@ welock-aistudio/
 │   ├── diagnostics.py             # Diagnosedaten (geschwärzt)
 │   ├── strings.json               # Basistexte (EN)
 │   └── translations/              # de, en, es, fr
+├── docs/                          # Reverse-Engineering-Methodik (anonymisiert, § 69e UrhG)
 ├── tools/                         # BLE- & Cloud-Diagnosetools (siehe tools/README.md)
 ├── tests/                         # Unit-Tests + optionaler Live-Smoke-Test (Marker "live")
 ├── archiv/                        # Archivierte Entwicklungsstände
