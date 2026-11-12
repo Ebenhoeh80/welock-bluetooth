@@ -69,11 +69,26 @@
       },
       "learned_commands": {
         "name": "Commandes hors ligne apprises"
+      },
+      "last_access": {
+        "name": "Dernier accès"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accessible"
+      }
+    }
+  },
+  "services": {
+    "fetch_access_log": {
+      "name": "Récupérer le journal d'accès",
+      "description": "Récupère le journal d'accès de la serrure depuis le cloud WeLock. Cela met fin aux autres sessions du compte (par ex. l'application WeLock).",
+      "fields": {
+        "page_size": {
+          "name": "Nombre d'entrées",
+          "description": "Combien des entrées de journal les plus récentes récupérer."
+        }
       }
     }
   }

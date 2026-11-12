@@ -69,11 +69,26 @@
       },
       "learned_commands": {
         "name": "Gelernte Offline-Befehle"
+      },
+      "last_access": {
+        "name": "Letzter Zugriff"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth erreichbar"
+      }
+    }
+  },
+  "services": {
+    "fetch_access_log": {
+      "name": "Zutrittsprotokoll abrufen",
+      "description": "Ruft das Zutrittsprotokoll des Schlosses aus der WeLock-Cloud ab. Dies meldet andere Sitzungen des Kontos ab (z. B. die WeLock-App).",
+      "fields": {
+        "page_size": {
+          "name": "Anzahl der Einträge",
+          "description": "Wie viele der neuesten Protokolleinträge abgerufen werden."
+        }
       }
     }
   }

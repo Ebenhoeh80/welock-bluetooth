@@ -40,3 +40,11 @@ BASE_API_URL: Final = DEFAULT_CLOUD_API_URL
 ENDPOINT_AUTH: Final = "/Account/token/welock"
 ENDPOINT_DEVICES: Final = "/Device/GetDevices"
 ENDPOINT_UNLOCK: Final = "/Command/UnLock"
+# Read-only access log (who opened the lock, when and how). Each read requires a
+# cloud login, which ends other sessions of the account (e.g. the WeLock app),
+# so it is fetched only on demand via the welock.fetch_access_log service.
+ENDPOINT_UNLOCK_RECORD: Final = "/device/GetUnlockRecord"
+
+# Service names
+SERVICE_FETCH_ACCESS_LOG: Final = "fetch_access_log"
+DEFAULT_ACCESS_LOG_PAGE_SIZE: Final = 20

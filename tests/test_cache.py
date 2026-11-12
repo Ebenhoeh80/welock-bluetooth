@@ -23,6 +23,7 @@ for mod in [
     "homeassistant.components.bluetooth",
     "homeassistant.components.diagnostics",
     "homeassistant.exceptions",
+    "voluptuous",
     "bleak",
     "bleak.exc",
     "bleak_retry_connector",

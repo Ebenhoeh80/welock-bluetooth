@@ -112,6 +112,8 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_batterie` | Sensor (Diagnose) | Akkustand in %, direkt vom Schloss gelesen. |
 | `sensor.<name>_signalstarke` | Sensor (Diagnose, standardmäßig deaktiviert) | RSSI der letzten Bluetooth-Advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_erreichbar` | Binärsensor (Diagnose) | An, solange ein verbindungsfähiger Adapter oder Proxy das Schloss sieht. |
+| `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock-experimentell). |
+| `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Wird nur durch den Dienst `welock.fetch_access_log` gefüllt. |
 
 Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
@@ -126,12 +128,45 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 | Als entriegelt anzeigen für | 7 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
 | Akkustand per Bluetooth lesen alle | 24 h | 0–168 h | Regelmäßige BLE-Statusabfrage. `0` = nur beim Entriegeln (schont die Schlossbatterie). |
 | Bluetooth-Erreichbarkeit prüfen alle | 60 s | 10–600 s | Wie oft Erreichbarkeit und RSSI aus dem HA-Bluetooth-Cache aktualisiert werden. Erzeugt **keinen** Funkverkehr. |
+| Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Experimentell.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Siehe unten. |
+
+---
+
+## 🔓 Lokaler Offline-Unlock (experimentell)
+
+Der Cloud-Entriegelungsbefehl hängt **allein vom `randomFactor`-Byte** der
+BLE-Challenge ab (nicht von Akkustand oder BLE-Schlüssel). Es gibt daher höchstens
+**256 verschiedene Befehle** pro Schloss. Die Integration **lernt** jeden von der
+Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
+
+* Die Tabelle füllt sich **im normalen Betrieb von selbst** – auch wenn die Option
+  aus ist (die Cloud wird dann weiter genutzt, aber jeder Befehl mitgelernt). Der
+  Sensor *Gelernte Offline-Befehle* zeigt den Fortschritt (x/256).
+* Mit aktivierter Option wird ein **bekannter** Challenge-Wert **lokal ohne
+  Cloud-Login** beantwortet – schneller und ohne Abmeldung der WeLock-App.
+* Ein gespeicherter Befehl ist **byte-identisch** zu dem, den die Cloud liefern
+  würde (kein selbst erzeugter Payload), und wird vor jeder Nutzung erneut geprüft.
+
+> ⚠️ **Noch nicht am Schloss mechanisch verifiziert.** Deshalb ist die Option
+> standardmäßig **aus** und die Cloud bleibt der Standardpfad. Schalte sie erst
+> ein, wenn du einen lokal erzeugten Befehl vor Ort erfolgreich getestet hast.
+
+## 📜 Zutrittsprotokoll (Dienst)
+
+Der Dienst **`welock.fetch_access_log`** holt das Zutrittsprotokoll (wer, wann,
+mit welcher Methode) aus der Cloud und schreibt es in den Sensor *Letzter
+Zugriff* (Attribute inkl. der letzten Einträge).
+
+> ⚠️ Jeder Abruf **meldet andere Sitzungen des Kontos ab** (z. B. die WeLock-App),
+> da ein Cloud-Login nötig ist. Deshalb wird **nur auf Abruf** geladen, nicht
+> automatisch. Die Telefonnummer aus dem Rohdatensatz wird bewusst **nicht**
+> übernommen.
 
 ---
 
 ## 🔄 Betrieb & Verhalten
 
-* **Jedes Entriegeln meldet die WeLock-App ab.** Für den Befehl ist ein frischer Cloud-Login nötig. Das ist eine Eigenschaft der WeLock-Cloud und lässt sich nicht umgehen.
+* **Entriegeln über die Cloud meldet die WeLock-App ab.** Für den Befehl ist dann ein frischer Cloud-Login nötig – eine Eigenschaft der WeLock-Cloud. Bei einem Treffer im [lokalen Befehls-Cache](#-lokaler-offline-unlock-experimentell) entfällt der Cloud-Login (und damit die Abmeldung).
 * **Mindestens 30 s zwischen zwei Entriegelungen.** Ein früherer Versuch wird mit einer Meldung abgelehnt.
 * **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf ca. 7 s ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.

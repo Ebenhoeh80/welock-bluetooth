@@ -69,11 +69,26 @@
       },
       "learned_commands": {
         "name": "Learned offline commands"
+      },
+      "last_access": {
+        "name": "Last access"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth reachable"
+      }
+    }
+  },
+  "services": {
+    "fetch_access_log": {
+      "name": "Fetch access log",
+      "description": "Fetch the lock's access log from the WeLock cloud. This ends other sessions of the account (e.g. the WeLock app).",
+      "fields": {
+        "page_size": {
+          "name": "Number of entries",
+          "description": "How many of the most recent access-log entries to fetch."
+        }
       }
     }
   }

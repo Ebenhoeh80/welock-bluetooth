@@ -69,11 +69,26 @@
       },
       "learned_commands": {
         "name": "Comandos sin conexión aprendidos"
+      },
+      "last_access": {
+        "name": "Último acceso"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accesible"
+      }
+    }
+  },
+  "services": {
+    "fetch_access_log": {
+      "name": "Obtener registro de accesos",
+      "description": "Obtiene el registro de accesos de la cerradura desde la nube de WeLock. Esto cierra otras sesiones de la cuenta (p. ej. la app de WeLock).",
+      "fields": {
+        "page_size": {
+          "name": "Número de entradas",
+          "description": "Cuántas de las entradas más recientes del registro obtener."
+        }
       }
     }
   }

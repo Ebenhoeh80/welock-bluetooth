@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-12
+
+### Added
+- **Local offline unlocking (experimental, opt-in).** The cloud unlock command
+  depends only on the one-byte `randomFactor` of the BLE challenge, so there are
+  at most 256 distinct commands per lock. Each command the cloud returns is now
+  learned and persisted per config entry (`cache.py`); with the new
+  **"Build and use the local command cache"** option enabled, a known challenge
+  is answered locally without a cloud round-trip. A cached command is
+  byte-identical to the cloud's and is re-validated before every use. The table
+  fills itself during normal use even while the option is off (shadow filling).
+- Diagnostic sensor **"Learned offline commands"** (count out of 256 and
+  coverage), disabled by default.
+- **Access log.** New service `welock.fetch_access_log` fetches who opened the
+  lock, when and how, into a **"Last access"** diagnostic sensor
+  (`/device/GetUnlockRecord`, read-only). Fetched on demand only, because each
+  cloud login ends other sessions of the account; the phone number in the raw
+  record is intentionally dropped.
+
+### Notes
+- Local unlocking is not yet mechanically verified on hardware; it is therefore
+  opt-in and the cloud remains the default unlock path.
+
 ## [2.0.0] - 2026-11-11
 
 > **Breaking change:** config entries from 1.x cannot be migrated. Remove them and add the integration again. Minimum Home Assistant version is now 2024.11.0.

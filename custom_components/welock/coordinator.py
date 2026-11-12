@@ -14,7 +14,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .api import CannotConnect, InvalidAuth, LockUnavailable, WeLockApiClient
+from .api import (
+    CannotConnect,
+    InvalidAuth,
+    LockUnavailable,
+    WeLockAccessRecord,
+    WeLockApiClient,
+    WeLockApiError,
+)
 from .ble import LockNotInRange, WeLockBleError, async_exchange
 from .cache import CommandCache
 from .const import (
@@ -67,6 +74,8 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # First battery read a minute after start, so setup is not blocked by BLE.
         self._next_battery_read = time.monotonic() + 60
         self.battery: int | None = None
+        # Access log, filled on demand by the fetch_access_log service (never polled).
+        self.access_records: list[WeLockAccessRecord] = []
 
     async def _async_update_data(self) -> dict[str, Any]:
         info = bluetooth.async_last_service_info(self.hass, self.address, connectable=False)
@@ -142,3 +151,23 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_unlock = time.monotonic()
         self.battery = state.battery
         self.async_set_updated_data({**(self.data or {}), "battery": state.battery})
+
+    async def async_fetch_access_log(self, page_size: int) -> int:
+        """Fetch the lock's access log from the cloud (on demand only).
+
+        Returns the number of records fetched. Logs in and therefore ends other
+        sessions of the account, so this runs only when the user triggers it.
+        """
+        try:
+            records = await self.api.async_get_access_log(self.device_number, page_size=page_size)
+        except InvalidAuth as err:
+            self._entry.async_start_reauth(self.hass)
+            raise HomeAssistantError(
+                "WeLock-Anmeldung fehlgeschlagen; bitte neu anmelden."
+            ) from err
+        except (CannotConnect, WeLockApiError) as err:
+            raise HomeAssistantError(f"WeLock Cloud: {err}") from err
+
+        self.access_records = records
+        self.async_update_listeners()
+        return len(records)

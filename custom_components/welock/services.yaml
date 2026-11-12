@@ -1,0 +1,17 @@
+fetch_access_log:
+  name: Fetch access log
+  description: >-
+    Fetch the lock's access log (who opened it, when and how) from the WeLock
+    cloud and store it on the "Last access" sensor. This logs in to the cloud
+    and therefore ends other sessions of the account (for example the WeLock
+    app on your phone), so use it only when you need it.
+  fields:
+    page_size:
+      name: Number of entries
+      description: How many of the most recent access-log entries to fetch.
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box

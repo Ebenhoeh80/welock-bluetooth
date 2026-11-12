@@ -20,6 +20,7 @@ for mod in [
     "homeassistant.components.bluetooth",
     "homeassistant.components.diagnostics",
     "homeassistant.exceptions",
+    "voluptuous",
     "bleak",
     "bleak.exc",
     "bleak_retry_connector",
@@ -32,6 +33,7 @@ from custom_components.welock.api import (  # noqa: E402
     LockUnavailable,
     WeLockApiClient,
     WeLockApiError,
+    parse_access_records,
     parse_device_list,
     parse_envelope,
     parse_unlock_command,
@@ -132,6 +134,46 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(format_mac("AA-BB-CC-DD-EE-FF"), "AA:BB:CC:DD:EE:FF")
         self.assertIsNone(format_mac(""))
         self.assertIsNone(format_mac("AABB"))
+
+
+class AccessLogParsingTests(unittest.TestCase):
+    def test_parse_access_records_maps_fields(self) -> None:
+        data = [
+            {
+                "unlockingTime": "2026-11-12 09:30:00",
+                "nickName": "Daniel",
+                "userName": "someone@example.com",
+                "mobile": "0123456789",
+                "operatingState": 6,
+                "unlockResult": 1,
+                "position": 0,
+            },
+            {
+                "unlockingTime": "2026-11-11 20:00:00",
+                "userName": "someone@example.com",
+                "operatingState": 1,
+                "unlockResult": 0,
+            },
+        ]
+        records = parse_access_records(data)
+        self.assertEqual(len(records), 2)
+        first = records[0]
+        self.assertEqual(first.user, "Daniel")  # nickName preferred
+        self.assertEqual(first.method, "app")  # operatingState 6
+        self.assertTrue(first.success)
+        # The phone number must not be carried over.
+        self.assertNotIn("0123456789", str(first))
+        second = records[1]
+        self.assertEqual(second.user, "someone@example.com")  # falls back to userName
+        self.assertEqual(second.method, "local")  # operatingState 1
+        self.assertFalse(second.success)
+
+    def test_parse_access_records_handles_bad_input(self) -> None:
+        self.assertEqual(parse_access_records(None), [])
+        self.assertEqual(parse_access_records({"not": "a list"}), [])
+        records = parse_access_records([{"operatingState": 99}])
+        self.assertEqual(records[0].method, "unknown")
+        self.assertIsNone(records[0].success)
 
 
 if __name__ == "__main__":

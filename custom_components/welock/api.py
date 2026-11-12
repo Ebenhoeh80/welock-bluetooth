@@ -23,7 +23,14 @@ from typing import Any
 
 import aiohttp
 
-from .const import BASE_API_URL, ENDPOINT_AUTH, ENDPOINT_DEVICES, ENDPOINT_UNLOCK
+from .const import (
+    BASE_API_URL,
+    DEFAULT_ACCESS_LOG_PAGE_SIZE,
+    ENDPOINT_AUTH,
+    ENDPOINT_DEVICES,
+    ENDPOINT_UNLOCK,
+    ENDPOINT_UNLOCK_RECORD,
+)
 from .protocol import format_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -167,6 +174,49 @@ def parse_device_list(data: Any) -> list[WeLockDevice]:
     return devices
 
 
+# Observed, not exhaustively confirmed meanings (app 4.5.x, model SECBREBL01).
+_OPERATING_STATE = {1: "local", 6: "app"}  # 1 = knob/keypad, 6 = BLE/app (cloud)
+
+
+@dataclass(frozen=True)
+class WeLockAccessRecord:
+    """One entry of the lock's access log (``/device/GetUnlockRecord``).
+
+    The phone number present in the raw record is intentionally dropped; only the
+    display name / account, time, method and result are kept.
+    """
+
+    time: str | None  # unlockingTime
+    user: str | None  # nickName, else userName
+    method: str  # "local" | "app" | "unknown" (from operatingState)
+    success: bool | None  # unlockResult == 1
+    position: int | None
+
+
+def parse_access_records(data: Any) -> list[WeLockAccessRecord]:
+    """Parse the ``data`` list of ``/device/GetUnlockRecord``."""
+    if not isinstance(data, list):
+        return []
+    records: list[WeLockAccessRecord] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        state = _as_int(item.get("operatingState"))
+        result = _as_int(item.get("unlockResult"))
+        user = item.get("nickName") or item.get("userName")
+        time = item.get("unlockingTime")
+        records.append(
+            WeLockAccessRecord(
+                time=time if isinstance(time, str) and time.strip() else None,
+                user=user.strip() if isinstance(user, str) and user.strip() else None,
+                method=_OPERATING_STATE.get(state, "unknown"),
+                success=(result == 1) if result is not None else None,
+                position=_as_int(item.get("position")),
+            )
+        )
+    return records
+
+
 def parse_unlock_command(data: Any) -> bytes:
     """Turn the ``data`` of ``/Command/UnLock`` into the raw command bytes."""
     if not isinstance(data, dict):
@@ -279,6 +329,29 @@ class WeLockApiClient:
         """Return the locks of the account including their BLE modules."""
         data = await self._authorized(ENDPOINT_DEVICES, {"pageSize": "40", "pageNo": "1"})
         return parse_device_list(data)
+
+    async def async_get_access_log(
+        self,
+        device_number: str,
+        page_no: int = 1,
+        page_size: int = DEFAULT_ACCESS_LOG_PAGE_SIZE,
+    ) -> list[WeLockAccessRecord]:
+        """Return the access log of a lock (who opened it, when, how).
+
+        Read-only. Like every cloud call this logs in and therefore ends other
+        sessions of the account; it is meant to be used sparingly, on demand.
+        """
+        if not device_number.strip():
+            raise WeLockApiError("Device number is required")
+        data = await self._authorized(
+            ENDPOINT_UNLOCK_RECORD,
+            {
+                "deviceNumber": device_number,
+                "pageNo": str(page_no),
+                "pageSize": str(page_size),
+            },
+        )
+        return parse_access_records(data)
 
     async def async_request_unlock_command(
         self, device_number: str, ble_name: str, random_factor: int, battery: int
