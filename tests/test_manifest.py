@@ -17,11 +17,11 @@ class TestManifests(unittest.TestCase):
             data = json.load(f)
 
         self.assertEqual(data.get("domain"), "welock")
-        self.assertEqual(data.get("name"), "WeLock Smart Lock")
+        self.assertEqual(data.get("name"), "WeLock Smart Lock BLE")
         self.assertTrue(data.get("config_flow"))
         self.assertIn("@Ebenhoeh80", data.get("codeowners", []))
         self.assertEqual(data.get("iot_class"), "local_polling")
-        self.assertEqual(data.get("version"), "2.1.1")
+        self.assertEqual(data.get("version"), "2.1.2")
         self.assertIn("aiohttp>=3.9.0", data.get("requirements", []))
         self.assertIn("bluetooth_adapters", data.get("dependencies", []))
         self.assertTrue(any(m.get("local_name") == "WeLock*" for m in data.get("bluetooth", [])))
@@ -34,7 +34,7 @@ class TestManifests(unittest.TestCase):
         with hacs_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.assertEqual(data.get("name"), "WeLock Smart Lock")
+        self.assertEqual(data.get("name"), "WeLock Smart Lock BLE")
         self.assertTrue(data.get("render_readme"))
         self.assertEqual(data.get("homeassistant"), "2024.11.0")
 

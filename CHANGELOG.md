@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-11-13
+
+### Changed
+- Renamed the repository from `welock-aistudio` to `welock-bluetooth`; all
+  GitHub URLs (documentation, issue tracker, badges, clone paths) now point to
+  the new name. GitHub redirects the old URL, so existing links keep working.
+- Renamed the integration from "WeLock Smart Lock" to **"WeLock Smart Lock BLE"**
+  (`manifest.json` and `hacs.json` `name`), so the local Bluetooth integration is
+  distinguishable by name when adding it in Home Assistant and in the HACS store.
+
 ## [2.1.1] - 2026-11-12
 
 ### Fixed
