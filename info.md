@@ -18,6 +18,5 @@ Unlock **WeLock smart cylinders** (Touch41, SECBN51, PCB41, SECBREBL01, …) fro
 ## Notes
 - ⚠️ Every cloud login (setup and **every unlock**) ends other sessions of the account, e.g. the WeLock app.
 - Minimum 30 s between two unlocks.
-- **2.0.0 is a breaking change:** remove entries from 1.x and add the integration again.
 
 Full documentation: [README](https://github.com/Ebenhoeh80/welock-bluetooth#readme)

@@ -14,8 +14,6 @@ Suite für **WeLock Smart Door Locks** (z. B. Touch41, SECBN51, PCB41, SECBREBL0
 1. 🏠 **Home Assistant HACS Integration** (`custom_components/welock`): Entriegeln per Bluetooth über den Home-Assistant-Bluetooth-Stack (lokaler Adapter oder ESPHome-Bluetooth-Proxy). Die WeLock-Cloud liefert dabei nur den einmaligen Entriegelungsbefehl. Mit geführter Einrichtung, Bluetooth-Discovery, Akku-, Signal- und Erreichbarkeitssensoren.
 2. 🔬 **BLE & Cloud Diagnose-Tools** ([`tools/`](tools/README.md)): Python-Werkzeuge für BLE-Suche, Akkustand/Challenge, GATT-Inspektion, Cloud-Login und Entriegelungstests.
 
-> ⚠️ **Version 2.0.0 ist ein Breaking Change.** Einträge aus 1.x müssen gelöscht und neu angelegt werden. Siehe [Upgrade von 1.x](#-upgrade-von-1x).
-
 ---
 
 ## 📑 Inhalt
@@ -28,7 +26,6 @@ Suite für **WeLock Smart Door Locks** (z. B. Touch41, SECBN51, PCB41, SECBREBL0
 - [Optionen](#-optionen)
 - [Betrieb & Verhalten](#-betrieb--verhalten)
 - [Fehlerbehebung](#-fehlerbehebung)
-- [Upgrade von 1.x](#-upgrade-von-1x)
 - [Datenschutz & Sicherheit](#-datenschutz--sicherheit)
 - [Diagnose-Tools](#-diagnose-tools-tools)
 - [Entwicklung & Tests](#-entwicklung--tests)
@@ -191,7 +188,6 @@ Zugriff* (Attribute inkl. der letzten Einträge).
 | *Das Schloss hat nicht auf die Statusabfrage geantwortet* | Schloss wecken (Knauf berühren), Batterien prüfen, erneut versuchen. |
 | Lock dauerhaft *nicht verfügbar* | Binärsensor „Bluetooth erreichbar“ prüfen. HA sieht das Schloss nicht, Ursachen wie oben. |
 | *Bitte … s warten* | Die 30-Sekunden-Sperre zwischen zwei Entriegelungen ist noch aktiv. |
-| Einrichtung meldet *Migrationsfehler* | Eintrag aus 1.x, siehe [Upgrade von 1.x](#-upgrade-von-1x). |
 
 **Debug-Logs** (`configuration.yaml`):
 ```yaml
@@ -200,17 +196,6 @@ logger:
     custom_components.welock: debug
 ```
 Die **Diagnosedaten** (Gerät → Diagnose herunterladen) enthalten weder Konto noch Passwort.
-
----
-
-## ⬆️ Upgrade von 1.x
-
-Version 2.0.0 ersetzt das alte Modell (Cloud-Polling, WiFiBox) durch den BLE-Workflow. Bestehende Einträge haben keine Schlossauswahl und lassen sich nicht automatisch migrieren.
-
-1. Integration per HACS auf 2.0.0 aktualisieren und HA neu starten.
-2. Den alten WeLock-Eintrag unter **Geräte & Dienste** **löschen**. Er zeigt einen Migrationsfehler.
-3. Integration neu hinzufügen und die [Einrichtung](#-einrichtung-in-home-assistant) durchlaufen.
-4. Automationen und Dashboards auf die neuen Entity-IDs anpassen. Entfallen sind der WiFiBox-Gateway-Sensor und „Letzte Entriegelungsmethode“.
 
 ---
 
@@ -326,7 +311,7 @@ Einrichtung, Optionen und Entitäten sind lokalisiert: 🇩🇪 Deutsch · 🇬�
 ```text
 welock-bluetooth/
 ├── custom_components/welock/      # Home Assistant HACS Integration
-│   ├── __init__.py                # Setup/Unload, Migration (1.x → Neuanlage)
+│   ├── __init__.py                # Setup/Unload
 │   ├── manifest.json              # Manifest inkl. Bluetooth-Matcher "WeLock*"
 │   ├── config_flow.py             # Einrichtung: Discovery → Login → Auswahl → BLE-Prüfung; Reauth; Optionen
 │   ├── api.py                     # WeLock-Cloud-Client (Login, Geräteliste, Unlock-Befehl)

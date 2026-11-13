@@ -14,8 +14,6 @@ A suite for **WeLock smart door locks** (e.g. Touch41, SECBN51, PCB41, SECBREBL0
 1. 🏠 **Home Assistant HACS integration** (`custom_components/welock`): unlock over Bluetooth through the Home Assistant Bluetooth stack (a local adapter or an ESPHome Bluetooth proxy). The WeLock cloud only supplies the single-use unlock command. Includes a guided setup, Bluetooth discovery, and battery, signal and reachability sensors.
 2. 🔬 **BLE & cloud diagnostic tools** ([`tools/`](tools/README.md)): Python utilities for BLE scanning, battery/challenge reads, GATT inspection, cloud login and unlock tests.
 
-> ⚠️ **Version 2.0.0 is a breaking change.** Entries from 1.x must be removed and recreated. See [Upgrading from 1.x](#-upgrading-from-1x).
-
 ---
 
 ## 📑 Contents
@@ -30,7 +28,6 @@ A suite for **WeLock smart door locks** (e.g. Touch41, SECBN51, PCB41, SECBREBL0
 - [Access log (service)](#-access-log-service)
 - [Operation & behaviour](#-operation--behaviour)
 - [Troubleshooting](#-troubleshooting)
-- [Upgrading from 1.x](#-upgrading-from-1x)
 - [Privacy & security](#-privacy--security)
 - [Diagnostic tools](#-diagnostic-tools-tools)
 - [Development & tests](#-development--tests)
@@ -193,7 +190,6 @@ which method) from the cloud and writes it into the *Last access* sensor
 | *The lock did not answer the status request* | Wake the lock (touch the knob), check the batteries, retry. |
 | Lock permanently *unavailable* | Check the “Bluetooth reachable” binary sensor. HA cannot see the lock; causes as above. |
 | *Please wait … s* | The 30-second lock-out between two unlocks is still active. |
-| Setup reports a *migration error* | Entry from 1.x, see [Upgrading from 1.x](#-upgrading-from-1x). |
 
 **Debug logs** (`configuration.yaml`):
 ```yaml
@@ -202,17 +198,6 @@ logger:
     custom_components.welock: debug
 ```
 The **diagnostics** (Device → Download diagnostics) contain neither the account nor the password.
-
----
-
-## ⬆️ Upgrading from 1.x
-
-Version 2.0.0 replaces the old model (cloud polling, WiFiBox) with the BLE workflow. Existing entries have no lock selection and cannot be migrated automatically.
-
-1. Update the integration to 2.0.0 via HACS and restart HA.
-2. **Delete** the old WeLock entry under **Devices & Services**. It shows a migration error.
-3. Add the integration again and run through [setup](#-setup-in-home-assistant).
-4. Adapt automations and dashboards to the new entity IDs. The WiFiBox gateway sensor and “last unlock method” have been removed.
 
 ---
 
@@ -330,7 +315,7 @@ The project documentation is available in **[English](README.md)** and **[Deutsc
 ```text
 welock-bluetooth/
 ├── custom_components/welock/      # Home Assistant HACS integration
-│   ├── __init__.py                # Setup/unload, migration (1.x → recreate)
+│   ├── __init__.py                # Setup/unload
 │   ├── manifest.json              # Manifest incl. Bluetooth matcher "WeLock*"
 │   ├── config_flow.py             # Setup: discovery → login → select → BLE check; reauth; options
 │   ├── api.py                     # WeLock cloud client (login, device list, unlock command)
