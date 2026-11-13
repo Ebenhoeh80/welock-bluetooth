@@ -332,7 +332,6 @@ welock-bluetooth/
 ├── docs/                          # Reverse-engineering methodology (anonymised, § 69e UrhG)
 ├── tools/                         # BLE & cloud diagnostic tools (see tools/README.md)
 ├── tests/                         # Unit tests + optional live smoke test (marker "live")
-├── archiv/                        # Archived development snapshots
 ├── src/, index.html, package.json # Companion web app (AI Studio)
 ├── hacs.json · info.md            # HACS metadata & store description
 ├── CHANGELOG.md · CONTRIBUTING.md · SECURITY.md

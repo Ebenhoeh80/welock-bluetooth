@@ -27,7 +27,6 @@ Alle Werkzeuge sind plattformunabhängig geschrieben und verfügen über passend
 - [Plattform-Startskripte (Linux / macOS / Windows)](#plattform-startskripte-linux--macos--windows)
 - [Typische Arbeitsabläufe (Workflows)](#typische-arbeitsabläufe-workflows)
 - [Fehlerbehebung (Troubleshooting)](#fehlerbehebung-troubleshooting)
-- [Archivierung alter Skripte](#archivierung-alter-skripte)
 
 ---
 
@@ -321,8 +320,3 @@ Prüft, ob Python >= 3.10 installiert ist, ob das Modul `bleak` importiert werde
 └────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 🗄 Archivierung alter Skripte
-
-Frühere Entwicklungsstände aus `/toolsdev` sowie Vorversionen einzelner Skripte wurden revisionssicher in das Verzeichnis [`/archiv`](../archiv/README.md) überführt.
