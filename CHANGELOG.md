@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-11-13
+
+### Added
+- Brand icon for Home Assistant: the integration now ships
+  `custom_components/welock/brand/icon.png`, so Home Assistant 2026.3+ shows the
+  WeLock icon automatically. Local brand images take priority over the brands
+  CDN, so no separate `home-assistant/brands` PR is needed.
+
+### Removed
+- Obsolete `archiv/` directory (historical/superseded scripts that were fully
+  integrated into `tools/`), plus its references in the READMEs, `pyproject.toml`
+  and `tools/README.md`.
+
 ## [2.1.2] - 2026-11-13
 
 ### Changed

@@ -21,7 +21,7 @@ class TestManifests(unittest.TestCase):
         self.assertTrue(data.get("config_flow"))
         self.assertIn("@Ebenhoeh80", data.get("codeowners", []))
         self.assertEqual(data.get("iot_class"), "local_polling")
-        self.assertEqual(data.get("version"), "2.1.2")
+        self.assertEqual(data.get("version"), "2.1.3")
         self.assertIn("aiohttp>=3.9.0", data.get("requirements", []))
         self.assertIn("bluetooth_adapters", data.get("dependencies", []))
         self.assertTrue(any(m.get("local_name") == "WeLock*" for m in data.get("bluetooth", [])))
