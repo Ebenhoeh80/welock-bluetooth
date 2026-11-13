@@ -1,4 +1,4 @@
-# WeLock Smart Lock
+# WeLock Smart Lock BLE
 
 Unlock **WeLock smart cylinders** (Touch41, SECBN51, PCB41, SECBREBL01, …) from Home Assistant over **Bluetooth**, using a local adapter or an **ESPHome Bluetooth proxy**. The WeLock cloud is only used to compute the one-time unlock command for a fresh challenge from the lock. The cloud is never polled.
 

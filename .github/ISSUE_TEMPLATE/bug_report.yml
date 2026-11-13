@@ -12,7 +12,7 @@ body:
     attributes:
       label: Integration & Home Assistant Version
       description: What version of this integration and Home Assistant are you using?
-      placeholder: "Integration v2.0.0, Home Assistant 2024.11.0, Bluetooth: local adapter / ESPHome proxy"
+      placeholder: "Integration v2.1.2, Home Assistant 2024.11.0, Bluetooth: local adapter / ESPHome proxy"
     validations:
       required: true
   - type: dropdown
