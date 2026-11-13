@@ -12,7 +12,7 @@ license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.9.0",
-    "bleak>=0.22.0,<3.0.0",
+    "bleak>=0.22.0,<4.0.0",
 ]
 
 [tool.ruff]
