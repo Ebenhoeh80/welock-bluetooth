@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distinguishable by name when adding it in Home Assistant and in the HACS store.
 - Documentation: English is now the primary `README.md`; the German version moved
   to `README.de.md`, with a language switcher in both and a dynamic release badge.
-- CI: bumped `actions/checkout` to v5 (the v4 action runs on deprecated Node 20).
+- CI: bumped `actions/checkout` (v4) and `actions/setup-python` (v5) to v7, off
+  the deprecated Node 20 runtime and onto the current major versions.
 
 ## [2.1.1] - 2026-11-12
 
