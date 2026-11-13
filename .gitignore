@@ -82,3 +82,6 @@ desktop.ini
 # Private local archive (non-public research tools / captures kept out of
 # the public repo but preserved locally). Never commit these.
 private-archiv/
+
+# Local Claude Code session helper (contains the private session id).
+resume.bat
