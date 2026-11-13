@@ -4,11 +4,11 @@ Thank you for your interest in improving this project! We welcome contributions,
 
 ## Development Workflow
 
-1. Fork the repository on GitHub: `https://github.com/Ebenhoeh80/welock-aistudio`
+1. Fork the repository on GitHub: `https://github.com/Ebenhoeh80/welock-bluetooth`
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/<your-username>/welock-aistudio.git
-   cd welock-aistudio
+   git clone https://github.com/<your-username>/welock-bluetooth.git
+   cd welock-bluetooth
    ```
 3. Set up a Python 3.10+ virtual environment:
    ```bash

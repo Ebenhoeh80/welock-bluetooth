@@ -1,7 +1,7 @@
 # WeLock Smart Lock — Home Assistant HACS Integration & BLE Diagnose-Tools
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
-[![GitHub Release](https://img.shields.io/badge/version-v2.0.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock-aistudio/releases)
+[![GitHub Release](https://img.shields.io/badge/version-v2.0.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock-bluetooth/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-sprachen--languages)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
@@ -77,11 +77,11 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
 
 ### Über HACS (empfohlen)
 1. **HACS** öffnen → Drei-Punkte-Menü → **Benutzerdefinierte Repositories**.
-2. URL `https://github.com/Ebenhoeh80/welock-aistudio` eingeben, Kategorie **Integration**, **Hinzufügen**.
+2. URL `https://github.com/Ebenhoeh80/welock-bluetooth` eingeben, Kategorie **Integration**, **Hinzufügen**.
 3. **WeLock Smart Lock** suchen → **Herunterladen** → Home Assistant **neu starten**.
 
 ### Manuell
-1. Neuestes [Release](https://github.com/Ebenhoeh80/welock-aistudio/releases) herunterladen.
+1. Neuestes [Release](https://github.com/Ebenhoeh80/welock-bluetooth/releases) herunterladen.
 2. Ordner `custom_components/welock` nach `/config/custom_components/welock/` kopieren.
 3. Home Assistant neu starten.
 
@@ -322,7 +322,7 @@ Einrichtung, Optionen und Entitäten sind lokalisiert: 🇩🇪 Deutsch · 🇬�
 ## 🏗 Repository-Architektur
 
 ```text
-welock-aistudio/
+welock-bluetooth/
 ├── custom_components/welock/      # Home Assistant HACS Integration
 │   ├── __init__.py                # Setup/Unload, Migration (1.x → Neuanlage)
 │   ├── manifest.json              # Manifest inkl. Bluetooth-Matcher "WeLock*"

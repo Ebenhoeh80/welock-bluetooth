@@ -61,7 +61,7 @@ export default function App() {
               <span>{t.downloadZip}</span>
             </button>
             <a
-              href="https://github.com/Ebenhoeh80/welock-aistudio"
+              href="https://github.com/Ebenhoeh80/welock-bluetooth"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition flex items-center gap-1"

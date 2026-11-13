@@ -16,8 +16,8 @@ export const REPO_FILES: RepoFile[] = [
   "name": "WeLock Smart Lock",
   "codeowners": ["@Ebenhoeh80"],
   "config_flow": true,
-  "documentation": "https://github.com/Ebenhoeh80/welock-aistudio",
-  "issue_tracker": "https://github.com/Ebenhoeh80/welock-aistudio/issues",
+  "documentation": "https://github.com/Ebenhoeh80/welock-bluetooth",
+  "issue_tracker": "https://github.com/Ebenhoeh80/welock-bluetooth/issues",
   "iot_class": "cloud_polling",
   "version": "1.3.0",
   "requirements": ["aiohttp>=3.9.0"]
@@ -1352,7 +1352,7 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
     content: `# WeLock Smart Lock — Home Assistant HACS Integration & BLE Diagnose-Tools
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
-[![GitHub Release](https://img.shields.io/badge/version-v1.3.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock-aistudio/releases)
+[![GitHub Release](https://img.shields.io/badge/version-v1.3.0-blue.svg?style=for-the-badge)](https://github.com/Ebenhoeh80/welock-bluetooth/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-languages--sprachen--idiomas--langues)
 

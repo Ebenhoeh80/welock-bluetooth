@@ -133,8 +133,8 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
   de: {
     appTitle: 'WeLock — Home Assistant HACS Integration',
     appSubtitle: 'Offizielle HACS / Marketplace Suite für WeLock Smart Locks mit vollständiger 4-Sprachen-Lokalisierung.',
-    repoBadge: 'Ebenhoeh80/welock-aistudio',
-    forkOf: 'Suite: Ebenhoeh80/welock-aistudio',
+    repoBadge: 'Ebenhoeh80/welock-bluetooth',
+    forkOf: 'Suite: Ebenhoeh80/welock-bluetooth',
     hacsCertified: 'HACS / Marketplace 2024–2026 Konform',
     fourLanguagesReady: '4 Sprachen: Deutsch • English • Español • Français',
 
@@ -241,7 +241,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
       step1Title: '1. API-Zugangsdaten in der WeLock-App abrufen',
       step1Desc: 'Öffnen Sie die offizielle WeLock-App auf Ihrem Smartphone. Stellen Sie sicher, dass Ihr Schloss mit einer WeLock WiFiBox verbunden ist. Öffnen Sie das Seitenmenü (☰) und tippen Sie auf das "Home Assistant"-Symbol. Kopieren Sie Ihre Client-ID und das Client-Secret.',
       step2Title: '2. Repository in HACS hinzufügen',
-      step2Desc: 'Öffnen Sie Home Assistant -> HACS -> Integrationen -> Menü oben rechts (drei Punkte) -> "Benutzerdefinierte Repositories". Fügen Sie die URL https://github.com/Ebenhoeh80/welock-aistudio ein und wählen Sie als Kategorie "Integration".',
+      step2Desc: 'Öffnen Sie Home Assistant -> HACS -> Integrationen -> Menü oben rechts (drei Punkte) -> "Benutzerdefinierte Repositories". Fügen Sie die URL https://github.com/Ebenhoeh80/welock-bluetooth ein und wählen Sie als Kategorie "Integration".',
       step3Title: '3. Integration herunterladen & Home Assistant neu starten',
       step3Desc: 'Suchen Sie in HACS nach "WeLock Smart Lock", klicken Sie auf "Herunterladen" und starten Sie Home Assistant einmalig unter Einstellungen -> System -> Neustart neu.',
       step4Title: '4. Einrichten unter Geräte & Dienste',
@@ -254,8 +254,8 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
   en: {
     appTitle: 'WeLock — Home Assistant HACS Integration',
     appSubtitle: 'Official HACS / Marketplace integration suite for WeLock Smart Locks with full 4-language localization.',
-    repoBadge: 'Ebenhoeh80/welock-aistudio',
-    forkOf: 'Suite: Ebenhoeh80/welock-aistudio',
+    repoBadge: 'Ebenhoeh80/welock-bluetooth',
+    forkOf: 'Suite: Ebenhoeh80/welock-bluetooth',
     hacsCertified: 'HACS / Marketplace 2024–2026 Compliant',
     fourLanguagesReady: '4 Languages: Deutsch • English • Español • Français',
 
@@ -362,7 +362,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
       step1Title: '1. Retrieve Credentials in the WeLock App',
       step1Desc: 'Open the official WeLock app on your mobile device. Ensure your lock is connected to a WeLock WiFiBox gateway. Open the sidebar (☰) and tap the "Home Assistant" icon. Copy your Client ID and Client Secret.',
       step2Title: '2. Add Custom Repository in HACS',
-      step2Desc: 'In Home Assistant, navigate to HACS -> Integrations -> top-right menu (three dots) -> "Custom repositories". Paste https://github.com/Ebenhoeh80/welock-aistudio and select "Integration" as the category.',
+      step2Desc: 'In Home Assistant, navigate to HACS -> Integrations -> top-right menu (three dots) -> "Custom repositories". Paste https://github.com/Ebenhoeh80/welock-bluetooth and select "Integration" as the category.',
       step3Title: '3. Download & Restart Home Assistant',
       step3Desc: 'Search for "WeLock Smart Lock" in HACS, click "Download", then restart Home Assistant from Settings -> System -> Restart.',
       step4Title: '4. Add Integration in Devices & Services',
@@ -375,8 +375,8 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
   es: {
     appTitle: 'WeLock — Integración HACS para Home Assistant',
     appSubtitle: 'Suite oficial de integración HACS / Marketplace para cerraduras inteligentes WeLock con localización en 4 idiomas.',
-    repoBadge: 'Ebenhoeh80/welock-aistudio',
-    forkOf: 'Suite: Ebenhoeh80/welock-aistudio',
+    repoBadge: 'Ebenhoeh80/welock-bluetooth',
+    forkOf: 'Suite: Ebenhoeh80/welock-bluetooth',
     hacsCertified: 'Compatible con HACS / Marketplace 2024–2026',
     fourLanguagesReady: '4 Idiomas: Deutsch • English • Español • Français',
 
@@ -483,7 +483,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
       step1Title: '1. Obtener credenciales en la App WeLock',
       step1Desc: 'Abra la app WeLock en su teléfono. Verifique que la cerradura esté enlazada a un gateway WiFiBox. Vaya al menú lateral (☰) y pulse sobre el icono de "Home Assistant". Copie el Client ID y el Client Secret.',
       step2Title: '2. Añadir repositorio personalizado en HACS',
-      step2Desc: 'En Home Assistant, abra HACS -> Integraciones -> menú superior derecho (tres puntos) -> "Repositorios personalizados". Pegue https://github.com/Ebenhoeh80/welock-aistudio y elija "Integración".',
+      step2Desc: 'En Home Assistant, abra HACS -> Integraciones -> menú superior derecho (tres puntos) -> "Repositorios personalizados". Pegue https://github.com/Ebenhoeh80/welock-bluetooth y elija "Integración".',
       step3Title: '3. Descargar y reiniciar Home Assistant',
       step3Desc: 'Busque "WeLock Smart Lock" en HACS, pulse "Descargar" y reinicie Home Assistant desde Ajustes -> Sistema -> Reiniciar.',
       step4Title: '4. Configurar en Dispositivos y Servicios',
@@ -496,8 +496,8 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
   fr: {
     appTitle: 'WeLock — Intégration HACS pour Home Assistant',
     appSubtitle: 'Suite officielle d’intégration HACS / Marketplace pour serrures connectées WeLock avec support complet en 4 langues.',
-    repoBadge: 'Ebenhoeh80/welock-aistudio',
-    forkOf: 'Suite : Ebenhoeh80/welock-aistudio',
+    repoBadge: 'Ebenhoeh80/welock-bluetooth',
+    forkOf: 'Suite : Ebenhoeh80/welock-bluetooth',
     hacsCertified: 'Conforme HACS / Marketplace 2024–2026',
     fourLanguagesReady: '4 Langues : Deutsch • English • Español • Français',
 
@@ -604,7 +604,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
       step1Title: '1. Récupérer les identifiants dans l’application WeLock',
       step1Desc: 'Ouvrez l’application mobile WeLock. Assurez-vous que votre serrure est associée à une passerelle WeLock WiFiBox. Ouvrez le menu latéral (☰) et appuyez sur l’icône "Home Assistant". Copiez votre Client ID et votre Client Secret.',
       step2Title: '2. Ajouter le dépôt personnalisé dans HACS',
-      step2Desc: 'Dans Home Assistant, accédez à HACS -> Intégrations -> menu en haut à droite (trois points) -> "Dépôts personnalisés". Collez https://github.com/Ebenhoeh80/welock-aistudio et sélectionnez la catégorie "Intégration".',
+      step2Desc: 'Dans Home Assistant, accédez à HACS -> Intégrations -> menu en haut à droite (trois points) -> "Dépôts personnalisés". Collez https://github.com/Ebenhoeh80/welock-bluetooth et sélectionnez la catégorie "Intégration".',
       step3Title: '3. Télécharger & redémarrer Home Assistant',
       step3Desc: 'Recherchez "WeLock Smart Lock" dans HACS, cliquez sur "Télécharger", puis redémarrez Home Assistant depuis Paramètres -> Système -> Redémarrer.',
       step4Title: '4. Configurer dans Appareils et Services',
