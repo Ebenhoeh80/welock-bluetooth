@@ -339,3 +339,7 @@ welock-bluetooth/
 ## 📄 Lizenz
 
 Lizenziert unter der MIT-Lizenz, siehe [LICENSE](LICENSE).
+
+## Spenden
+
+Freiwillige Spenden: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
