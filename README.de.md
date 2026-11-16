@@ -6,6 +6,7 @@
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-sprachen--languages)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
+[![Spenden via PayPal](https://img.shields.io/badge/❤%20Spenden-PayPal-00457C.svg?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/pool/9p84qTHCFr?sr=wccr)
 
 **🌍 Sprache:** [🇬🇧 English](README.md) · **🇩🇪 Deutsch**
 
@@ -340,6 +341,19 @@ welock-bluetooth/
 
 Lizenziert unter der MIT-Lizenz, siehe [LICENSE](LICENSE).
 
-## Spenden
+---
 
-Freiwillige Spenden: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
+## ❤️ Projekt unterstützen
+
+<div align="center">
+
+**Ich entwickle und pflege diese Integration in meiner Freizeit – und trage die laufenden Kosten aus eigener Tasche.**
+
+Wenn sie dir Zeit oder Ärger erspart, hält eine kleine freiwillige Spende das Projekt am Leben und motiviert zu neuen Funktionen.
+Jeder Beitrag, egal wie klein, freut mich riesig. Vielen Dank! 🙏
+
+<a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
+  <img src="https://img.shields.io/badge/Spendier%20mir%20einen%20Kaffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Spenden via PayPal" height="42">
+</a>
+
+</div>
