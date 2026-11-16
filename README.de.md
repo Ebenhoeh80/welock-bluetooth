@@ -49,7 +49,7 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
 
 * Die Cloud wird **nur** bei Einrichtung, erneuter Anmeldung und beim Entriegeln kontaktiert. Es gibt **kein Cloud-Polling**.
 * Erreichbarkeit und Signalstärke kommen aus dem Home-Assistant-Bluetooth-Stack, der Akkustand direkt vom Schloss.
-* Jeder Befehl gilt nur für eine Challenge. Ein abgefangener Befehl lässt sich nicht wiederverwenden.
+* Jeder Entriegelungsbefehl hängt am Ein-Byte-Challenge-Wert (`randomFactor`) des Schlosses, der nur **256** mögliche Werte hat. Ein abgefangener Befehl kann daher erneut funktionieren, wenn derselbe Wert wieder auftritt — der BLE-Verkehr ist **nicht** replay-sicher. Gelernte Befehle werden zudem lokal im Home-Assistant-Speicher zwischengespeichert.
 
 ---
 

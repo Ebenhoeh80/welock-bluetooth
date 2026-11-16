@@ -91,5 +91,25 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "unlock_too_soon": {
+      "message": "Bitte {wait} s warten: zwischen zwei Entriegelungen müssen mindestens {min_interval} s liegen."
+    },
+    "lock_busy": {
+      "message": "Das Schloss ist gerade mit einem anderen Vorgang beschäftigt."
+    },
+    "lock_not_in_range": {
+      "message": "Kein Bluetooth-Adapter oder -Proxy von Home Assistant erreicht das Schloss derzeit."
+    },
+    "reauth_required": {
+      "message": "WeLock-Anmeldung fehlgeschlagen; bitte neu authentifizieren."
+    },
+    "cloud_error": {
+      "message": "WeLock-Cloud-Fehler: {error}"
+    },
+    "bluetooth_error": {
+      "message": "Bluetooth-Fehler: {error}"
+    }
   }
 }

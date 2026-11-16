@@ -91,5 +91,25 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "unlock_too_soon": {
+      "message": "Veuillez patienter {wait} s : au moins {min_interval} s doivent s'écouler entre deux déverrouillages."
+    },
+    "lock_busy": {
+      "message": "La serrure est actuellement occupée par une autre opération."
+    },
+    "lock_not_in_range": {
+      "message": "Aucun adaptateur ou proxy Bluetooth de Home Assistant ne peut atteindre la serrure pour le moment."
+    },
+    "reauth_required": {
+      "message": "Échec de la connexion WeLock ; veuillez vous ré-authentifier."
+    },
+    "cloud_error": {
+      "message": "Erreur du cloud WeLock : {error}"
+    },
+    "bluetooth_error": {
+      "message": "Erreur Bluetooth : {error}"
+    }
   }
 }

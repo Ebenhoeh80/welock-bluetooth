@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-16
+
+### Changed
+- **Modernised to `ConfigEntry.runtime_data`.** The coordinator is stored on the
+  config entry instead of `hass.data[DOMAIN]`, and the access-log service is now
+  registered in `async_setup` (the Home Assistant `action-setup` pattern).
+- **Translated exceptions.** Unlock and service errors use `translation_key`
+  entries (added to `strings.json` and all four languages) instead of hard-coded
+  English strings.
+- Synced the `pyproject.toml` version (was stuck at `2.0.0`) with the
+  integration version.
+
+### Fixed
+- **Battery stays current after a failed read.** A failed Bluetooth battery read
+  is now retried after 5 minutes instead of waiting a full battery interval
+  (which can be hours).
+- **A failing BLE `disconnect()` no longer masks the real error** during the
+  exchange teardown.
+- **Diagnostics now redact the lock identity** (BLE MAC, serial / device number
+  and BLE name), not just the account credentials.
+- Corrected the README security note: an intercepted command is **not**
+  replay-proof, because the challenge is a single byte (256 possible values).
+
+### Added
+- Python 3.13 to the CI test matrix.
+
 ## [2.1.4] - 2026-11-15
 
 ### Fixed

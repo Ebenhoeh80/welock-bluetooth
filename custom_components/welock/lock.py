@@ -10,16 +10,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_AUTO_RELOCK_DELAY, DEFAULT_AUTO_RELOCK_DELAY, DOMAIN
-from .coordinator import WeLockCoordinator
+from .const import CONF_AUTO_RELOCK_DELAY, DEFAULT_AUTO_RELOCK_DELAY
+from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up the WeLock lock entity."""
-    coordinator: WeLockCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     delay = entry.options.get(CONF_AUTO_RELOCK_DELAY, DEFAULT_AUTO_RELOCK_DELAY)
     async_add_entities([WeLockLock(coordinator, entry, delay)])
 

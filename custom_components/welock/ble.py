@@ -106,4 +106,8 @@ async def async_exchange(
             await client.stop_notify(NOTIFY_UUID)
         except (BleakError, asyncio.TimeoutError, OSError):
             pass
-        await client.disconnect()
+        try:
+            await client.disconnect()
+        except (BleakError, asyncio.TimeoutError, OSError):
+            # Never let a disconnect error mask the real exchange exception.
+            pass

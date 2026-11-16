@@ -11,16 +11,15 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
-from .coordinator import WeLockCoordinator
+from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up the WeLock connectivity sensor."""
-    coordinator: WeLockCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     async_add_entities([WeLockReachableSensor(coordinator, entry)])
 
 

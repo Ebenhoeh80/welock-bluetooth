@@ -51,7 +51,7 @@ Home Assistant                          Lock (BLE)                 WeLock cloud
 
 * The cloud is contacted **only** during setup, re-authentication and unlocking. There is **no cloud polling**.
 * Reachability and signal strength come from the Home Assistant Bluetooth stack; the battery level is read directly from the lock.
-* Each command is valid for a single challenge. An intercepted command cannot be replayed.
+* Each unlock command is tied to the lock's one-byte challenge (`randomFactor`), which has only **256** possible values, so a captured command can work again whenever the same challenge value recurs — the BLE traffic is **not** replay-proof. Learned commands are also cached locally in Home Assistant's storage.
 
 ---
 
