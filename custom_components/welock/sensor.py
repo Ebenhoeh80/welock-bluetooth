@@ -14,16 +14,16 @@ from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT, 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import COMMAND_SPACE, DOMAIN
-from .coordinator import WeLockCoordinator
+from .const import COMMAND_SPACE
+from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up WeLock sensors."""
-    coordinator: WeLockCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data
     async_add_entities(
         [
             WeLockBatterySensor(coordinator, entry),

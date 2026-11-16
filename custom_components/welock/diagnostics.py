@@ -5,19 +5,36 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import (
+    CONF_ADDRESS,
+    CONF_BLE_NAME,
+    CONF_DEVICE_NUMBER,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+)
+from .coordinator import WeLockConfigEntry
 
-TO_REDACT = {CONF_USERNAME, CONF_PASSWORD, "access_token", "refresh_token", "token"}
+TO_REDACT = {
+    CONF_USERNAME,
+    CONF_PASSWORD,
+    CONF_ADDRESS,
+    CONF_BLE_NAME,
+    CONF_DEVICE_NUMBER,
+    "access_token",
+    "refresh_token",
+    "token",
+    "deviceMac",
+    "address",
+}
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: ConfigEntry
+    hass: HomeAssistant, entry: WeLockConfigEntry
 ) -> dict[str, Any]:
-    """Return diagnostics for a config entry (password and account redacted)."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    """Return diagnostics for a config entry (account, MAC and serial redacted)."""
+    coordinator = entry.runtime_data
     return {
         "entry": {
             "version": entry.version,

@@ -91,5 +91,25 @@
         }
       }
     }
+  },
+  "exceptions": {
+    "unlock_too_soon": {
+      "message": "Please wait {wait} s: at least {min_interval} s must pass between two unlocks."
+    },
+    "lock_busy": {
+      "message": "The lock is currently busy with another operation."
+    },
+    "lock_not_in_range": {
+      "message": "No Bluetooth adapter or proxy of Home Assistant can reach the lock right now."
+    },
+    "reauth_required": {
+      "message": "WeLock login failed; please re-authenticate."
+    },
+    "cloud_error": {
+      "message": "WeLock cloud error: {error}"
+    },
+    "bluetooth_error": {
+      "message": "Bluetooth error: {error}"
+    }
   }
 }

@@ -7,6 +7,7 @@ BLE status/challenge -> cloud unlock command -> BLE write. The cloud is not poll
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -24,7 +25,10 @@ from .const import (
     DOMAIN,
     SERVICE_FETCH_ACCESS_LOG,
 )
-from .coordinator import WeLockCoordinator
+from .coordinator import WeLockConfigEntry, WeLockCoordinator
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +43,27 @@ _FETCH_ACCESS_LOG_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the integration-wide access-log service once."""
+
+    async def _handle_fetch_access_log(call: ServiceCall) -> None:
+        page_size = call.data["page_size"]
+        # Each lock is a separate cloud login; most accounts have a single lock.
+        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+            coordinator = entry.runtime_data
+            count = await coordinator.async_fetch_access_log(page_size)
+            _LOGGER.debug("Fetched %d access-log entries for %s", count, coordinator.device_number)
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_FETCH_ACCESS_LOG,
+        _handle_fetch_access_log,
+        schema=_FETCH_ACCESS_LOG_SCHEMA,
+    )
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bool:
     """Set up a WeLock lock from a config entry (no cloud login at startup)."""
     api = WeLockApiClient(
         username=entry.data[CONF_USERNAME],
@@ -51,44 +75,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = WeLockCoordinator(hass, entry, api, cache)
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
-    _async_register_services(hass)
     return True
 
 
-def _async_register_services(hass: HomeAssistant) -> None:
-    """Register the on-demand access-log service once for the integration."""
-    if hass.services.has_service(DOMAIN, SERVICE_FETCH_ACCESS_LOG):
-        return
-
-    async def _handle_fetch_access_log(call: ServiceCall) -> None:
-        page_size = call.data["page_size"]
-        coordinators = list(hass.data.get(DOMAIN, {}).values())
-        if not coordinators:
-            return
-        # Each lock is a separate cloud login; most accounts have a single lock.
-        for coordinator in coordinators:
-            count = await coordinator.async_fetch_access_log(page_size)
-            _LOGGER.debug("Fetched %d access-log entries for %s", count, coordinator.device_number)
-
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_FETCH_ACCESS_LOG,
-        _handle_fetch_access_log,
-        schema=_FETCH_ACCESS_LOG_SCHEMA,
-    )
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-        if not hass.data[DOMAIN]:
-            hass.services.async_remove(DOMAIN, SERVICE_FETCH_ACCESS_LOG)
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
