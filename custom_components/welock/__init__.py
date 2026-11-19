@@ -26,13 +26,20 @@ from .const import (
     SERVICE_FETCH_ACCESS_LOG,
 )
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
+from .stats import UnlockStats
 
 if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.LOCK, Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.LOCK,
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.SWITCH,
+    Platform.EVENT,
+]
 
 _FETCH_ACCESS_LOG_SCHEMA = vol.Schema(
     {
@@ -72,7 +79,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bo
     )
     cache = CommandCache(hass, entry.entry_id)
     await cache.async_load()
-    coordinator = WeLockCoordinator(hass, entry, api, cache)
+    stats = UnlockStats(hass, entry.entry_id)
+    await stats.async_load()
+    coordinator = WeLockCoordinator(hass, entry, api, cache, stats)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator
@@ -99,9 +108,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Remove the learned command cache when the entry is deleted."""
+    """Remove the learned command cache and the statistics when the entry is deleted."""
     await CommandCache(hass, entry.entry_id).async_clear()
+    await UnlockStats(hass, entry.entry_id).async_clear()
 
 
-async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_reload_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> None:
+    """Apply changed options: the offline switch live, anything else by reloading."""
+    if entry.runtime_data.apply_options(entry.options):
+        return
     await hass.config_entries.async_reload(entry.entry_id)

@@ -54,7 +54,7 @@
           "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
           "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
           "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)",
-          "local_unlock": "Constituer et utiliser le cache local de commandes pour le déverrouillage hors ligne (expérimental)"
+          "local_unlock": "Utiliser les commandes enregistrées pour le déverrouillage hors ligne (expérimental ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Dernier accès"
+      },
+      "unlocks_cloud": {
+        "name": "Déverrouillages via le cloud"
+      },
+      "unlocks_offline": {
+        "name": "Déverrouillages hors ligne"
+      },
+      "last_unlock": {
+        "name": "Dernière tentative de déverrouillage"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accessible"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Déverrouillage hors ligne"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Historique des déverrouillages",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Déverrouillé via le cloud",
+              "unlock_offline": "Déverrouillé hors ligne",
+              "unlock_failed": "Échec du déverrouillage"
+            }
+          }
+        }
       }
     }
   },

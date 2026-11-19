@@ -100,6 +100,14 @@ class CommandCache:
             COMMAND_SPACE,
         )
 
+    async def async_discard(self, random_factor: int) -> bool:
+        """Forget one learned command (e.g. after it failed); True if it existed."""
+        if self._map.pop(random_factor, None) is None:
+            return False
+        await self._store.async_save({"commands": self._map})
+        _LOGGER.debug("Discarded learned unlock command for randomFactor=%d", random_factor)
+        return True
+
     async def async_clear(self) -> None:
         """Forget all learned commands and remove the stored file."""
         self._map = {}

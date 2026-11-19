@@ -34,6 +34,20 @@ BLE_TIMEOUT: Final = 15.0  # seconds
 COMMAND_SPACE: Final = 256  # number of possible randomFactor values (0..255)
 STORAGE_VERSION: Final = 1
 
+# Unlock statistics and history (persisted per config entry).
+STATS_STORAGE_VERSION: Final = 1
+HISTORY_LIMIT: Final = 100  # unlock attempts kept in the history
+
+# How an unlock command was obtained.
+PATH_CLOUD: Final = "cloud"  # command requested from the WeLock cloud
+PATH_OFFLINE: Final = "offline"  # command taken from the local command cache
+PATH_NONE: Final = "none"  # failed before a command was needed (Bluetooth)
+
+# What happened to an unlock attempt.
+RESULT_CONFIRMED: Final = "confirmed"  # command written and the lock answered
+RESULT_UNCONFIRMED: Final = "unconfirmed"  # command written, no answer seen
+RESULT_FAILED: Final = "failed"  # error before or while writing the command
+
 # WeLock mobile cloud API
 DEFAULT_CLOUD_API_URL: Final = "https://clientapi.welock.com.cn/api"
 BASE_API_URL: Final = DEFAULT_CLOUD_API_URL

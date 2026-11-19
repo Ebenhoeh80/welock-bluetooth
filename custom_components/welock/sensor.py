@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -16,7 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .api import access_records_from_attributes
-from .const import COMMAND_SPACE
+from .const import COMMAND_SPACE, PATH_CLOUD, PATH_OFFLINE
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
@@ -32,6 +33,9 @@ async def async_setup_entry(
             WeLockSignalSensor(coordinator, entry),
             WeLockLearnedCommandsSensor(coordinator, entry),
             WeLockLastAccessSensor(coordinator, entry),
+            WeLockUnlockCountSensor(coordinator, entry, PATH_CLOUD),
+            WeLockUnlockCountSensor(coordinator, entry, PATH_OFFLINE),
+            WeLockLastUnlockSensor(coordinator, entry),
         ]
     )
 
@@ -161,3 +165,76 @@ class WeLockLastAccessSensor(WeLockEntity, RestoreEntity, SensorEntity):
                 for record in records[:20]
             ],
         }
+
+
+class WeLockUnlockCountSensor(WeLockEntity, SensorEntity):
+    """How many unlocks through Home Assistant were delivered by one path.
+
+    ``cloud`` = the command came from the WeLock cloud, ``offline`` = it came
+    from the local command cache (no cloud contact). The state counts unlocks in
+    which the command was written to the lock; the attributes split them into
+    ``confirmed`` (the lock answered), ``unconfirmed`` and ``failed`` attempts and
+    give the average duration. The counters survive restarts.
+    """
+
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = "unlocks"
+
+    def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry, path: str) -> None:
+        """Initialize the counter for one path."""
+        super().__init__(coordinator, entry, f"unlocks_{path}")
+        self._path = path
+        self._attr_translation_key = f"unlocks_{path}"
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of unlocks delivered by this path."""
+        return self.coordinator.stats.paths[self._path].delivered
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the split into confirmed / unconfirmed / failed and the timing."""
+        return self.coordinator.stats.paths[self._path].as_attributes()
+
+
+class WeLockLastUnlockSensor(WeLockEntity, SensorEntity):
+    """Time of the last unlock attempt and how it went, plus recent history."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:history"
+    _attr_translation_key = "last_unlock"
+
+    def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the last-unlock sensor."""
+        super().__init__(coordinator, entry, "last_unlock")
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return when the latest unlock attempt happened."""
+        latest = self.coordinator.stats.latest
+        if latest is None:
+            return None
+        try:
+            return datetime.fromisoformat(latest.time)
+        except ValueError:
+            return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the latest attempt and the ten most recent ones (newest first)."""
+        stats = self.coordinator.stats
+        latest = stats.latest
+        attributes: dict[str, Any] = {
+            "evictions": stats.evictions,
+            "recent": stats.recent(10),
+        }
+        if latest is not None:
+            attributes.update(
+                path=latest.path,
+                result=latest.result,
+                duration_ms=latest.duration_ms,
+                random_factor=latest.random_factor,
+                error=latest.error,
+            )
+        return attributes

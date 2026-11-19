@@ -115,6 +115,11 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_signal_strength` | Sensor (diagnostic, disabled by default) | RSSI of the latest Bluetooth advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_reachable` | Binary sensor (diagnostic) | On while a connectable adapter or proxy sees the lock. |
 | `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock-experimental). |
+| `switch.<name>_offline_unlock` | Switch (configuration) | Turns [offline unlocking](#-local-offline-unlock-experimental) on or off with immediate effect; the setting is remembered across restarts. Off by default. |
+| `sensor.<name>_unlocks_via_cloud` | Sensor | Number of unlocks whose command came from the WeLock cloud. Attributes: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
+| `sensor.<name>_unlocks_offline` | Sensor | Number of unlocks whose command came from the local cache (no cloud contact). Same attributes. |
+| `event.<name>_unlock_history` | Event | One event per unlock attempt (`unlock_cloud`, `unlock_offline`, `unlock_failed`) with path, result, duration and challenge value. Shows up in the logbook and history. |
+| `sensor.<name>_last_unlock_attempt` | Sensor (diagnostic) | Time of the last unlock attempt; attributes carry its result and the ten most recent attempts. |
 | `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
 
 The exact entity IDs depend on the BLE name and the HA language.
@@ -130,7 +135,7 @@ The exact entity IDs depend on the BLE name and the HA language.
 | Show as unlocked for | 7 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
 | Read battery over Bluetooth every | 24 h | 0–168 h | Periodic BLE status read. `0` = only on unlock (saves the lock battery). |
 | Check Bluetooth reachability every | 60 s | 10–600 s | How often reachability and RSSI are refreshed from the HA Bluetooth cache. Creates **no** radio traffic. |
-| Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. See below. |
+| Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. Also available as a switch entity. See below. |
 
 ---
 
@@ -148,6 +153,42 @@ cloud returns and stores it per config entry.
   without a cloud login** — faster and without logging the WeLock app out.
 * A stored command is **byte-identical** to what the cloud would return (no
   self-generated payload) and is re-validated before every use.
+
+* **Switch:** `switch.<name>_offline_unlock` turns the feature on or off at any
+  time, from the UI or an automation. It applies immediately (no reload), is
+  remembered across restarts and is the same setting as the option in the
+  integration's *Configure* dialog.
+* **Statistics and history:** every unlock made through Home Assistant is
+  recorded with the path that delivered the command (`cloud` or `offline`), the
+  result and the duration. The counters and the last 100 attempts survive
+  restarts and appear as the *Unlocks via cloud* / *Unlocks offline* sensors, the
+  *Unlock history* event entity (logbook) and in the diagnostics download.
+  *Confirmed* means the lock answered the command with a notification;
+  *unconfirmed* means the command was written but no answer was seen (the lock
+  does not always send one); *failed* means an error before or while writing.
+* **Safety net:** if writing a **stored** command fails, that command is dropped
+  from the cache, so the next unlock for that challenge value asks the cloud
+  again.
+
+### Testing offline unlock on your own lock
+
+To check that offline unlocking really works (and to document it), run a series
+of unlocks and read the counters:
+
+1. Let the table fill (normal use with the switch **off**) or check
+   `learned_commands` on the switch.
+2. Turn the switch **on**. Unlock the door several times, at least 30 s apart,
+   and note by eye each time whether the cylinder really released.
+3. Compare *Unlocks offline* with your notes: `confirmed` + `unconfirmed` is what
+   the lock was sent, your observation is the ground truth. Challenge values that
+   are not yet stored are answered by the cloud and show up under *Unlocks via
+   cloud* instead.
+4. For proof that **no cloud is needed**, block internet access for Home
+   Assistant (or the WeLock cloud host) while repeating step 2. Offline unlocks
+   still count; `unlock_failed` events with `path: cloud` show the cloud being
+   unreachable.
+5. Optionally run `welock.fetch_access_log` afterwards. The lock's own log
+   should list the same unlocks (this logs the WeLock app out once).
 
 > ⚠️ **Not yet mechanically verified on hardware.** The option is therefore **off**
 > by default and the cloud stays the default path. Only enable it once you have

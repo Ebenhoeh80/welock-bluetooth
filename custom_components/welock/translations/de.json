@@ -54,7 +54,7 @@
           "auto_relock_delay": "Als entriegelt anzeigen für (Sekunden)",
           "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
           "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)",
-          "local_unlock": "Lokalen Befehls-Cache für Offline-Entriegelung aufbauen und nutzen (experimentell)"
+          "local_unlock": "Gespeicherte Befehle zum Offline-Entsperren nutzen (experimentell; auch als Schalter „Offline-Entsperren“ verfügbar)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Letzter Zugriff"
+      },
+      "unlocks_cloud": {
+        "name": "Entsperrungen über die Cloud"
+      },
+      "unlocks_offline": {
+        "name": "Entsperrungen offline"
+      },
+      "last_unlock": {
+        "name": "Letzter Entsperrversuch"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth erreichbar"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Offline-Entsperren"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Entsperr-Verlauf",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Über die Cloud entsperrt",
+              "unlock_offline": "Offline entsperrt",
+              "unlock_failed": "Entsperren fehlgeschlagen"
+            }
+          }
+        }
       }
     }
   },

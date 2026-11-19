@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
@@ -39,6 +40,19 @@ class LockNotInRange(WeLockBleError):
 CommandProvider = Callable[[BatteryResponse], Awaitable[bytes]]
 
 
+@dataclass
+class ExchangeReport:
+    """What happened during an unlock exchange, filled in by ``async_exchange``.
+
+    ``command_written`` is set once the unlock command has been written to the
+    lock; ``confirmed`` once the lock answered it with a notification. The lock
+    does not always answer, so "written but not confirmed" is not an error.
+    """
+
+    command_written: bool = False
+    confirmed: bool = False
+
+
 def lock_in_range(hass: HomeAssistant, address: str) -> bool:
     """Return True if a connectable adapter or proxy currently sees the lock."""
     return bluetooth.async_ble_device_from_address(hass, address, connectable=True) is not None
@@ -49,6 +63,7 @@ async def async_exchange(
     address: str,
     command_provider: CommandProvider | None = None,
     timeout: float = BLE_TIMEOUT,
+    report: ExchangeReport | None = None,
 ) -> BatteryResponse:
     """Run the WeLock challenge exchange.
 
@@ -94,8 +109,12 @@ async def async_exchange(
             command = validate_unlock_command(await command_provider(state))
             waiting_for_followup = True
             await client.write_gatt_char(WRITE_UUID, command, response=False)
+            if report is not None:
+                report.command_written = True
             try:
                 await asyncio.wait_for(followup, timeout)
+                if report is not None:
+                    report.confirmed = True
             except asyncio.TimeoutError:
                 _LOGGER.debug("No confirmation notification from %s after unlock", address)
         return state

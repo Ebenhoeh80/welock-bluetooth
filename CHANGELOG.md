@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Offline-unlock switch.** `switch.<name>_offline_unlock` turns the local
+  command cache on or off from the UI or an automation. It takes effect
+  immediately (no reload) and is remembered across restarts. It is the same
+  setting as the option in the *Configure* dialog; the default stays off.
+- **Unlock statistics.** Counters per path, `sensor.<name>_unlocks_via_cloud` and
+  `sensor.<name>_unlocks_offline`, split into confirmed / unconfirmed / failed
+  with the average duration. They survive restarts.
+- **Unlock history.** An event entity fires one event per unlock attempt
+  (`unlock_cloud`, `unlock_offline`, `unlock_failed`), visible in the logbook, and
+  `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part
+  of the diagnostics download. No commands, account data or addresses are stored.
+- README (en/de): how to verify offline unlocking on your own lock.
+
 ### Fixed
 - **Last access sensor keeps its value across restarts.** The sensor is only
   filled by the on-demand `welock.fetch_access_log` service, so it used to fall
@@ -16,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ends other sessions of the account).
 
 ### Changed
+- A stored command that fails while being written to the lock is dropped from the
+  cache, so the next unlock for that challenge value asks the cloud again.
 - README (en/de): the *Last access* sensor and the access-log service now state
   clearly that the value is only refreshed on demand.
 

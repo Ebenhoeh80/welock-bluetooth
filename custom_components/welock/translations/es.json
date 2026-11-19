@@ -54,7 +54,7 @@
           "auto_relock_delay": "Mostrar como abierta durante (segundos)",
           "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
           "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)",
-          "local_unlock": "Crear y usar la caché local de comandos para el desbloqueo sin conexión (experimental)"
+          "local_unlock": "Usar comandos guardados para el desbloqueo sin conexión (experimental; también disponible como interruptor «Desbloqueo sin conexión»)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Último acceso"
+      },
+      "unlocks_cloud": {
+        "name": "Desbloqueos mediante la nube"
+      },
+      "unlocks_offline": {
+        "name": "Desbloqueos sin conexión"
+      },
+      "last_unlock": {
+        "name": "Último intento de desbloqueo"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accesible"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Desbloqueo sin conexión"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Historial de desbloqueos",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Desbloqueado mediante la nube",
+              "unlock_offline": "Desbloqueado sin conexión",
+              "unlock_failed": "Fallo al desbloquear"
+            }
+          }
+        }
       }
     }
   },
