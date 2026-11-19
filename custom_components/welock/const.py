@@ -65,4 +65,8 @@ ENDPOINT_UNLOCK_RECORD: Final = "/device/GetUnlockRecord"
 
 # Service names
 SERVICE_FETCH_ACCESS_LOG: Final = "fetch_access_log"
+SERVICE_IMPORT_COMMANDS: Final = "import_commands"
+# Default file name of a command table, relative to the Home Assistant config folder.
+DEFAULT_IMPORT_FILE: Final = "welock-oracle-table.json"
+MAX_IMPORT_FILE_BYTES: Final = 200_000  # a full table is about 8 KB
 DEFAULT_ACCESS_LOG_PAGE_SIZE: Final = 20

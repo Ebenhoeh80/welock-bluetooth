@@ -31,7 +31,10 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.cache import CommandCache  # noqa: E402
+from custom_components.welock.cache import (  # noqa: E402
+    CommandCache,
+    parse_command_table,
+)
 from custom_components.welock.const import (  # noqa: E402
     BLE_TIMEOUT,
     CONF_LOCAL_UNLOCK,
@@ -266,6 +269,85 @@ class CacheDiscardTests(unittest.TestCase):
     def test_discard_unknown_is_a_noop(self) -> None:
         cache = self._cache()
         self.assertFalse(asyncio.run(cache.async_discard(9)))
+        self.assertIsNone(cache._store.data)
+
+
+CMD_RF6 = "U1BMEGMHMEAAAAJ"
+CMD_RF7_STR = "U1BOFHOIOFAAAAM"
+
+
+def _table_file(**table) -> dict:
+    return {"device_number": "22231059", "battery_used": 100, "table": table}
+
+
+class ParseCommandTableTests(unittest.TestCase):
+    def test_valid_file(self) -> None:
+        device, table = parse_command_table(_table_file(**{"6": CMD_RF6, "7": CMD_RF7_STR}))
+        self.assertEqual(device, "22231059")
+        self.assertEqual(table, {6: CMD_RF6.encode(), 7: CMD_RF7_STR.encode()})
+
+    def test_rejects_non_objects_and_missing_parts(self) -> None:
+        for bad in (None, [], "x", {}, {"device_number": "1"}, {"table": {"1": CMD_RF6}}):
+            with self.assertRaises(ValueError):
+                parse_command_table(bad)
+        with self.assertRaises(ValueError):
+            parse_command_table({"device_number": " ", "table": {"1": CMD_RF6}})
+        with self.assertRaises(ValueError):
+            parse_command_table({"device_number": "1", "table": {}})
+
+    def test_one_bad_entry_rejects_the_whole_file(self) -> None:
+        for bad_value in ("U1SHORT", "X1BMEGMHMEAAAAJ", "U1BMEGMHMEAA-AJ", 5, None):
+            with self.assertRaises(ValueError):
+                parse_command_table(_table_file(**{"6": CMD_RF6, "7": bad_value}))
+
+    def test_rejects_bad_challenge_numbers(self) -> None:
+        for bad_key in ("256", "-1", "abc", ""):
+            with self.assertRaises(ValueError):
+                parse_command_table(_table_file(**{bad_key: CMD_RF6}))
+
+    def test_error_text_names_the_entry_but_never_a_command(self) -> None:
+        with self.assertRaises(ValueError) as caught:
+            parse_command_table(_table_file(**{"6": CMD_RF6, "7": "U1BAD"}))
+        message = str(caught.exception)
+        self.assertIn("7", message)
+        self.assertNotIn("U1BAD", message)
+        self.assertNotIn(CMD_RF6, message)
+
+
+class CacheImportTests(unittest.TestCase):
+    def _cache(self) -> CommandCache:
+        cache = CommandCache(MagicMock(), "entry-test")
+        cache._store = _FakeStore()
+        return cache
+
+    def test_import_adds_new_commands_and_persists(self) -> None:
+        cache = self._cache()
+        result = asyncio.run(cache.async_import({6: CMD_RF6.encode(), 7: CMD_RF7}))
+        self.assertEqual((result.added, result.unchanged, result.conflicts), (2, 0, []))
+        self.assertEqual(cache.count, 2)
+        self.assertEqual(cache.get(7), CMD_RF7)
+        self.assertEqual(sorted(cache._store.data["commands"]), [6, 7])
+
+    def test_import_is_idempotent(self) -> None:
+        cache = self._cache()
+        asyncio.run(cache.async_import({7: CMD_RF7}))
+        result = asyncio.run(cache.async_import({7: CMD_RF7}))
+        self.assertEqual((result.added, result.unchanged, result.conflicts), (0, 1, []))
+
+    def test_import_never_overwrites_a_learned_command(self) -> None:
+        cache = self._cache()
+        asyncio.run(cache.async_put(7, CMD_RF7))
+        other = b"U1ZZZZZZZZZZZZZ"
+        result = asyncio.run(cache.async_import({7: other, 6: CMD_RF6.encode()}))
+        self.assertEqual(result.conflicts, [7])
+        self.assertEqual(result.added, 1)
+        self.assertEqual(cache.get(7), CMD_RF7)  # the learned command stays
+
+    def test_import_without_new_commands_does_not_write(self) -> None:
+        cache = self._cache()
+        asyncio.run(cache.async_put(7, CMD_RF7))
+        cache._store.data = None
+        asyncio.run(cache.async_import({7: CMD_RF7}))
         self.assertIsNone(cache._store.data)
 
 

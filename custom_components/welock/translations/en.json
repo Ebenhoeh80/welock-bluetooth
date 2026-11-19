@@ -118,6 +118,16 @@
           "description": "How many of the most recent access-log entries to fetch."
         }
       }
+    },
+    "import_commands": {
+      "name": "Import command table",
+      "description": "Add unlock commands from a JSON table file to the lock's local command cache. Existing commands are never overwritten. This does not switch offline unlocking on.",
+      "fields": {
+        "path": {
+          "name": "File",
+          "description": "Path of the table file, relative to the Home Assistant configuration folder."
+        }
+      }
     }
   },
   "exceptions": {
@@ -138,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Bluetooth error: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "The file path is not allowed: it must be a .json file inside the Home Assistant configuration folder."
+    },
+    "import_file_unreadable": {
+      "message": "The command table file could not be read ({error})."
+    },
+    "import_invalid_table": {
+      "message": "The command table is not valid: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "The command table belongs to a different lock; no loaded WeLock entry has this device number."
     }
   }
 }

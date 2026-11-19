@@ -118,6 +118,16 @@
           "description": "Cuántas de las entradas más recientes del registro obtener."
         }
       }
+    },
+    "import_commands": {
+      "name": "Importar tabla de comandos",
+      "description": "Añade comandos de desbloqueo de un archivo de tabla JSON a la caché local de comandos de la cerradura. Los comandos existentes nunca se sobrescriben. Esto no activa el desbloqueo sin conexión.",
+      "fields": {
+        "path": {
+          "name": "Archivo",
+          "description": "Ruta del archivo de tabla, relativa a la carpeta de configuración de Home Assistant."
+        }
+      }
     }
   },
   "exceptions": {
@@ -138,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Error de Bluetooth: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "La ruta del archivo no está permitida: debe ser un archivo .json dentro de la carpeta de configuración de Home Assistant."
+    },
+    "import_file_unreadable": {
+      "message": "No se pudo leer el archivo de la tabla de comandos ({error})."
+    },
+    "import_invalid_table": {
+      "message": "La tabla de comandos no es válida: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "La tabla de comandos pertenece a otra cerradura; ninguna entrada WeLock cargada tiene este número de dispositivo."
     }
   }
 }

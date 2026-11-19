@@ -169,6 +169,35 @@ Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
   wird dieser Befehl aus dem Cache entfernt; die nächste Entsperrung für diesen
   Challenge-Wert fragt wieder die Cloud.
 
+### Befehlstabelle importieren
+
+Wenn du die Befehle deines Schlosses schon hast (eine JSON-Datei mit
+`device_number` und einer `table` mit randomFactor `"0"`..`"255"` auf Befehl, wie
+sie `tools/welock_offline_oracle.py --harvest` schreibt), musst du nicht warten,
+bis die Integration sie einzeln gelernt hat:
+
+1. Kopiere die Datei in den Home-Assistant-Konfigurationsordner, zum Beispiel als
+   `welock-oracle-table.json` (das File-Editor-Add-on oder Samba genügen).
+2. **Entwicklerwerkzeuge → Aktionen → WeLock: Befehlstabelle importieren**,
+   Dateinamen setzen (Standard ist `welock-oracle-table.json`) und ausführen. Die
+   Antwort zeigt `added`, `unchanged`, `conflicts` und `known`.
+3. Schalte den Schalter *Offline-Entsperren* ein, wenn du die Befehle nutzen
+   willst.
+
+Die Datei wird vollständig geprüft, bevor etwas gespeichert wird: Ein falsches
+Format, ein ungültiger Befehl oder die Tabelle eines anderen Schlosses (die
+`device_number` muss zum Schloss passen) lehnt sie ab. Ein bereits gespeicherter
+Befehl wird nie überschrieben; weicht die Datei von einem aus der Cloud gelernten
+Befehl ab, steht der randomFactor unter `conflicts` und der gelernte Befehl
+bleibt. Der Dienst schaltet das Offline-Entsperren nicht ein und schreibt nichts
+an das Schloss.
+
+> ⚠️ Eine Befehlstabelle ist **sicherheitsrelevant**: Zusammen mit
+> Bluetooth-Reichweite kann sie genügen, deine Tür zu entriegeln, falls das
+> Schloss die Befehle erneut akzeptiert. Halte die Datei privat, lade sie nie in
+> ein Repository und gib sie nicht weiter. Lösche sie nach dem Import aus dem
+> Konfigurationsordner, wenn du sie nicht mehr brauchst.
+
 ### Offline-Entsperren am eigenen Schloss prüfen
 
 Um zu prüfen (und zu dokumentieren), dass das Offline-Entsperren wirklich

@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`unlock_cloud`, `unlock_offline`, `unlock_failed`), visible in the logbook, and
   `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part
   of the diagnostics download. No commands, account data or addresses are stored.
+- **Import a command table.** The service `welock.import_commands` adds unlock
+  commands from a JSON table file in the Home Assistant configuration folder
+  (default `welock-oracle-table.json`) to the local command cache of the lock the
+  file belongs to (matched by device number). Every entry is validated, the whole
+  file is rejected if any entry is invalid, existing commands are never
+  overwritten (differences are reported as conflicts) and offline unlocking is
+  not switched on. The result (added / unchanged / conflicts / known) is returned
+  as the service response.
 - **Where the unlock time goes.** Every unlock attempt now records the time of
   each phase in milliseconds (`connect_ms`, `status_ms`, `command_ms`,
   `confirm_ms`, `teardown_ms`): establishing the Bluetooth connection (including

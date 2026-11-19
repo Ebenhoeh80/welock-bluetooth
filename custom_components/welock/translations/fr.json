@@ -118,6 +118,16 @@
           "description": "Combien des entrées de journal les plus récentes récupérer."
         }
       }
+    },
+    "import_commands": {
+      "name": "Importer une table de commandes",
+      "description": "Ajoute des commandes de déverrouillage d'un fichier de table JSON au cache local de commandes de la serrure. Les commandes existantes ne sont jamais écrasées. Cela n'active pas le déverrouillage hors ligne.",
+      "fields": {
+        "path": {
+          "name": "Fichier",
+          "description": "Chemin du fichier de table, relatif au dossier de configuration de Home Assistant."
+        }
+      }
     }
   },
   "exceptions": {
@@ -138,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Erreur Bluetooth : {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "Le chemin du fichier n'est pas autorisé : il doit s'agir d'un fichier .json dans le dossier de configuration de Home Assistant."
+    },
+    "import_file_unreadable": {
+      "message": "Le fichier de la table de commandes n'a pas pu être lu ({error})."
+    },
+    "import_invalid_table": {
+      "message": "La table de commandes n'est pas valide : {error}."
+    },
+    "import_wrong_lock": {
+      "message": "La table de commandes appartient à une autre serrure ; aucune entrée WeLock chargée n'a ce numéro d'appareil."
     }
   }
 }

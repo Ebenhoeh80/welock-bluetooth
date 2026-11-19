@@ -170,6 +170,32 @@ cloud returns and stores it per config entry.
   from the cache, so the next unlock for that challenge value asks the cloud
   again.
 
+### Importing a command table
+
+If you already have the commands of your lock (a JSON file with `device_number`
+and a `table` of randomFactor `"0"`..`"255"` to command, as written by
+`tools/welock_offline_oracle.py --harvest`), you do not have to wait until the
+integration has learned them one by one:
+
+1. Copy the file into the Home Assistant configuration folder, for example as
+   `welock-oracle-table.json` (the File editor add-on or Samba will do).
+2. **Developer tools → Actions → WeLock: Import command table**, set the file
+   name (the default is `welock-oracle-table.json`) and run it. The response
+   shows `added`, `unchanged`, `conflicts` and `known`.
+3. Turn the *Offline unlock* switch on when you want to use the commands.
+
+The file is checked completely before anything is stored: a wrong format, an
+invalid command or a table of a different lock (the `device_number` must match
+the lock) rejects it. A command that is already stored is never overwritten; if
+the file differs from a command learned from the cloud, the randomFactor is
+listed under `conflicts` and the learned command stays. The service neither
+switches offline unlocking on nor writes anything to the lock.
+
+> ⚠️ A command table is **security-sensitive**: together with Bluetooth range it
+> may be enough to unlock your door if the lock accepts the commands again. Keep
+> the file private, never commit or share it, and delete it from the
+> configuration folder after the import if you do not need it.
+
 ### Testing offline unlock on your own lock
 
 To check that offline unlocking really works (and to document it), run a series

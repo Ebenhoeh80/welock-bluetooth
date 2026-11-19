@@ -16,6 +16,8 @@ not a self-generated payload - and it is re-validated before every use.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -24,6 +26,53 @@ from .const import COMMAND_SPACE, DOMAIN, STORAGE_VERSION
 from .protocol import validate_unlock_command
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class ImportResult:
+    """Outcome of importing a command table into the cache."""
+
+    added: int = 0
+    unchanged: int = 0
+    # randomFactor values whose stored command differs from the imported one.
+    # The stored command is kept; the values themselves are never reported.
+    conflicts: list[int] = field(default_factory=list)
+
+
+def parse_command_table(data: Any) -> tuple[str, dict[int, bytes]]:
+    """Validate a command-table file and return ``(device_number, table)``.
+
+    The file is a JSON object with ``device_number`` and ``table`` (a mapping of
+    randomFactor ``"0"``..``"255"`` to a 15-byte ``U1...`` command). Anything
+    that is not well-formed rejects the whole file with a ``ValueError`` that
+    names the problem but never contains a command.
+    """
+    if not isinstance(data, dict):
+        raise ValueError("The file must contain a JSON object")
+    device_number = data.get("device_number")
+    if not isinstance(device_number, str) or not device_number.strip():
+        raise ValueError("The file has no device_number")
+    raw_table = data.get("table")
+    if not isinstance(raw_table, dict) or not raw_table:
+        raise ValueError("The file has no table of commands")
+    table: dict[int, bytes] = {}
+    bad: list[str] = []
+    for key, value in raw_table.items():
+        try:
+            random_factor = int(key)
+        except (TypeError, ValueError):
+            bad.append(str(key)[:12])
+            continue
+        if not 0 <= random_factor <= 255 or not isinstance(value, str):
+            bad.append(str(key)[:12])
+            continue
+        try:
+            table[random_factor] = validate_unlock_command(value.encode("ascii"))
+        except (ValueError, UnicodeEncodeError):
+            bad.append(str(random_factor))
+    if bad:
+        raise ValueError(f"{len(bad)} invalid table entries (randomFactor: {', '.join(bad[:10])})")
+    return device_number.strip(), table
 
 
 def _storage_key(entry_id: str) -> str:
@@ -99,6 +148,35 @@ class CommandCache:
             len(self._map),
             COMMAND_SPACE,
         )
+
+    async def async_import(self, table: dict[int, bytes]) -> ImportResult:
+        """Add commands from an imported table; never overwrites a stored command.
+
+        A stored command that differs from the imported one is reported as a
+        conflict and kept, because it was learned from the cloud for this lock.
+        """
+        result = ImportResult()
+        for random_factor, command in sorted(table.items()):
+            hex_value = command.hex()
+            existing = self._map.get(random_factor)
+            if existing is None:
+                self._map[random_factor] = hex_value
+                result.added += 1
+            elif existing == hex_value:
+                result.unchanged += 1
+            else:
+                result.conflicts.append(random_factor)
+        if result.added:
+            await self._store.async_save({"commands": self._map})
+        _LOGGER.info(
+            "Imported unlock commands: %d added, %d unchanged, %d conflicts (%d/%d known)",
+            result.added,
+            result.unchanged,
+            len(result.conflicts),
+            len(self._map),
+            COMMAND_SPACE,
+        )
+        return result
 
     async def async_discard(self, random_factor: int) -> bool:
         """Forget one learned command (e.g. after it failed); True if it existed."""

@@ -118,6 +118,16 @@
           "description": "Wie viele der neuesten Protokolleinträge abgerufen werden."
         }
       }
+    },
+    "import_commands": {
+      "name": "Befehlstabelle importieren",
+      "description": "Fügt Entriegelungsbefehle aus einer JSON-Tabellendatei dem lokalen Befehls-Cache des Schlosses hinzu. Vorhandene Befehle werden nie überschrieben. Das Offline-Entsperren wird dadurch nicht eingeschaltet.",
+      "fields": {
+        "path": {
+          "name": "Datei",
+          "description": "Pfad der Tabellendatei, relativ zum Home-Assistant-Konfigurationsordner."
+        }
+      }
     }
   },
   "exceptions": {
@@ -138,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Bluetooth-Fehler: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "Der Dateipfad ist nicht erlaubt: Es muss eine .json-Datei im Home-Assistant-Konfigurationsordner sein."
+    },
+    "import_file_unreadable": {
+      "message": "Die Befehlstabelle konnte nicht gelesen werden ({error})."
+    },
+    "import_invalid_table": {
+      "message": "Die Befehlstabelle ist ungültig: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "Die Befehlstabelle gehört zu einem anderen Schloss; kein geladener WeLock-Eintrag hat diese Gerätenummer."
     }
   }
 }
