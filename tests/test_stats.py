@@ -186,6 +186,58 @@ class UnlockStatsTests(unittest.TestCase):
         self.assertNotIn(CMD_RF7.decode(), text)
 
 
+class PhaseTimeTests(unittest.TestCase):
+    def test_phase_times_survive_a_save_and_load(self) -> None:
+        stats = _stats()
+        asyncio.run(
+            stats.async_record(
+                _attempt(
+                    PATH_CLOUD,
+                    RESULT_CONFIRMED,
+                    8000,
+                    connect_ms=5200,
+                    status_ms=700,
+                    command_ms=1500,
+                    confirm_ms=400,
+                    teardown_ms=200,
+                )
+            )
+        )
+        reloaded = _stats(stats._store.data)
+        asyncio.run(reloaded.async_load())
+        latest = reloaded.latest
+        self.assertEqual(
+            (latest.connect_ms, latest.status_ms, latest.command_ms),
+            (5200, 700, 1500),
+        )
+        self.assertEqual((latest.confirm_ms, latest.teardown_ms), (400, 200))
+
+    def test_attempts_without_phase_times_still_load(self) -> None:
+        # Statistics written by rc.1/rc.2 have no phase times.
+        old = {"history": [{"time": "t", "path": "cloud", "result": "confirmed", "duration_ms": 9}]}
+        stats = _stats(old)
+        asyncio.run(stats.async_load())
+        self.assertEqual(len(stats.history), 1)
+        self.assertIsNone(stats.history[0].connect_ms)
+
+    def test_invalid_phase_times_are_ignored(self) -> None:
+        bad = {
+            "history": [
+                {
+                    "time": "t",
+                    "path": "cloud",
+                    "result": "failed",
+                    "connect_ms": -5,
+                    "status_ms": "x",
+                }
+            ]
+        }
+        stats = _stats(bad)
+        asyncio.run(stats.async_load())
+        self.assertIsNone(stats.history[0].connect_ms)
+        self.assertIsNone(stats.history[0].status_ms)
+
+
 class TimeoutTests(unittest.TestCase):
     def test_confirmation_wait_is_short(self) -> None:
         """The post-write wait must not stall the unlocked state like the 15 s status wait."""

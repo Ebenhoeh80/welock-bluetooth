@@ -51,6 +51,12 @@ class UnlockAttempt:
     error: str | None = None  # exception class name only, never a message
     rssi: int | None = None
     evicted: bool = False  # offline command was dropped from the cache afterwards
+    # Where the time went, in milliseconds (``None`` = phase not reached).
+    connect_ms: int | None = None
+    status_ms: int | None = None
+    command_ms: int | None = None
+    confirm_ms: int | None = None
+    teardown_ms: int | None = None
 
 
 @dataclass
@@ -85,6 +91,15 @@ class PathStats:
         }
 
 
+PHASE_KEYS = ("connect_ms", "status_ms", "command_ms", "confirm_ms", "teardown_ms")
+
+
+def _optional_ms(value: object) -> int | None:
+    """Return a stored phase time, or ``None`` if it is missing or not a valid time."""
+    ok = isinstance(value, int) and not isinstance(value, bool) and value >= 0
+    return value if ok else None
+
+
 def _non_negative_int(value: object) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
@@ -101,6 +116,7 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
     rf = item.get("random_factor")
     rssi = item.get("rssi")
     error = item.get("error")
+    phases = {key: _optional_ms(item.get(key)) for key in PHASE_KEYS}
     return UnlockAttempt(
         time=time,
         path=path,
@@ -110,6 +126,7 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
         error=error if isinstance(error, str) else None,
         rssi=rssi if isinstance(rssi, int) and not isinstance(rssi, bool) else None,
         evicted=item.get("evicted") is True,
+        **phases,
     )
 
 

@@ -61,6 +61,17 @@ def static_options(options: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in options.items() if key != CONF_LOCAL_UNLOCK}
 
 
+def _phase_times(report: ExchangeReport) -> dict[str, int | None]:
+    """Return the per-phase times of an exchange for an unlock attempt."""
+    return {
+        "connect_ms": report.connect_ms,
+        "status_ms": report.status_ms,
+        "command_ms": report.command_ms,
+        "confirm_ms": report.confirm_ms,
+        "teardown_ms": report.teardown_ms,
+    }
+
+
 def options_change_is_live(applied: Mapping[str, Any], options: Mapping[str, Any]) -> bool:
     """Return True if only the offline switch differs, so no reload is needed."""
     return static_options(options) == dict(applied)
@@ -272,6 +283,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     error=type(error).__name__,
                     rssi=rssi,
                     evicted=evicted,
+                    **_phase_times(report),
                 )
             )
             mapped = self._map_unlock_error(error)
@@ -289,6 +301,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 duration_ms=duration_ms,
                 random_factor=random_factor,
                 rssi=rssi,
+                **_phase_times(report),
             )
         )
         self.async_set_updated_data({**(self.data or {}), "battery": state.battery})

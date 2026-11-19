@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`unlock_cloud`, `unlock_offline`, `unlock_failed`), visible in the logbook, and
   `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part
   of the diagnostics download. No commands, account data or addresses are stored.
+- **Where the unlock time goes.** Every unlock attempt now records the time of
+  each phase in milliseconds (`connect_ms`, `status_ms`, `command_ms`,
+  `confirm_ms`, `teardown_ms`): establishing the Bluetooth connection (including
+  waiting for a busy adapter), the challenge answer, getting the command (cloud
+  round-trip or cache), writing it and waiting for the lock's answer, and
+  disconnecting. They are part of the unlock history event, the *Last unlock
+  attempt* sensor and the diagnostics download.
 - README (en/de): how to verify offline unlocking on your own lock, and a
   measurement table for how long the cylinder stays free after an unlock (not
   measured yet; the 7 s default of the display option is an assumption).
