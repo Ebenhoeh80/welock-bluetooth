@@ -217,6 +217,37 @@ def parse_access_records(data: Any) -> list[WeLockAccessRecord]:
     return records
 
 
+def access_records_from_attributes(attributes: Any) -> list[WeLockAccessRecord]:
+    """Rebuild access records from the ``records`` attribute of a restored state.
+
+    Used to bring the last-access sensor back after a restart. Anything that is
+    not a well-formed entry is skipped, so a damaged state never breaks setup.
+    """
+    if not isinstance(attributes, dict):
+        return []
+    items = attributes.get("records")
+    if not isinstance(items, list):
+        return []
+    records: list[WeLockAccessRecord] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        time = item.get("time")
+        user = item.get("user")
+        method = item.get("method")
+        success = item.get("success")
+        records.append(
+            WeLockAccessRecord(
+                time=time if isinstance(time, str) and time.strip() else None,
+                user=user if isinstance(user, str) and user.strip() else None,
+                method=method if isinstance(method, str) and method else "unknown",
+                success=success if isinstance(success, bool) else None,
+                position=None,
+            )
+        )
+    return records
+
+
 def parse_unlock_command(data: Any) -> bytes:
     """Turn the ``data`` of ``/Command/UnLock`` into the raw command bytes."""
     if not isinstance(data, dict):

@@ -113,7 +113,7 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_signalstarke` | Sensor (Diagnose, standardmäßig deaktiviert) | RSSI der letzten Bluetooth-Advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_erreichbar` | Binärsensor (Diagnose) | An, solange ein verbindungsfähiger Adapter oder Proxy das Schloss sieht. |
 | `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock-experimentell). |
-| `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Wird nur durch den Dienst `welock.fetch_access_log` gefüllt. |
+| `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Bleibt `unbekannt`, bis der Dienst `welock.fetch_access_log` einmal ausgeführt wurde; die zuletzt abgerufenen Einträge bleiben über Neustarts erhalten. |
 
 Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
@@ -160,6 +160,12 @@ Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
 Der Dienst **`welock.fetch_access_log`** holt das Zutrittsprotokoll (wer, wann,
 mit welcher Methode) aus der Cloud und schreibt es in den Sensor *Letzter
 Zugriff* (Attribute inkl. der letzten Einträge).
+
+Der Sensor zeigt deshalb `unbekannt`, bis du den Dienst einmal ausgeführt hast. Er
+wird nie von selbst aktualisiert, die zuletzt abgerufenen Einträge werden aber
+nach einem **Neustart oder Neuladen wiederhergestellt**. Führe den Dienst erneut
+aus, wenn du frische Daten möchtest, z. B. per Skript oder per Automation, die
+du selbst auslöst.
 
 > ⚠️ Jeder Abruf **meldet andere Sitzungen des Kontos ab** (z. B. die WeLock-App),
 > da ein Cloud-Login nötig ist. Deshalb wird **nur auf Abruf** geladen, nicht

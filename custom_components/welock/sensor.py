@@ -13,7 +13,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
+from .api import access_records_from_attributes
 from .const import COMMAND_SPACE
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
@@ -102,12 +104,15 @@ class WeLockLearnedCommandsSensor(WeLockEntity, SensorEntity):
         }
 
 
-class WeLockLastAccessSensor(WeLockEntity, SensorEntity):
+class WeLockLastAccessSensor(WeLockEntity, RestoreEntity, SensorEntity):
     """Most recent access-log entry, filled on demand by the fetch service.
 
     The state is the time of the latest entry; attributes carry who opened the
-    lock and how, plus the most recent entries. Disabled by default because it
-    stays empty until the ``welock.fetch_access_log`` service is used.
+    lock and how, plus the most recent entries. The log is never polled (the
+    cloud login ends other sessions of the account), so the sensor stays empty
+    until the ``welock.fetch_access_log`` service is used. The last fetched
+    entries are restored after a restart or reload, so the value is not lost.
+    Disabled by default.
     """
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -118,6 +123,16 @@ class WeLockLastAccessSensor(WeLockEntity, SensorEntity):
     def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:
         """Initialize the last-access sensor."""
         super().__init__(coordinator, entry, "last_access")
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last fetched entries after a restart or reload."""
+        await super().async_added_to_hass()
+        if self.coordinator.access_records:
+            return
+        last_state = await self.async_get_last_state()
+        if last_state is None:
+            return
+        self.coordinator.access_records = access_records_from_attributes(last_state.attributes)
 
     @property
     def native_value(self) -> str | None:

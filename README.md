@@ -115,7 +115,7 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_signal_strength` | Sensor (diagnostic, disabled by default) | RSSI of the latest Bluetooth advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_reachable` | Binary sensor (diagnostic) | On while a connectable adapter or proxy sees the lock. |
 | `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock-experimental). |
-| `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Filled only by the `welock.fetch_access_log` service. |
+| `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
 
 The exact entity IDs depend on the BLE name and the HA language.
 
@@ -162,6 +162,11 @@ cloud returns and stores it per config entry.
 The **`welock.fetch_access_log`** service fetches the access log (who, when, by
 which method) from the cloud and writes it into the *Last access* sensor
 (attributes include the most recent entries).
+
+The sensor therefore shows `unknown` until you have run the service once. It is
+never refreshed by itself, but the last fetched entries are **restored after a
+restart or reload**. Run the service again whenever you want fresh data, for
+example from a script or an automation that you trigger yourself.
 
 > ⚠️ Each fetch **logs other sessions of the account out** (e.g. the WeLock app),
 > because a cloud login is required. It is therefore loaded **on demand only**,

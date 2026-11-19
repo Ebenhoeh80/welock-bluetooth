@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Last access sensor keeps its value across restarts.** The sensor is only
+  filled by the on-demand `welock.fetch_access_log` service, so it used to fall
+  back to `unknown` after every restart or reload of the entry. The last fetched
+  entries are now restored from the previous state. It still stays `unknown`
+  until the service has been run once (it is never polled, because a cloud login
+  ends other sessions of the account).
+
+### Changed
+- README (en/de): the *Last access* sensor and the access-log service now state
+  clearly that the value is only refreshed on demand.
+
 ## [2.2.0] - 2026-11-16
 
 ### Changed

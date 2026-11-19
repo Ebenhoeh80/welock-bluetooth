@@ -33,6 +33,7 @@ from custom_components.welock.api import (  # noqa: E402
     LockUnavailable,
     WeLockApiClient,
     WeLockApiError,
+    access_records_from_attributes,
     parse_access_records,
     parse_device_list,
     parse_envelope,
@@ -167,6 +168,48 @@ class AccessLogParsingTests(unittest.TestCase):
         self.assertEqual(second.user, "someone@example.com")  # falls back to userName
         self.assertEqual(second.method, "local")  # operatingState 1
         self.assertFalse(second.success)
+
+    def test_restore_roundtrip_matches_sensor_attributes(self) -> None:
+        """The sensor's ``records`` attribute can be turned back into records."""
+        original = parse_access_records(
+            [
+                {
+                    "unlockingTime": "2026-11-19 11:35:44",
+                    "nickName": "Daniel",
+                    "operatingState": 6,
+                    "unlockResult": 1,
+                },
+                {"unlockingTime": "2026-11-19 08:01:02", "operatingState": 1, "unlockResult": 0},
+            ]
+        )
+        attributes = {
+            "records": [
+                {"time": r.time, "user": r.user, "method": r.method, "success": r.success}
+                for r in original
+            ]
+        }
+        restored = access_records_from_attributes(attributes)
+        self.assertEqual(len(restored), 2)
+        self.assertEqual(restored[0].time, "2026-11-19 11:35:44")
+        self.assertEqual(restored[0].user, "Daniel")
+        self.assertEqual(restored[0].method, "app")
+        self.assertIs(restored[0].success, True)
+        self.assertIsNone(restored[1].user)
+        self.assertEqual(restored[1].method, "local")
+        self.assertIs(restored[1].success, False)
+
+    def test_restore_ignores_missing_or_damaged_attributes(self) -> None:
+        self.assertEqual(access_records_from_attributes(None), [])
+        self.assertEqual(access_records_from_attributes({}), [])
+        self.assertEqual(access_records_from_attributes({"records": "x"}), [])
+        records = access_records_from_attributes(
+            {"records": ["bad", 5, {"time": 3, "user": "", "method": None, "success": "yes"}]}
+        )
+        self.assertEqual(len(records), 1)
+        self.assertIsNone(records[0].time)
+        self.assertIsNone(records[0].user)
+        self.assertEqual(records[0].method, "unknown")
+        self.assertIsNone(records[0].success)
 
     def test_parse_access_records_handles_bad_input(self) -> None:
         self.assertEqual(parse_access_records(None), [])
