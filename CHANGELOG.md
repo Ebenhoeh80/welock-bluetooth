@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`unlock_cloud`, `unlock_offline`, `unlock_failed`), visible in the logbook, and
   `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part
   of the diagnostics download. No commands, account data or addresses are stored.
-- README (en/de): how to verify offline unlocking on your own lock.
+- README (en/de): how to verify offline unlocking on your own lock, and a
+  measurement table for how long the cylinder stays free after an unlock (not
+  measured yet; the 7 s default of the display option is an assumption).
 
 ### Fixed
 - **Last access sensor keeps its value across restarts.** The sensor is only

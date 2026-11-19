@@ -224,6 +224,37 @@ example from a script or an automation that you trigger yourself.
 * **Without Bluetooth range** the lock is *unavailable*. The cloud alone cannot unlock.
 * All BLE access to one lock is serialised so that battery reads and unlocks do not collide.
 
+### How long is the cylinder free? (measure it)
+
+After a successful unlock the outer knob can be turned for a limited time. That
+time is **not documented and has not been measured yet**; the "about 7 s" used
+as the default of *Show as unlocked for* is an assumption. That option only
+controls how long Home Assistant *displays* "unlocked" - it does not change the
+lock. The lock does not report its state, so the real window can only be found
+by trying it:
+
+1. Unlock through Home Assistant and start a stopwatch the moment the door
+   switches to *unlocked* in Home Assistant (the command has just arrived).
+2. Try to turn the cylinder after a fixed time: **3, 5, 7, 10 and 15 s**. Use a
+   fresh unlock for every attempt and wait at least 30 s in between.
+3. Write down for each attempt whether the cylinder still turned.
+4. Repeat the values around the point where it stops working, to see where the
+   window really ends, and do the series with the switch *Offline unlock* both
+   on and off (the cloud path is slower, so the window may start later).
+5. Set *Show as unlocked for* to the measured value (a little below the end of
+   the window) and note the result here.
+
+| Attempt after | Cylinder still turned? (cloud) | Cylinder still turned? (offline) |
+| :---: | :---: | :---: |
+| 3 s | not measured | not measured |
+| 5 s | not measured | not measured |
+| 7 s | not measured | not measured |
+| 10 s | not measured | not measured |
+| 15 s | not measured | not measured |
+
+The *Unlock history* event and the *Last unlock attempt* sensor record when the
+command was written, which helps to compare the timing of several attempts.
+
 ---
 
 ## 🩺 Troubleshooting

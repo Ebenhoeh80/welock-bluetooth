@@ -226,6 +226,38 @@ du selbst auslöst.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.
 * Alle BLE-Zugriffe auf ein Schloss laufen nacheinander, damit Akkuabfrage und Entriegeln nicht kollidieren.
 
+### Wie lange ist der Zylinder frei? (messen)
+
+Nach einer erfolgreichen Entriegelung lässt sich der Außenknauf nur begrenzte
+Zeit drehen. Diese Zeit ist **nicht dokumentiert und noch nicht gemessen**; die
+„ca. 7 s“ als Standard von *Als entriegelt anzeigen für* sind eine Annahme. Die
+Option steuert nur, wie lange Home Assistant „entriegelt“ *anzeigt* – am Schloss
+ändert sie nichts. Das Schloss meldet seinen Zustand nicht, das echte Zeitfenster
+lässt sich deshalb nur durch Ausprobieren finden:
+
+1. Über Home Assistant entriegeln und die Stoppuhr starten, sobald die Tür in
+   Home Assistant auf *entriegelt* springt (der Befehl ist gerade angekommen).
+2. Nach einer festen Zeit versuchen, den Zylinder zu drehen: **3, 5, 7, 10 und
+   15 s**. Für jeden Versuch neu entriegeln und mindestens 30 s warten.
+3. Pro Versuch notieren, ob sich der Zylinder noch drehen ließ.
+4. Die Werte rund um den Punkt, an dem es nicht mehr geht, wiederholen, um das
+   Ende des Fensters genau zu finden. Die Serie mit dem Schalter
+   *Offline-Entsperren* sowohl an als auch aus durchführen (der Cloud-Weg ist
+   langsamer, das Fenster beginnt dadurch eventuell später).
+5. *Als entriegelt anzeigen für* auf den gemessenen Wert setzen (etwas unter dem
+   Ende des Fensters) und das Ergebnis hier eintragen.
+
+| Versuch nach | Zylinder noch drehbar? (Cloud) | Zylinder noch drehbar? (offline) |
+| :---: | :---: | :---: |
+| 3 s | nicht gemessen | nicht gemessen |
+| 5 s | nicht gemessen | nicht gemessen |
+| 7 s | nicht gemessen | nicht gemessen |
+| 10 s | nicht gemessen | nicht gemessen |
+| 15 s | nicht gemessen | nicht gemessen |
+
+Das Event *Entsperr-Verlauf* und der Sensor *Letzter Entsperrversuch* halten fest,
+wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
+
 ---
 
 ## 🩺 Fehlerbehebung
