@@ -33,7 +33,9 @@ for mod in [
 
 from custom_components.welock.cache import CommandCache  # noqa: E402
 from custom_components.welock.const import (  # noqa: E402
+    BLE_TIMEOUT,
     CONF_LOCAL_UNLOCK,
+    CONFIRM_TIMEOUT,
     HISTORY_LIMIT,
     PATH_CLOUD,
     PATH_NONE,
@@ -182,6 +184,14 @@ class UnlockStatsTests(unittest.TestCase):
         stats.add(_attempt(PATH_OFFLINE, RESULT_CONFIRMED, random_factor=7, error=None))
         text = str(stats.as_dict())
         self.assertNotIn(CMD_RF7.decode(), text)
+
+
+class TimeoutTests(unittest.TestCase):
+    def test_confirmation_wait_is_short(self) -> None:
+        """The post-write wait must not stall the unlocked state like the 15 s status wait."""
+        self.assertGreater(CONFIRM_TIMEOUT, 0)
+        self.assertLessEqual(CONFIRM_TIMEOUT, 5)
+        self.assertLess(CONFIRM_TIMEOUT, BLE_TIMEOUT)
 
 
 class CacheDiscardTests(unittest.TestCase):

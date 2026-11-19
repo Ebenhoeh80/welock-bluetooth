@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ends other sessions of the account).
 
 ### Changed
+- **Faster unlock state.** After writing the unlock command the integration waited up
+  to 15 s for a confirmation from the lock before showing "unlocked". The lock
+  normally answers within about half a second, so the wait is now 3 s
+  (`CONFIRM_TIMEOUT`). The lock itself already opens as soon as the command is
+  written; only the displayed state is faster.
 - A stored command that fails while being written to the lock is dropped from the
   cache, so the next unlock for that challenge value asks the cloud again.
 - README (en/de): the *Last access* sensor and the access-log service now state

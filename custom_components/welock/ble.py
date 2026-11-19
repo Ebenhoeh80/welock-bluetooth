@@ -15,7 +15,7 @@ from bleak_retry_connector import BleakClientWithServiceCache, establish_connect
 from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant
 
-from .const import BLE_TIMEOUT
+from .const import BLE_TIMEOUT, CONFIRM_TIMEOUT
 from .protocol import (
     BATTERY_REQUEST,
     NOTIFY_UUID,
@@ -64,6 +64,7 @@ async def async_exchange(
     command_provider: CommandProvider | None = None,
     timeout: float = BLE_TIMEOUT,
     report: ExchangeReport | None = None,
+    confirm_timeout: float = CONFIRM_TIMEOUT,
 ) -> BatteryResponse:
     """Run the WeLock challenge exchange.
 
@@ -112,7 +113,7 @@ async def async_exchange(
             if report is not None:
                 report.command_written = True
             try:
-                await asyncio.wait_for(followup, timeout)
+                await asyncio.wait_for(followup, confirm_timeout)
                 if report is not None:
                     report.confirmed = True
             except asyncio.TimeoutError:
