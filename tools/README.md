@@ -66,7 +66,7 @@ WeLock Smart Locks nutzen für die lokale Kommunikation Bluetooth Low Energy (BL
 | `welock_cloud_login.py` | `run_cloud_login.sh` | `run_cloud_login.ps1` | Prüft Cloud-Konto, listet Schlosscodes (`deviceNumber`) und BLE-Namen. |
 | `welock_command_probe.py` | `run_command_probe.sh` | `run_command_probe.ps1` | Hybrid-Test: BLE-Challenge + Cloud-Befehl anfordern (**ohne Unlock**). |
 | `welock_unlock.py` | `run_unlock.sh` | `run_unlock.ps1` | Autorisierter Entriegelungstest (**sendet echten Unlock-Befehl per BLE**). |
-| `welock_bench.py` | `run_bench.sh` | `run_bench.ps1` | Misst Scan, Verbindung, Status, Bestätigung und Trennen je Durchgang wie die HA-Integration (Standard: ohne Entsperren; `--listen` beobachtet die Werbung; `--unlock --table` sendet echte Befehle). |
+| `welock_bench.py` | `run_bench.sh` | `run_bench.ps1` | Misst je Durchgang Scan, Verbinden, Status und Trennen wie die HA-Integration, bewertet das Ergebnis (GUT/WACKELIG/SCHLECHT) und vergleicht optional mit Home Assistant (`--ha-connect SEK`). Standard: 5 Durchgänge **ohne Entsperren**; `--listen SEK` beobachtet die Werbung; `--unlock --table DATEI` sendet echte Befehle; `--out DATEI` speichert JSON; Strg+C wertet das Bisherige aus. |
 | `welock_tools.py` | `welock_tools.sh` | `welock_tools.ps1` | Interaktives Konsolen-Hauptmenü mit allen Funktionen. |
 | `dependency_check.py` | — | — | Prüft Python-Version, Bleak-Installation und Bluetooth-Stack. |
 | `welock_protocol.py` | — | — | Gemeinsames Protokollmodul (Konstanten, UUIDs, Parser). |

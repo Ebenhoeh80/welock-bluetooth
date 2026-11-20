@@ -1,21 +1,24 @@
-"""Misst Verbindungsaufbau und Ablauf zum WeLock-Schloss und erfasst dieselben Werte wie die HA-Integration.
+"""Misst Verbindungsaufbau und Ablauf zum WeLock-Schloss (gleiche Phasen wie die HA-Integration).
 
-Pro Durchgang werden – wie im Entsperr-Verlauf der Home-Assistant-Integration – diese Zeiten
-erfasst: scan (bis das Schloss gehört wird), connect, status, command, confirm, teardown,
-dazu Signalstärke (RSSI) und Alter der letzten Werbung beim Verbindungsstart.
+Pro Durchgang: Scan (bis das Schloss gehört wird) -> Verbinden -> Status -> (Befehl senden)
+-> Trennen. Die Phasen heißen wie im Entsperr-Verlauf der Home-Assistant-Integration
+(scan/connect/status/command/confirm/teardown), damit sich die Werte direkt vergleichen lassen.
 
-Standardmäßig wird NICHT entriegelt (nur Verbindung und Statusabfrage; unbegrenzt oft möglich).
-Mit ``--unlock --table DATEI`` wird zusätzlich der lokal bekannte Befehl für die Challenge
-gesendet (gleiches Tabellenformat wie ``import_commands``; die Datei ist privat und darf nicht
-veröffentlicht werden). Zwischen zwei Entriegelungen liegen mindestens 30 Sekunden.
-
-Mit ``--listen SEK`` wird vorab nur das Werbeverhalten des Schlosses beobachtet (Abstände
-zwischen den Werbepaketen, RSSI), ohne eine Verbindung aufzubauen.
+Ohne --unlock wird NICHT entriegelt (nur Verbindung und Statusabfrage, beliebig oft möglich).
+Mit --unlock --table DATEI wird der lokal bekannte Befehl zur Challenge gesendet (Tabellenformat
+wie beim HA-Dienst import_commands; die Datei ist privat). Zwischen zwei Entriegelungen liegen
+mindestens 30 s. Der Test läuft über den Bluetooth-Adapter dieses Rechners, nicht über den
+Dongle von Home Assistant; Home Assistant und die WeLock-App sollten währenddessen nicht mit dem
+Schloss verbunden sein.
 
 Beispiele:
-    python welock_bench.py C4:43:4A:03:42:A9 --rounds 10
-    python welock_bench.py C4:43:4A:03:42:A9 --listen 60
-    python welock_bench.py C4:43:4A:03:42:A9 --rounds 5 --unlock --table welock-oracle-table.json
+    python welock_bench.py C4:43:4A:03:42:A9
+    python welock_bench.py C4:43:4A:03:42:A9 --rounds 10 --ha-connect 31
+    python welock_bench.py C4:43:4A:03:42:A9 --listen 60 --rounds 0
+    python welock_bench.py C4:43:4A:03:42:A9 --unlock --table welock-oracle-table.json
+
+Exitcode: 0 = alle Durchgänge erfolgreich, 1 = mindestens ein Fehler, 2 = falsche Eingabe,
+130 = mit Strg+C abgebrochen.
 """
 
 from __future__ import annotations
@@ -23,9 +26,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import statistics
 import sys
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,11 +54,250 @@ except ImportError:
 
 MIN_UNLOCK_INTERVAL = 30.0
 CONFIRM_TIMEOUT = 3.0
-COLUMNS = ("scan_ms", "connect_ms", "status_ms", "command_ms", "confirm_ms", "teardown_ms")
+PROGRESS_INTERVAL = 10.0  # ohne Terminal höchstens alle 10 s eine Fortschrittszeile
+
+# Richtwerte für die Bewertung (keine Garantien, nur Orientierung).
+GOOD_MEDIAN_S = 5.0
+WOBBLY_MEDIAN_S = 15.0
+WOBBLY_MIN_RATE = 0.7
+MIN_ROUNDS_FOR_RATING = 3
+SLOW_SCAN_S = 5.0
+
+# Fehlerarten mit Meldung und nächstem Schritt.
+ERRORS: dict[str, tuple[str, str]] = {
+    "not_found": (
+        "Schloss nicht gefunden",
+        "Abstand unter 2 m, Schloss durch Berühren wecken, Bluetooth am PC prüfen, erneut starten.",
+    ),
+    "connect_timeout": (
+        "Verbindung kam nicht zustande (Zeitüberschreitung)",
+        "Mit --timeout erhöhen; prüfen, ob Home Assistant oder die WeLock-App gerade verbunden ist.",
+    ),
+    "connect_failed": (
+        "Verbindung abgelehnt oder abgebrochen",
+        "Bluetooth am PC aus- und wieder einschalten, danach erneut starten.",
+    ),
+    "exchange_failed": (
+        "Statusabfrage fehlgeschlagen",
+        "Erneut versuchen; tritt es wiederholt auf, den Abstand zum Schloss verringern.",
+    ),
+    "no_command": (
+        "Kein Befehl für diese Challenge in der Tabelle",
+        "Vollständige Tabelle verwenden (256 Einträge); es wurde nichts gesendet.",
+    ),
+}
 
 
-def _ms(since: float) -> int:
-    return round((time.monotonic() - since) * 1000)
+@dataclass
+class Round:
+    """Ergebnis eines Durchgangs. Zeiten in ms, ``None`` = nicht erfasst (nie 0)."""
+
+    index: int
+    time: str
+    scan_ms: int | None = None
+    connect_ms: int | None = None
+    status_ms: int | None = None
+    command_ms: int | None = None
+    confirm_ms: int | None = None
+    teardown_ms: int | None = None
+    rssi: int | None = None
+    random_factor: int | None = None
+    battery: int | None = None
+    unlocked: bool = False  # Befehl wurde an das Schloss geschrieben
+    confirmed: bool | None = None  # Schloss hat geantwortet (nur wenn unlocked)
+    error: str | None = None  # Schlüssel aus ERRORS
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None
+
+
+# --------------------------------------------------------------------------- Darstellung
+
+
+def num(value: float, digits: int = 1) -> str:
+    """Zahl mit Dezimalkomma."""
+    return f"{value:.{digits}f}".replace(".", ",")
+
+
+def fmt_seconds(ms: int | None) -> str:
+    """Sekunden: unter 1 s zwei Stellen, sonst eine; ``-`` wenn nicht erfasst."""
+    if ms is None:
+        return "-"
+    seconds = ms / 1000
+    return num(seconds, 2 if seconds < 1 else 1)
+
+
+def use_color(stream: object, environ: dict[str, str], no_color_flag: bool) -> bool:
+    """Farbe nur auf einem Terminal und wenn NO_COLOR nicht gesetzt ist."""
+    isatty = getattr(stream, "isatty", lambda: False)()
+    return bool(isatty) and "NO_COLOR" not in environ and not no_color_flag
+
+
+def paint(text: str, code: str, enabled: bool) -> str:
+    return f"\033[{code}m{text}\033[0m" if enabled else text
+
+
+def percentile(sorted_values: list[int], fraction: float) -> int:
+    """Wert am Anteil ``fraction`` (0..1) einer sortierten, nicht leeren Liste (Nearest-Rank)."""
+    index = min(len(sorted_values) - 1, max(0, round(fraction * (len(sorted_values) - 1))))
+    return sorted_values[index]
+
+
+def phase_values(rounds: list[Round], key: str) -> list[int]:
+    return sorted(v for r in rounds if isinstance(v := getattr(r, key), int))
+
+
+def phase_stats(values: list[int]) -> tuple[int, int, int, int]:
+    """(min, Median, P90, max) in ms; ``values`` muss sortiert und nicht leer sein."""
+    return values[0], round(statistics.median(values)), percentile(values, 0.9), values[-1]
+
+
+def rate(rounds: list[Round]) -> tuple[str, str]:
+    """Bewertung nach Erfolgsquote und Median des Verbindungsaufbaus: (Stufe, Begründung)."""
+    if len(rounds) < MIN_ROUNDS_FOR_RATING:
+        return "ZU WENIG DATEN", f"mindestens {MIN_ROUNDS_FOR_RATING} Durchgänge nötig"
+    ok = sum(r.ok for r in rounds)
+    connects = phase_values(rounds, "connect_ms")
+    if not connects:
+        return "SCHLECHT", "keine einzige Verbindung kam zustande"
+    median_s = statistics.median(connects) / 1000
+    failures = len(rounds) - ok
+    why = f"Verbinden dauert im Median {num(median_s)} s"
+    if failures:
+        why += f", {failures} Ausfall" + ("" if failures == 1 else "e")
+    if failures == 0 and median_s < GOOD_MEDIAN_S:
+        return "GUT", why
+    if ok / len(rounds) >= WOBBLY_MIN_RATE and median_s < WOBBLY_MEDIAN_S:
+        return "WACKELIG", why
+    return "SCHLECHT", why
+
+
+def conclusions(rounds: list[Round], ha_connect_s: float | None) -> list[str]:
+    """Regelbasierte Hinweise zur Einordnung (Richtwerte, keine Garantie)."""
+    lines: list[str] = []
+    scans = phase_values(rounds, "scan_ms")
+    connects = phase_values(rounds, "connect_ms")
+    statuses = phase_values(rounds, "status_ms")
+    if scans and statistics.median(scans) / 1000 > SLOW_SCAN_S:
+        lines.append(
+            "Das Schloss wird erst nach längerer Zeit gehört: seltene Werbung oder schwache "
+            "Funkstrecke."
+        )
+    if connects:
+        connect_s = statistics.median(connects) / 1000
+        fast_status = bool(statuses) and statistics.median(statuses) / 1000 < 1
+        if connect_s >= GOOD_MEDIAN_S * 2 and fast_status:
+            lines.append(
+                "Der Verbindungsaufbau ist langsam, danach läuft alles schnell: Das spricht für "
+                "das Schloss bzw. die Funkstrecke, nicht für die Software."
+            )
+        if ha_connect_s is not None:
+            slower = ha_connect_s - connect_s > max(5.0, connect_s * 0.5)
+            verdict = (
+                "Home Assistant ist deutlich langsamer: Dongle, VM oder gleichzeitige "
+                "Verbindungen prüfen."
+                if slower
+                else "Home Assistant liegt in der gleichen Größenordnung: Das Schloss selbst "
+                "ist die Ursache."
+            )
+            lines.append(
+                f"Vergleich Verbinden: hier {num(connect_s)} s, Home Assistant "
+                f"{num(ha_connect_s)} s. {verdict}"
+            )
+    lines.append(
+        "Der Test nutzt den Bluetooth-Adapter dieses PCs, nicht den Dongle von Home Assistant."
+    )
+    return lines
+
+
+def columns(unlock: bool) -> list[tuple[str, str]]:
+    """(Attribut, Kopf) je Spalte; Befehl/Bestätigung nur mit --unlock."""
+    cols = [("scan_ms", "Scan"), ("connect_ms", "Verbinden"), ("status_ms", "Status")]
+    if unlock:
+        cols += [("command_ms", "Befehl"), ("confirm_ms", "Bestätigt")]
+    return [*cols, ("teardown_ms", "Trennen")]
+
+
+def header(unlock: bool) -> str:
+    cols = columns(unlock)
+    top = " Nr " + " ".join(f"{name:>9}" for _, name in cols) + "  Ergebnis"
+    unit = "    " + " ".join(f"{'[s]':>9}" for _ in cols)
+    return f"{top}\n{unit}"
+
+
+def result_text(r: Round) -> tuple[str, str]:
+    """(Status, Details) einer Zeile; der Status ist immer auch als Text lesbar."""
+    if r.error:
+        message, step = ERRORS[r.error]
+        return "FEHLER", f"{message}\n       -> {step}"
+    parts = [f"RSSI {r.rssi} dBm" if r.rssi is not None else "RSSI nicht erfasst"]
+    if r.battery is not None:
+        parts.append(f"Akku {r.battery} %")
+    if r.unlocked:
+        parts.append("ENTRIEGELT" if r.confirmed else "ENTRIEGELT, UNBESTÄTIGT: Tür prüfen")
+    return "OK", ", ".join(parts)
+
+
+def format_row(r: Round, unlock: bool, color: bool) -> str:
+    cells = " ".join(f"{fmt_seconds(getattr(r, key)):>9}" for key, _ in columns(unlock))
+    status, details = result_text(r)
+    padded = paint(status.ljust(6), "32" if r.ok else "31", color)
+    return f"{r.index:>3} {cells}  {padded} {details}"
+
+
+def format_summary(
+    rounds: list[Round], unlock: bool, ha_connect_s: float | None, color: bool
+) -> str:
+    ok = sum(r.ok for r in rounds)
+    lines = [
+        f"\nZusammenfassung: {ok} von {len(rounds)} erfolgreich ({round(100 * ok / len(rounds))} %)",
+        f"  {'Phase':<10} {'min':>7} {'Median':>7} {'P90':>7} {'max':>7}   (Sekunden)",
+    ]
+    for key, name in columns(unlock):
+        values = phase_values(rounds, key)
+        if values:
+            stats = (fmt_seconds(v) for v in phase_stats(values))
+            lines.append(f"  {name:<10} " + " ".join(f"{s:>7}" for s in stats))
+    level, why = rate(rounds)
+    code = {"GUT": "32", "WACKELIG": "33", "SCHLECHT": "31"}.get(level, "0")
+    lines.append(f"Bewertung: {paint(level, code, color)} - {why} (Richtwerte)")
+    lines.extend(f"Hinweis: {line}" for line in conclusions(rounds, ha_connect_s))
+    return "\n".join(lines)
+
+
+class Progress:
+    """Zeigt bei langen Wartezeiten, dass etwas passiert (Terminal: eine Zeile, sonst selten)."""
+
+    def __init__(self, stream: object, enabled: bool) -> None:
+        self._stream = stream
+        self._tty = bool(getattr(stream, "isatty", lambda: False)())
+        self._enabled = enabled
+        self._last_print = float("-inf")
+        self._dirty = False
+
+    def update(self, label: str, elapsed: float, limit: float) -> None:
+        if not self._enabled:
+            return
+        if self._tty:
+            width = 20
+            filled = min(width, int(width * elapsed / limit))
+            bar = "#" * filled + "-" * (width - filled)
+            text = f"\r  {label} {elapsed:>3.0f} s / {limit:.0f} s [{bar}]"
+            print(text, end="", file=self._stream, flush=True)
+            self._dirty = True
+        elif time.monotonic() - self._last_print >= PROGRESS_INTERVAL:
+            text = f"  {label} {elapsed:.0f} s / {limit:.0f} s ..."
+            print(text, file=self._stream, flush=True)
+            self._last_print = time.monotonic()
+
+    def clear(self) -> None:
+        if self._dirty and self._tty:
+            print("\r" + " " * 60 + "\r", end="", file=self._stream, flush=True)
+            self._dirty = False
+
+
+# --------------------------------------------------------------------------- Eingaben
 
 
 def load_table(path: str) -> dict[int, bytes]:
@@ -71,6 +315,13 @@ def load_table(path: str) -> dict[int, bytes]:
     return table
 
 
+# --------------------------------------------------------------------------- Bluetooth
+
+
+def _ms(since: float) -> int:
+    return round((time.monotonic() - since) * 1000)
+
+
 async def listen(address: str, seconds: float) -> dict[str, object]:
     """Beobachtet nur die Werbung des Schlosses und wertet Abstände und RSSI aus."""
     seen: list[tuple[float, int]] = []
@@ -83,14 +334,14 @@ async def listen(address: str, seconds: float) -> dict[str, object]:
     async with BleakScanner(_callback):
         await asyncio.sleep(seconds)
 
-    result: dict[str, object] = {"seconds": seconds, "packets": len(seen)}
+    result: dict[str, object] = {"sekunden": seconds, "pakete": len(seen)}
     if len(seen) >= 2:
         gaps = [b[0] - a[0] for a, b in zip(seen, seen[1:], strict=False)]
         rssis = [r for _, r in seen]
         result.update(
-            gap_min_s=round(min(gaps), 2),
-            gap_median_s=round(statistics.median(gaps), 2),
-            gap_max_s=round(max(gaps), 2),
+            abstand_min_s=round(min(gaps), 2),
+            abstand_median_s=round(statistics.median(gaps), 2),
+            abstand_max_s=round(max(gaps), 2),
             rssi_min=min(rssis),
             rssi_median=round(statistics.median(rssis)),
             rssi_max=max(rssis),
@@ -98,49 +349,83 @@ async def listen(address: str, seconds: float) -> dict[str, object]:
     return result
 
 
+async def _scan(address: str, timeout: float, row: Round, progress: Progress) -> object | None:
+    """Wartet, bis das Schloss gehört wird; ``None`` bei Zeitüberschreitung."""
+    found: asyncio.Future = asyncio.get_running_loop().create_future()
+
+    def _callback(device, adv) -> None:  # noqa: ANN001
+        if device.address.upper() == address.upper():
+            row.rssi = adv.rssi
+            if not found.done():
+                found.set_result(device)
+
+    started = time.monotonic()
+    try:
+        async with BleakScanner(_callback):
+            while not found.done():
+                elapsed = time.monotonic() - started
+                if elapsed >= timeout:
+                    return None
+                progress.update("Suche    ", elapsed, timeout)
+                await asyncio.wait({found}, timeout=min(1.0, timeout - elapsed))
+    finally:
+        row.scan_ms = _ms(started)
+        progress.clear()
+    return found.result()
+
+
+async def _connect(
+    target: object, timeout: float, row: Round, progress: Progress
+) -> BleakClient | None:
+    """Baut die Verbindung auf; setzt ``row.error`` bei Misserfolg."""
+    client = BleakClient(target, timeout=timeout)
+    started = time.monotonic()
+    task = asyncio.ensure_future(client.connect())
+    try:
+        while not task.done():
+            elapsed = time.monotonic() - started
+            if elapsed >= timeout + 5:
+                task.cancel()
+                row.error = "connect_timeout"
+                break
+            progress.update("Verbinden", elapsed, timeout)
+            await asyncio.wait({task}, timeout=min(1.0, timeout + 5 - elapsed))
+        if row.error is None:
+            task.result()
+    except asyncio.CancelledError:
+        task.cancel()
+        raise
+    except asyncio.TimeoutError:
+        row.error = "connect_timeout"
+    except (BleakError, OSError):
+        row.error = "connect_failed"
+    finally:
+        row.connect_ms = _ms(started)
+        progress.clear()
+    return client if row.error is None else None
+
+
 async def one_round(
+    index: int,
     address: str,
     *,
     timeout: float,
     direct: bool,
     table: dict[int, bytes] | None,
-) -> dict[str, object]:
+    progress: Progress,
+) -> Round:
     """Ein Durchgang: (scannen) -> verbinden -> Status -> (entsperren) -> trennen."""
-    row: dict[str, object] = {"time": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    row = Round(index=index, time=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     target: object = address
-    last_adv = time.monotonic()
-
     if not direct:
-        phase = time.monotonic()
-        found: asyncio.Future = asyncio.get_running_loop().create_future()
-
-        def _callback(device, adv) -> None:  # noqa: ANN001
-            nonlocal last_adv
-            if device.address.upper() == address.upper():
-                last_adv = time.monotonic()
-                row["rssi"] = adv.rssi
-                if not found.done():
-                    found.set_result(device)
-
-        try:
-            async with BleakScanner(_callback):
-                target = await asyncio.wait_for(found, timeout)
-        except asyncio.TimeoutError:
-            row["scan_ms"] = _ms(phase)
-            row["error"] = "nicht gefunden (Scan-Timeout)"
+        target = await _scan(address, timeout, row, progress)
+        if target is None:
+            row.error = "not_found"
             return row
-        row["scan_ms"] = _ms(phase)
-        row["adv_age_ms"] = _ms(last_adv)
 
-    client = BleakClient(target, timeout=timeout)
-    phase = time.monotonic()
-    try:
-        await client.connect()
-    except (BleakError, asyncio.TimeoutError, OSError) as err:
-        row["connect_ms"] = _ms(phase)
-        row["error"] = f"Verbindung fehlgeschlagen: {type(err).__name__}"
+    client = await _connect(target, timeout, row, progress)
+    if client is None:
         return row
-    row["connect_ms"] = _ms(phase)
 
     loop = asyncio.get_running_loop()
     status: asyncio.Future = loop.create_future()
@@ -162,29 +447,28 @@ async def one_round(
         await client.start_notify(NOTIFY_UUID, _notify)
         await client.write_gatt_char(WRITE_UUID, BATTERY_REQUEST, response=False)
         state = await asyncio.wait_for(status, timeout)
-        row["status_ms"] = _ms(phase)
-        row["random_factor"] = state.random_factor
-        row["battery"] = state.battery
+        row.status_ms = _ms(phase)
+        row.random_factor, row.battery = state.random_factor, state.battery
 
         if table is not None:
             phase = time.monotonic()
             command = table.get(state.random_factor)
-            row["command_ms"] = _ms(phase)
+            row.command_ms = _ms(phase)
             if command is None:
-                row["error"] = "kein Befehl für diese Challenge in der Tabelle"
+                row.error = "no_command"
             else:
                 waiting = True
                 phase = time.monotonic()
                 await client.write_gatt_char(WRITE_UUID, command, response=False)
+                row.unlocked = True
                 try:
                     await asyncio.wait_for(followup, CONFIRM_TIMEOUT)
-                    row["confirmed"] = True
+                    row.confirmed = True
                 except asyncio.TimeoutError:
-                    row["confirmed"] = False
-                row["confirm_ms"] = _ms(phase)
-                row["unlocked_at"] = time.monotonic()
-    except (BleakError, asyncio.TimeoutError, ValueError, OSError) as err:
-        row["error"] = f"Austausch fehlgeschlagen: {type(err).__name__}"
+                    row.confirmed = False
+                row.confirm_ms = _ms(phase)
+    except (BleakError, asyncio.TimeoutError, ValueError, OSError):
+        row.error = "exchange_failed"
     finally:
         phase = time.monotonic()
         try:
@@ -195,68 +479,69 @@ async def one_round(
             await client.disconnect()
         except (BleakError, asyncio.TimeoutError, OSError):
             pass
-        row["teardown_ms"] = _ms(phase)
+        row.teardown_ms = _ms(phase)
     return row
 
 
-def _fmt(value: object) -> str:
-    return "-" if value is None else str(value)
+# --------------------------------------------------------------------------- Ablauf
 
 
-def print_row(index: int, row: dict[str, object]) -> None:
-    cells = " ".join(f"{_fmt(row.get(key)):>9}" for key in COLUMNS)
-    extra = f"rssi={_fmt(row.get('rssi'))} alter={_fmt(row.get('adv_age_ms'))}ms"
-    if "random_factor" in row:
-        extra += f" rf={row['random_factor']} akku={row.get('battery')}%"
-    if row.get("confirmed") is not None:
-        extra += " bestätigt" if row["confirmed"] else " UNBESTÄTIGT"
-    if "error" in row:
-        extra += f"  FEHLER: {row['error']}"
-    print(f"{index:>3} {cells}  {extra}")
+def intro(args: argparse.Namespace) -> str:
+    mode = "direkt, ohne Scan (RSSI nicht verfügbar)" if args.direct else "mit Scan vorab"
+    action = "ENTRIEGELT ECHT" if args.unlock else "ohne Entriegeln"
+    return (
+        f"WeLock-Messung  {args.address}\n"
+        f"{args.rounds} Durchgänge | Pause {args.pause:g} s | Zeitlimit {args.timeout:g} s | "
+        f"{mode} | {action} | Abbruch: Strg+C\n"
+        "Phasen wie im HA-Entsperr-Verlauf: Scan=scan, Verbinden=connect, Status=status, "
+        "Trennen=teardown"
+    )
 
 
-def summarize(rows: list[dict[str, object]]) -> None:
-    ok = [r for r in rows if "error" not in r]
-    print(f"\nErfolgreich: {len(ok)} von {len(rows)}")
-    for key in COLUMNS:
-        values = sorted(int(r[key]) for r in rows if isinstance(r.get(key), int))  # type: ignore[arg-type]
-        if not values:
-            continue
-        p90 = values[min(len(values) - 1, round(0.9 * (len(values) - 1)))]
-        print(
-            f"  {key:<12} min {values[0]:>6}  Median {round(statistics.median(values)):>6}"
-            f"  P90 {p90:>6}  max {values[-1]:>6}"
-        )
-
-
-async def main_async(args: argparse.Namespace) -> int:
+async def run(args: argparse.Namespace, rounds: list[Round], color: bool) -> None:
     table = load_table(args.table) if args.unlock else None
+    progress = Progress(sys.stdout, enabled=not args.quiet)
+    print(intro(args))
     if args.listen:
-        print(f"Beobachte die Werbung des Schlosses {args.listen:.0f} s lang ...")
-        print(json.dumps(await listen(args.address, args.listen), indent=2))
-        if not args.rounds:
-            return 0
-
-    print(f"\n{'#':>3} " + " ".join(f"{c:>9}" for c in COLUMNS) + "  Details")
-    rows: list[dict[str, object]] = []
+        print(f"\nBeobachte die Werbung {args.listen:g} s lang ...")
+        print(json.dumps(await listen(args.address, args.listen), indent=2, ensure_ascii=False))
+    if not args.rounds:
+        return
+    print("\n" + header(args.unlock))
     last_unlock = float("-inf")
     for index in range(1, args.rounds + 1):
         if table is not None:
             wait = MIN_UNLOCK_INTERVAL - (time.monotonic() - last_unlock)
             if wait > 0:
                 await asyncio.sleep(wait)
-        row = await one_round(args.address, timeout=args.timeout, direct=args.direct, table=table)
-        if "unlocked_at" in row:
-            last_unlock = float(row.pop("unlocked_at"))  # type: ignore[arg-type]
-        rows.append(row)
-        print_row(index, row)
+        row = await one_round(
+            index,
+            args.address,
+            timeout=args.timeout,
+            direct=args.direct,
+            table=table,
+            progress=progress,
+        )
+        if row.unlocked:
+            last_unlock = time.monotonic()
+        rounds.append(row)
+        print(format_row(row, args.unlock, color))
         if index < args.rounds:
             await asyncio.sleep(args.pause)
-    summarize(rows)
-    if args.out:
-        Path(args.out).write_text(json.dumps(rows, indent=2), encoding="utf-8")
-        print(f"\nRohdaten gespeichert: {args.out}")
-    return 0
+
+
+def finish(args: argparse.Namespace, rounds: list[Round], color: bool, interrupted: bool) -> int:
+    """Gibt Zusammenfassung und Rohdaten aus und liefert den Exitcode."""
+    if rounds:
+        print(format_summary(rounds, args.unlock, args.ha_connect, color))
+        if args.out:
+            data = [asdict(r) for r in rounds]
+            Path(args.out).write_text(json.dumps(data, indent=2, ensure_ascii=False), "utf-8")
+            print(f"Rohdaten: {args.out}")
+    if interrupted:
+        print("\nAbgebrochen; die bisherigen Durchgänge sind oben ausgewertet.", file=sys.stderr)
+        return 130
+    return 0 if all(r.ok for r in rounds) else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -264,56 +549,79 @@ def build_parser() -> argparse.ArgumentParser:
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("address", help="BLE-Adresse des Schlosses (z. B. C4:43:4A:03:42:A9)")
-    parser.add_argument("--rounds", type=int, default=10, help="Anzahl Durchgänge (Standard 10)")
-    parser.add_argument("--pause", type=float, default=10.0, help="Pause zwischen Durchgängen in s")
-    parser.add_argument("--timeout", type=float, default=30.0, help="Timeout je Schritt in s")
+    parser.add_argument("--rounds", type=int, default=5, help="Anzahl Durchgänge (Standard 5)")
+    parser.add_argument("--pause", type=float, default=5.0, help="Pause zwischen Durchgängen in s")
+    parser.add_argument("--timeout", type=float, default=60.0, help="Zeitlimit je Schritt in s")
     parser.add_argument(
         "--listen", type=float, default=0.0, help="vorab Werbeverhalten beobachten (s)"
     )
     parser.add_argument("--direct", action="store_true", help="ohne eigenen Scan direkt verbinden")
     parser.add_argument(
-        "--unlock", action="store_true", help="auch wirklich entsperren (braucht --table)"
+        "--unlock", action="store_true", help="wirklich entsperren (braucht --table)"
     )
     parser.add_argument("--table", help="Befehlstabelle (JSON) für --unlock; privat halten")
     parser.add_argument(
         "--yes", action="store_true", help="Sicherheitsabfrage für --unlock überspringen"
     )
+    parser.add_argument(
+        "--ha-connect", type=float, help="Verbindungszeit in Home Assistant (s) zum Vergleich"
+    )
     parser.add_argument("--out", help="Rohdaten als JSON speichern")
+    parser.add_argument("--no-color", action="store_true", help="keine Farben")
+    parser.add_argument("--quiet", action="store_true", help="keine Fortschrittsanzeige")
     return parser
+
+
+def validate(args: argparse.Namespace) -> str | None:
+    """Fehlertext bei unsinnigen Eingaben, sonst ``None``."""
+    if args.rounds < 0 or args.pause < 0 or args.listen < 0 or args.timeout <= 0:
+        return "--rounds, --pause, --listen dürfen nicht negativ sein; --timeout muss positiv sein."
+    if args.ha_connect is not None and args.ha_connect <= 0:
+        return "--ha-connect muss eine positive Zahl in Sekunden sein."
+    if args.unlock and not args.table:
+        return "--unlock braucht --table DATEI."
+    return None
+
+
+def confirm_unlock(args: argparse.Namespace) -> bool:
+    minutes = args.rounds * MIN_UNLOCK_INTERVAL / 60
+    print(
+        f"ACHTUNG: Es werden bis zu {args.rounds} echte Entsperrbefehle gesendet "
+        f"(je mindestens 30 s Abstand, Dauer etwa {minutes:.0f} min).\n"
+        "Die Tür wird wirklich entriegelt. Home Assistant und die WeLock-App dürfen "
+        "währenddessen nicht entsperren."
+    )
+    return input("ENTRIEGELN eingeben zum Fortfahren: ").strip() == "ENTRIEGELN"
 
 
 def main() -> int:
     args = build_parser().parse_args()
+    error = validate(args)
+    if error:
+        print(f"Fehler: {error}", file=sys.stderr)
+        return 2
     if BleakScanner is None:
         print(
-            "Fehler: 'bleak' fehlt. Installation: pip install -r tools/requirements-ble.txt",
+            "Fehler: 'bleak' fehlt.\n  -> pip install -r tools/requirements-ble.txt",
             file=sys.stderr,
         )
         return 1
-    if args.rounds < 0 or args.timeout <= 0 or args.pause < 0:
-        print(
-            "Fehler: --rounds, --timeout und --pause müssen sinnvolle Werte haben.", file=sys.stderr
-        )
+    if args.unlock and not args.yes and not confirm_unlock(args):
+        print("Abgebrochen; es wurde nichts gesendet.")
         return 1
-    if args.unlock:
-        if not args.table:
-            print("Fehler: --unlock braucht --table DATEI.", file=sys.stderr)
-            return 1
-        if not args.yes:
-            print(
-                f"Es werden bis zu {args.rounds} echte Entsperrbefehle gesendet (je >= 30 s Abstand)."
-            )
-            if input("ENTRIEGELN eingeben zum Fortfahren: ").strip() != "ENTRIEGELN":
-                print("Abgebrochen; es wurde nichts gesendet.")
-                return 1
+    if os.name == "nt":
+        os.system("")  # schaltet ANSI-Farben in Windows-Konsolen ein
+    color = use_color(sys.stdout, dict(os.environ), args.no_color)
+    rounds: list[Round] = []
+    interrupted = False
     try:
-        return asyncio.run(main_async(args))
+        asyncio.run(run(args, rounds, color))
     except KeyboardInterrupt:
-        print("\nAbgebrochen.", file=sys.stderr)
-        return 1
+        interrupted = True
     except (OSError, ValueError) as err:
         print(f"Fehler: {err}", file=sys.stderr)
         return 1
+    return finish(args, rounds, color, interrupted)
 
 
 if __name__ == "__main__":
