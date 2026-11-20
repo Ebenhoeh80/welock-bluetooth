@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import asdict, dataclass, field, replace
-from typing import Any
+from typing import Any, TypedDict
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -62,6 +62,18 @@ class UnlockAttempt:
     connect_attempts: int | None = None
 
 
+class PhaseTimes(TypedDict):
+    """The per-phase times of an exchange, as stored in an ``UnlockAttempt``."""
+
+    connect_ms: int | None
+    status_ms: int | None
+    command_ms: int | None
+    confirm_ms: int | None
+    teardown_ms: int | None
+    adv_age_ms: int | None
+    connect_attempts: int | None
+
+
 @dataclass
 class PathStats:
     """Totals for one path."""
@@ -105,14 +117,22 @@ PHASE_KEYS = (
 )
 
 
+def _valid_int(value: object, minimum: int | None = None, maximum: int | None = None) -> int | None:
+    """Return ``value`` if it is a real integer (not a bool) within the bounds, else ``None``."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    if (minimum is not None and value < minimum) or (maximum is not None and value > maximum):
+        return None
+    return value
+
+
 def _optional_ms(value: object) -> int | None:
     """Return a stored phase time, or ``None`` if it is missing or not a valid time."""
-    ok = isinstance(value, int) and not isinstance(value, bool) and value >= 0
-    return value if ok else None
+    return _valid_int(value, minimum=0)
 
 
 def _non_negative_int(value: object) -> int:
-    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+    return _valid_int(value, minimum=0) or 0
 
 
 def _attempt_from_dict(item: object) -> UnlockAttempt | None:
@@ -124,20 +144,17 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
     result = item.get("result")
     if not isinstance(time, str) or path not in PATHS or result not in RESULTS:
         return None
-    rf = item.get("random_factor")
-    rssi = item.get("rssi")
     error = item.get("error")
-    phases = {key: _optional_ms(item.get(key)) for key in PHASE_KEYS}
     return UnlockAttempt(
         time=time,
         path=path,
         result=result,
         duration_ms=_non_negative_int(item.get("duration_ms")),
-        random_factor=rf if isinstance(rf, int) and 0 <= rf <= 255 else None,
+        random_factor=_valid_int(item.get("random_factor"), minimum=0, maximum=255),
         error=error if isinstance(error, str) else None,
-        rssi=rssi if isinstance(rssi, int) and not isinstance(rssi, bool) else None,
+        rssi=_valid_int(item.get("rssi")),
         evicted=item.get("evicted") is True,
-        **phases,
+        **{key: _optional_ms(item.get(key)) for key in PHASE_KEYS},
     )
 
 

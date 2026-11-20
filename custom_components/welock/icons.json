@@ -1,0 +1,22 @@
+{
+  "entity": {
+    "sensor": {
+      "last_access": {
+        "default": "mdi:history"
+      },
+      "last_unlock": {
+        "default": "mdi:history"
+      }
+    },
+    "event": {
+      "unlock": {
+        "default": "mdi:history"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "default": "mdi:lock-clock"
+      }
+    }
+  }
+}

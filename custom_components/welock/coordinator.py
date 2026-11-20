@@ -6,6 +6,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -47,7 +48,7 @@ from .const import (
 from .health import QualityReport, connection_quality
 from .issues import WeLockIssues
 from .protocol import BatteryResponse
-from .stats import UnlockAttempt, UnlockStats
+from .stats import PhaseTimes, UnlockAttempt, UnlockStats
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +64,18 @@ def static_options(options: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in options.items() if key != CONF_LOCAL_UNLOCK}
 
 
-def _phase_times(report: ExchangeReport) -> dict[str, int | None]:
+@dataclass(frozen=True)
+class _UnlockOutcome:
+    """The facts of one unlock attempt that are needed to record it afterwards."""
+
+    path: str
+    random_factor: int | None
+    report: ExchangeReport
+    duration_ms: int
+    rssi: int | None
+
+
+def _phase_times(report: ExchangeReport) -> PhaseTimes:
     """Return the per-phase times of an exchange for an unlock attempt."""
     return {
         "connect_ms": report.connect_ms,
@@ -221,9 +233,12 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             except asyncio.TimeoutError:
                 return
             attempt = self.stats.latest
-            if attempt is not None and attempt.teardown_ms is None:
-                if await self.stats.async_update_latest(attempt, teardown_ms=report.teardown_ms):
-                    self.async_update_listeners()
+            if (
+                attempt is not None
+                and attempt.teardown_ms is None
+                and await self.stats.async_update_latest(attempt, teardown_ms=report.teardown_ms)
+            ):
+                self.async_update_listeners()
 
         task = self.hass.async_create_background_task(_run(), f"welock teardown {self.address}")
         self._teardown_tasks.add(task)
@@ -287,8 +302,8 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "battery": self.battery,
         }
 
-    async def async_unlock(self) -> None:
-        """Challenge -> cloud command -> BLE write. Raises HomeAssistantError."""
+    def _ensure_unlock_possible(self) -> None:
+        """Refuse an unlock that is too soon after the last one or while the lock is busy."""
         wait = MIN_UNLOCK_INTERVAL - (time.monotonic() - self._last_unlock)
         if wait > 0:
             raise HomeAssistantError(
@@ -301,6 +316,10 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         if self._ble_lock.locked():
             raise HomeAssistantError(translation_domain=DOMAIN, translation_key="lock_busy")
+
+    async def async_unlock(self) -> None:
+        """Challenge -> cloud command -> BLE write. Raises HomeAssistantError."""
+        self._ensure_unlock_possible()
 
         started = time.monotonic()
         report = ExchangeReport()
@@ -325,6 +344,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             return command
 
+        state: BatteryResponse | None = None
         error: Exception | None = None
         recorded = asyncio.Event()
         handed_off = False
@@ -345,54 +365,73 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if not handed_off:
                 self._ble_lock.release()
 
-        duration_ms = round((time.monotonic() - started) * 1000)
-        # The signal strength when the connection started beats the polled value,
-        # which can be up to a minute old.
-        rssi = report.rssi if report.rssi is not None else (self.data or {}).get("rssi")
-        if error is not None:
-            evicted = False
-            if path == PATH_OFFLINE and report.command_written and random_factor is not None:
-                # A stored command that failed while being written is not trusted
-                # again; the next attempt for this challenge asks the cloud.
-                evicted = await self.cache.async_discard(random_factor)
-                _LOGGER.warning(
-                    "Offline unlock for randomFactor=%d failed; the stored command was dropped",
-                    random_factor,
-                )
-            await self._async_record_unlock(
-                UnlockAttempt(
-                    time=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                    path=path,
-                    result=RESULT_FAILED,
-                    duration_ms=duration_ms,
-                    random_factor=random_factor,
-                    error=type(error).__name__,
-                    rssi=rssi,
-                    evicted=evicted,
-                    **_phase_times(report),
-                )
-            )
-            mapped = self._map_unlock_error(error)
+        outcome = _UnlockOutcome(
+            path=path,
+            random_factor=random_factor,
+            report=report,
+            duration_ms=round((time.monotonic() - started) * 1000),
+            # The signal strength when the connection started beats the polled value,
+            # which can be up to a minute old.
+            rssi=report.rssi if report.rssi is not None else (self.data or {}).get("rssi"),
+        )
+        if state is None:
+            failure = error or WeLockBleError("The exchange ended without a status answer")
+            await self._async_record_failed_unlock(failure, outcome)
+            mapped = self._map_unlock_error(failure)
             if mapped is None:
-                raise error
-            raise mapped from error
+                raise failure
+            raise mapped from failure
 
+        await self._async_record_successful_unlock(state, outcome)
+        recorded.set()
+        self.async_set_updated_data({**(self.data or {}), "battery": state.battery})
+
+    async def _async_record_failed_unlock(self, error: Exception, outcome: _UnlockOutcome) -> None:
+        """Record a failed attempt; a stored command that failed while being written is dropped."""
+        evicted = False
+        if (
+            outcome.path == PATH_OFFLINE
+            and outcome.report.command_written
+            and outcome.random_factor is not None
+        ):
+            # It is not trusted again; the next attempt for this challenge asks the cloud.
+            evicted = await self.cache.async_discard(outcome.random_factor)
+            _LOGGER.warning(
+                "Offline unlock for randomFactor=%d failed; the stored command was dropped",
+                outcome.random_factor,
+            )
+        await self._async_record_unlock(
+            UnlockAttempt(
+                time=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                path=outcome.path,
+                result=RESULT_FAILED,
+                duration_ms=outcome.duration_ms,
+                random_factor=outcome.random_factor,
+                error=type(error).__name__,
+                rssi=outcome.rssi,
+                evicted=evicted,
+                **_phase_times(outcome.report),
+            )
+        )
+
+    async def _async_record_successful_unlock(
+        self, state: BatteryResponse, outcome: _UnlockOutcome
+    ) -> None:
+        """Record a completed unlock and take over the battery level the lock reported."""
         self._last_unlock = time.monotonic()
         self.battery = state.battery
         self.issues.update_battery(self.battery)
         await self._async_record_unlock(
             UnlockAttempt(
                 time=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                path=path,
-                result=RESULT_CONFIRMED if report.confirmed else RESULT_UNCONFIRMED,
-                duration_ms=duration_ms,
-                random_factor=random_factor,
-                rssi=rssi,
-                **_phase_times(report),
+                path=outcome.path,
+                result=RESULT_CONFIRMED if outcome.report.confirmed else RESULT_UNCONFIRMED,
+                duration_ms=outcome.duration_ms,
+                random_factor=outcome.random_factor,
+                rssi=outcome.rssi,
+                **_phase_times(outcome.report),
             )
         )
-        recorded.set()
-        self.async_set_updated_data({**(self.data or {}), "battery": state.battery})
 
     async def async_fetch_access_log(self, page_size: int) -> int:
         """Fetch the lock's access log from the cloud (on demand only).

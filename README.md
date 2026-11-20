@@ -308,6 +308,44 @@ The **diagnostics** (Device → Download diagnostics) contain neither the accoun
 
 ---
 
+## 🔌 Supported devices & functions
+
+| Device | Supported |
+| :--- | :--- |
+| WeLock smart lock with Bluetooth module (BLE name `WeLock*`) | yes, one entry per lock |
+| WeLock locks without a Bluetooth module | no |
+| Other lock brands | no |
+
+**Functions:** unlock (BLE, with the command from the WeLock cloud or, optionally, from the local table), display of the
+unlocked state for the relock delay, battery level, connection reachability and quality, signal strength, unlock
+statistics and history, access log (service). **Not supported:** locking from Home Assistant (the lock relocks by
+itself), changing lock settings, managing users or keys, locks of other makers.
+
+## 🔄 Data updates
+
+Home Assistant does not hold a permanent Bluetooth connection (it would drain the battery). The lock is read on
+demand and on a schedule: battery every 24 hours by default and a reachability check every 60 seconds (the latter uses the Bluetooth cache only and creates no radio traffic; see
+[Options](#-options)). An unlock connects, reads the lock's challenge, asks the cloud for the command (or uses the
+stored one), sends it and disconnects. The WeLock cloud is contacted only for unlocking, for the setup and for the
+optional access log.
+
+## ⚠️ Known limitations
+
+- The lock state is *assumed*: the lock does not report whether it is open, so the entity shows *unlocked* for the
+  configured delay (10 s by default, the time the knob stays engaged) after an unlock and *locked* otherwise.
+- Unlocking needs a Bluetooth adapter or ESPHome Bluetooth proxy within a few metres; a weak signal is the usual
+  reason for slow unlocks (see [Troubleshooting](#-troubleshooting)).
+- Every cloud login ends other sessions of the account (for example the WeLock app).
+- Offline unlocking is experimental and only works for challenge values the integration has learned.
+
+## 🗑️ Removal
+
+**Settings → Devices & Services → WeLock Smart Lock BLE → ⋮ → Delete.** The lock, its entities and the stored
+command table of this entry are removed from Home Assistant. Nothing is changed on the lock. Then remove the
+integration in HACS if you wish, and change your WeLock password if you shared it while debugging.
+
+---
+
 ## 🛡 Privacy & security
 
 * Email and password live only in the Home Assistant config entry. The cloud token is kept in memory only and discarded after every request.

@@ -8,6 +8,10 @@
         "data": {
           "username": "E-Mail / WeLock-Konto",
           "password": "Passwort"
+        },
+        "data_description": {
+          "username": "Die E-Mail-Adresse deines WeLock-App-Kontos.",
+          "password": "Das Passwort deines WeLock-App-Kontos. Es wird in Home Assistant gespeichert und nur an die WeLock-Cloud gesendet."
         }
       },
       "select": {
@@ -15,6 +19,9 @@
         "description": "Wähle das BLE-Modul deines Schlosses. „In Reichweite“ heißt: Ein Bluetooth-Adapter oder ESPHome-Bluetooth-Proxy von Home Assistant kann sich gerade damit verbinden.",
         "data": {
           "address": "Schloss / BLE-Modul"
+        },
+        "data_description": {
+          "address": "Das Bluetooth-Modul des Schlosses, das eingerichtet werden soll. „In Reichweite“ heißt: Home Assistant erreicht es gerade."
         }
       },
       "verify": {
@@ -27,6 +34,9 @@
         "description": "Die WeLock-Cloud hat die Anmeldung für {username} abgelehnt. Gib das aktuelle Passwort ein. Das beendet andere Sitzungen des Kontos (z. B. die WeLock-App).",
         "data": {
           "password": "Passwort"
+        },
+        "data_description": {
+          "password": "Das Passwort deines WeLock-App-Kontos. Es wird in Home Assistant gespeichert und nur an die WeLock-Cloud gesendet."
         }
       }
     },
@@ -55,6 +65,12 @@
           "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
           "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)",
           "local_unlock": "Gespeicherte Befehle zum Offline-Entsperren nutzen (experimentell; auch als Schalter „Offline-Entsperren“ verfügbar)"
+        },
+        "data_description": {
+          "auto_relock_delay": "Wie lange das Schloss nach dem Entsperren „entsperrt“ anzeigt. Der Knauf bleibt etwa 10 s eingekuppelt.",
+          "battery_interval": "Wie oft die Batterie per Bluetooth gelesen wird, in Stunden. 0 liest sie nur beim Entsperren und schont die Batterie des Schlosses.",
+          "scan_interval": "Wie oft Erreichbarkeit und Signalstärke aus dem Bluetooth-Cache aktualisiert werden, in Sekunden. Das erzeugt keinen Funkverkehr.",
+          "local_unlock": "Experimentell: ohne Cloud entsperren, wenn der Challenge-Wert schon bekannt ist."
         }
       }
     }

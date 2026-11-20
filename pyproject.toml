@@ -53,3 +53,16 @@ pythonpath = ["."]
 markers = [
     "live: echter WELOCK-Cloud-Smoke-Test; nur mit WELOCK_LIVE_TEST=1, nie in CI",
 ]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Home Assistant's own type hints for schemas name a newer schema library than voluptuous, which
+# the integrations (and Home Assistant itself) still use at run time.
+[[tool.mypy.overrides]]
+module = ["welock", "welock.config_flow"]
+disable_error_code = ["arg-type"]

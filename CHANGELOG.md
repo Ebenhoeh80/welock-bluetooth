@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0-rc.1] - 2026-11-20
+
+Release candidate: the code behind the unlock was split into smaller functions. Behaviour is meant
+to be unchanged, but it was not tried on the real lock before this build: please unlock a few times
+(offline and through the cloud) before it becomes 2.5.0.
+
+### Added
+- **Home Assistant Integration Quality Scale: Gold.** `quality_scale.yaml` records every rule;
+  `icons.json` replaces icons set in code, `PARALLEL_UPDATES` on all platforms, descriptions for all
+  dialog fields, and new README sections (supported devices and functions, data updates, known
+  limitations, removal).
+- **Much broader tests inside a real Home Assistant core:** setup, Bluetooth discovery,
+  re-authentication and options dialogs, the Bluetooth exchange with a fake lock, the cloud client,
+  services, error paths, migration and removal. Coverage rose from 65 % to 98 %, the CI fails below 95 %.
+- **More automatic checks in CI:** MyPy with the real Home Assistant types, a complexity limit (xenon),
+  CodeQL and black/ruff on the tests. [`docs/ENGINEERING.md`](docs/ENGINEERING.md) documents the
+  architecture, failure modes, measurements and decisions.
+
+### Changed
+- The Bluetooth exchange, the unlock flow, the service handlers and the parsers are split into small
+  functions (no function above complexity B), `async_exchange` takes its options as keyword arguments only.
+- Config flows return `ConfigFlowResult`; the typed phase times of an attempt replace an untyped dict.
+
+### Fixed
+- The unlock flow can no longer use a possibly uninitialised status (found by CodeQL); an exchange
+  without a status is recorded as a failed attempt.
+
 ## [2.4.0] - 2026-11-20
 
 ### Added

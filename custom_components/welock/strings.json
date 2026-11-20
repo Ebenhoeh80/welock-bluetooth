@@ -8,6 +8,10 @@
         "data": {
           "username": "Email / WeLock account",
           "password": "Password"
+        },
+        "data_description": {
+          "username": "The email address of your WeLock app account.",
+          "password": "The password of your WeLock app account. It is stored in Home Assistant and sent only to the WeLock cloud."
         }
       },
       "select": {
@@ -15,6 +19,9 @@
         "description": "Choose the BLE module of your lock. 'In range' means a Bluetooth adapter or ESPHome Bluetooth proxy of Home Assistant can currently connect to it.",
         "data": {
           "address": "Lock / BLE module"
+        },
+        "data_description": {
+          "address": "The Bluetooth module of the lock to set up. 'In range' means Home Assistant can reach it right now."
         }
       },
       "verify": {
@@ -27,6 +34,9 @@
         "description": "The WeLock cloud rejected the login for {username}. Enter the current password. This ends other sessions of the account (e.g. the WeLock app).",
         "data": {
           "password": "Password"
+        },
+        "data_description": {
+          "password": "The password of your WeLock app account. It is stored in Home Assistant and sent only to the WeLock cloud."
         }
       }
     },
@@ -55,6 +65,12 @@
           "battery_interval": "Read battery over Bluetooth every (hours, 0 = only when unlocking)",
           "scan_interval": "Check Bluetooth reachability every (seconds)",
           "local_unlock": "Use stored commands for offline unlocking (experimental; also available as the Offline unlock switch)"
+        },
+        "data_description": {
+          "auto_relock_delay": "How long the lock shows 'unlocked' after an unlock. The knob stays engaged for about 10 s.",
+          "battery_interval": "How often the battery is read over Bluetooth, in hours. 0 reads it only on unlock and saves the lock's battery.",
+          "scan_interval": "How often reachability and signal strength are refreshed from the Bluetooth cache, in seconds. This creates no radio traffic.",
+          "local_unlock": "Experimental: unlock without the cloud when the challenge value is already known."
         }
       }
     }

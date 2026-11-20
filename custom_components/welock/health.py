@@ -44,6 +44,19 @@ class QualityReport:
     suggestion: str  # "move_closer" or "none"
 
 
+def _rate(failures: int, median_s: float | None, rssi: int | None) -> str:
+    """Rate the link from the failure count, the median connect time and the signal strength."""
+    if failures >= POOR_FAILURES or (median_s is not None and median_s >= POOR_MEDIAN_CONNECT_S):
+        return QUALITY_POOR
+    if (
+        failures >= 1
+        or (median_s is not None and median_s >= FAIR_MEDIAN_CONNECT_S)
+        or (rssi is not None and rssi <= VERY_WEAK_RSSI)
+    ):
+        return QUALITY_FAIR
+    return QUALITY_GOOD
+
+
 def connection_quality(attempts: Sequence[UnlockAttempt], rssi: int | None) -> QualityReport:
     """Rate how well Home Assistant reaches the lock from its recent unlock attempts."""
     recent = list(attempts)[-SAMPLE_SIZE:]
@@ -55,16 +68,7 @@ def connection_quality(attempts: Sequence[UnlockAttempt], rssi: int | None) -> Q
     if len(recent) < MIN_SAMPLE:
         return QualityReport(QUALITY_UNKNOWN, len(recent), failures, median_s, "none")
 
-    if failures >= POOR_FAILURES or (median_s is not None and median_s >= POOR_MEDIAN_CONNECT_S):
-        level = QUALITY_POOR
-    elif (
-        failures >= 1
-        or (median_s is not None and median_s >= FAIR_MEDIAN_CONNECT_S)
-        or (rssi is not None and rssi <= VERY_WEAK_RSSI)
-    ):
-        level = QUALITY_FAIR
-    else:
-        level = QUALITY_GOOD
+    level = _rate(failures, median_s, rssi)
     suggestion = "move_closer" if level in (QUALITY_FAIR, QUALITY_POOR) and weak else "none"
     return QualityReport(level, len(recent), failures, median_s, suggestion)
 

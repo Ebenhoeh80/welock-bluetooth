@@ -14,6 +14,9 @@ from .const import COMMAND_SPACE
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
+# only changes a stored option
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
@@ -32,7 +35,6 @@ class WeLockOfflineUnlockSwitch(WeLockEntity, SwitchEntity):
     """
 
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_icon = "mdi:lock-clock"
     _attr_translation_key = "offline_unlock"
 
     def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:
