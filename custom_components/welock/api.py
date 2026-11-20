@@ -209,7 +209,7 @@ def parse_access_records(data: Any) -> list[WeLockAccessRecord]:
             WeLockAccessRecord(
                 time=time if isinstance(time, str) and time.strip() else None,
                 user=user.strip() if isinstance(user, str) and user.strip() else None,
-                method=_OPERATING_STATE.get(state, "unknown"),
+                method=_OPERATING_STATE.get(state, "unknown") if state is not None else "unknown",
                 success=(result == 1) if result is not None else None,
                 position=_as_int(item.get("position")),
             )

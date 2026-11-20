@@ -6,6 +6,7 @@ Uses whatever adapter or ESPHome Bluetooth proxy Home Assistant has in range.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import Awaitable, Callable
@@ -207,14 +208,10 @@ async def _async_teardown(
 ) -> None:
     """Stop notifications and disconnect; never raises."""
     started = time.monotonic()
-    try:
+    # A failure to close must never mask the real exchange exception.
+    with contextlib.suppress(BleakError, asyncio.TimeoutError, OSError):
         await client.stop_notify(NOTIFY_UUID)
-    except (BleakError, asyncio.TimeoutError, OSError):
-        pass
-    try:
+    with contextlib.suppress(BleakError, asyncio.TimeoutError, OSError):
         await client.disconnect()
-    except (BleakError, asyncio.TimeoutError, OSError):
-        # Never let a disconnect error mask the real exchange exception.
-        pass
     if report is not None:
         report.teardown_ms = _elapsed_ms(started)

@@ -19,7 +19,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -66,7 +66,9 @@ def _candidates(devices: list[WeLockDevice]) -> dict[str, dict[str, Any]]:
     return out
 
 
-async def _async_login_and_list(hass, username: str, password: str) -> list[WeLockDevice]:
+async def _async_login_and_list(
+    hass: HomeAssistant, username: str, password: str
+) -> list[WeLockDevice]:
     api = WeLockApiClient(username, password, async_get_clientsession(hass))
     return await api.async_get_devices()
 

@@ -47,7 +47,7 @@ from .const import (
 from .health import QualityReport, connection_quality
 from .issues import WeLockIssues
 from .protocol import BatteryResponse
-from .stats import UnlockAttempt, UnlockStats
+from .stats import PhaseTimes, UnlockAttempt, UnlockStats
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def static_options(options: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in options.items() if key != CONF_LOCAL_UNLOCK}
 
 
-def _phase_times(report: ExchangeReport) -> dict[str, int | None]:
+def _phase_times(report: ExchangeReport) -> PhaseTimes:
     """Return the per-phase times of an exchange for an unlock attempt."""
     return {
         "connect_ms": report.connect_ms,
@@ -221,9 +221,12 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             except asyncio.TimeoutError:
                 return
             attempt = self.stats.latest
-            if attempt is not None and attempt.teardown_ms is None:
-                if await self.stats.async_update_latest(attempt, teardown_ms=report.teardown_ms):
-                    self.async_update_listeners()
+            if (
+                attempt is not None
+                and attempt.teardown_ms is None
+                and await self.stats.async_update_latest(attempt, teardown_ms=report.teardown_ms)
+            ):
+                self.async_update_listeners()
 
         task = self.hass.async_create_background_task(_run(), f"welock teardown {self.address}")
         self._teardown_tasks.add(task)

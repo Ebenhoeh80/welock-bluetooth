@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import asdict, dataclass, field, replace
-from typing import Any
+from typing import Any, TypedDict
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
@@ -62,6 +62,18 @@ class UnlockAttempt:
     connect_attempts: int | None = None
 
 
+class PhaseTimes(TypedDict):
+    """The per-phase times of an exchange, as stored in an ``UnlockAttempt``."""
+
+    connect_ms: int | None
+    status_ms: int | None
+    command_ms: int | None
+    confirm_ms: int | None
+    teardown_ms: int | None
+    adv_age_ms: int | None
+    connect_attempts: int | None
+
+
 @dataclass
 class PathStats:
     """Totals for one path."""
@@ -107,8 +119,9 @@ PHASE_KEYS = (
 
 def _optional_ms(value: object) -> int | None:
     """Return a stored phase time, or ``None`` if it is missing or not a valid time."""
-    ok = isinstance(value, int) and not isinstance(value, bool) and value >= 0
-    return value if ok else None
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return None
 
 
 def _non_negative_int(value: object) -> int:
