@@ -7,11 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.5.0-rc.1] - 2026-11-20
+## [2.5.0] - 2026-11-20
 
-Release candidate: the code behind the unlock was split into smaller functions. Behaviour is meant
-to be unchanged, but it was not tried on the real lock before this build: please unlock a few times
-(offline and through the cloud) before it becomes 2.5.0.
+The code behind the unlock was split into smaller functions. Behaviour is unchanged; after the
+release candidate 2.5.0-rc.1 the unlock was tried on the real lock and works.
 
 ### Added
 - **Home Assistant Integration Quality Scale: Gold.** `quality_scale.yaml` records every rule;
