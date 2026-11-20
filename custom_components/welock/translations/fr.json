@@ -54,8 +54,18 @@
           "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
           "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
           "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)",
-          "local_unlock": "Utiliser les commandes enregistrées pour le déverrouillage hors ligne (expérimental ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
+          "local_unlock": "Utiliser les commandes apprises pour le déverrouillage hors ligne (apprises et vérifiées sur une seule serrure : 45 sur 45 ; désactivé par défaut ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
         }
+      }
+    }
+  },
+  "selector": {
+    "lock_choice": {
+      "options": {
+        "lock": "serrure",
+        "battery_cloud": "batterie selon le cloud",
+        "in_range": "à portée",
+        "out_of_range": "hors de portée"
       }
     }
   },

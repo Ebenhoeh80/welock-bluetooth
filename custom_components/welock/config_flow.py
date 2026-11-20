@@ -22,6 +22,7 @@ from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.translation import async_get_translations
 
 from .api import CannotConnect, InvalidAuth, WeLockApiClient, WeLockApiError, WeLockDevice
 from .ble import LockNotInRange, WeLockBleError, async_exchange, lock_in_range
@@ -53,6 +54,25 @@ PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWO
 LOGIN_SCHEMA = vol.Schema(
     {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR}
 )
+
+
+# The words of an entry of the lock list; the translations are under ``selector.lock_choice.options``.
+_LOCK_CHOICE_DEFAULTS = {
+    "lock": "lock",
+    "battery_cloud": "battery per cloud",
+    "in_range": "in range",
+    "out_of_range": "out of range",
+}
+
+
+async def _async_lock_choice_words(hass: HomeAssistant) -> dict[str, str]:
+    """Return the words of the lock list in the language of Home Assistant (English as fallback)."""
+    translations = await async_get_translations(hass, hass.config.language, "selector", [DOMAIN])
+    prefix = f"component.{DOMAIN}.selector.lock_choice.options."
+    return {
+        key: translations.get(prefix + key) or default
+        for key, default in _LOCK_CHOICE_DEFAULTS.items()
+    }
 
 
 def _candidates(devices: list[WeLockDevice]) -> dict[str, dict[str, Any]]:
@@ -156,15 +176,16 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._selected = self._candidates[address]
             return await self.async_step_verify()
 
+        words = await _async_lock_choice_words(self.hass)
         options: dict[str, str] = {}
         default: str | None = None
         for address, cand in self._candidates.items():
             in_range = lock_in_range(self.hass, address)
             battery = f"{cand['battery']} %" if cand["battery"] is not None else "?"
-            reach = "in range" if in_range else "out of range"
+            reach = words["in_range" if in_range else "out_of_range"]
             options[address] = (
-                f"{cand[CONF_BLE_NAME]} ({address}) - lock {cand[CONF_DEVICE_NUMBER]}, "
-                f"battery per cloud {battery}, {reach}"
+                f"{cand[CONF_BLE_NAME]} ({address}) - {words['lock']} {cand[CONF_DEVICE_NUMBER]}, "
+                f"{words['battery_cloud']} {battery}, {reach}"
             )
             if in_range and default is None:
                 default = address

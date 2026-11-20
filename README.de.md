@@ -112,8 +112,8 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_batterie` | Sensor (Diagnose) | Akkustand in %, direkt vom Schloss gelesen. |
 | `sensor.<name>_signalstarke` | Sensor (Diagnose, standardmäßig deaktiviert) | RSSI der letzten Bluetooth-Advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_erreichbar` | Binärsensor (Diagnose) | An, solange ein verbindungsfähiger Adapter oder Proxy das Schloss sieht. |
-| `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock-experimentell). |
-| `switch.<name>_offline_entsperren` | Schalter (Konfiguration) | Schaltet das [Offline-Entsperren](#-lokaler-offline-unlock-experimentell) mit sofortiger Wirkung ein oder aus; die Einstellung bleibt über Neustarts erhalten. Standardmäßig aus. |
+| `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock). |
+| `switch.<name>_offline_entsperren` | Schalter (Konfiguration) | Schaltet das [Offline-Entsperren](#-lokaler-offline-unlock) mit sofortiger Wirkung ein oder aus; die Einstellung bleibt über Neustarts erhalten. Standardmäßig aus. |
 | `sensor.<name>_entsperrungen_uber_die_cloud` | Sensor | Anzahl der Entsperrungen, deren Befehl von der WeLock-Cloud kam. Attribute: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
 | `sensor.<name>_entsperrungen_offline` | Sensor | Anzahl der Entsperrungen, deren Befehl aus dem lokalen Cache kam (ohne Cloud-Kontakt). Gleiche Attribute. |
 | `event.<name>_entsperr_verlauf` | Event | Ein Ereignis je Entsperrversuch (`unlock_cloud`, `unlock_offline`, `unlock_failed`) mit Pfad, Ergebnis, Dauer und Challenge-Wert. Erscheint im Logbuch und im Verlauf. |
@@ -144,11 +144,11 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 | Als entriegelt anzeigen für | 10 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
 | Akkustand per Bluetooth lesen alle | 24 h | 0–168 h | Regelmäßige BLE-Statusabfrage. `0` = nur beim Entriegeln (schont die Schlossbatterie). |
 | Bluetooth-Erreichbarkeit prüfen alle | 60 s | 10–600 s | Wie oft Erreichbarkeit und RSSI aus dem HA-Bluetooth-Cache aktualisiert werden. Erzeugt **keinen** Funkverkehr. |
-| Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Experimentell.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Auch als Schalter-Entität verfügbar. Siehe unten. |
+| Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Gelernt und an einem einzelnen Schloss geprüft (45 von 45), standardmäßig aus.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Auch als Schalter-Entität verfügbar. Siehe unten. |
 
 ---
 
-## 🔓 Lokaler Offline-Unlock (experimentell)
+## 🔓 Lokaler Offline-Unlock
 
 Der Cloud-Entriegelungsbefehl hängt **allein vom `randomFactor`-Byte** der
 BLE-Challenge ab (nicht von Akkustand oder BLE-Schlüssel). Es gibt daher höchstens
@@ -264,7 +264,7 @@ du selbst auslöst.
 
 ## 🔄 Betrieb & Verhalten
 
-* **Entriegeln über die Cloud meldet die WeLock-App ab.** Für den Befehl ist dann ein frischer Cloud-Login nötig – eine Eigenschaft der WeLock-Cloud. Bei einem Treffer im [lokalen Befehls-Cache](#-lokaler-offline-unlock-experimentell) entfällt der Cloud-Login (und damit die Abmeldung).
+* **Entriegeln über die Cloud meldet die WeLock-App ab.** Für den Befehl ist dann ein frischer Cloud-Login nötig – eine Eigenschaft der WeLock-Cloud. Bei einem Treffer im [lokalen Befehls-Cache](#-lokaler-offline-unlock) entfällt der Cloud-Login (und damit die Abmeldung).
 * **Mindestens 12 s zwischen zwei Entriegelungen.** Der Knauf bleibt 10 s eingekuppelt und das Schloss nimmt dabei keinen weiteren Befehl an; ein früherer Versuch wird mit einer Meldung abgelehnt.
 * **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf 10 s (gemessen) ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.
@@ -344,7 +344,7 @@ WeLock-Cloud wird nur zum Entsperren, bei der Einrichtung und für das optionale
 - Zum Entsperren braucht es einen Bluetooth-Adapter oder ESPHome-Bluetooth-Proxy in wenigen Metern Abstand; ein
   schwaches Signal ist der übliche Grund für langsames Entsperren (siehe [Fehlerbehebung](#-fehlerbehebung)).
 - Jede Cloud-Anmeldung beendet andere Sitzungen des Kontos (zum Beispiel die WeLock-App).
-- Offline-Entsperren ist experimentell und funktioniert nur für Challenge-Werte, die die Integration gelernt hat.
+- Offline-Entsperren wurde an einem einzelnen Schloss (eine Firmware) geprüft und funktioniert nur für Challenge-Werte, die die Integration gelernt hat.
 
 ## 🗑️ Entfernen
 

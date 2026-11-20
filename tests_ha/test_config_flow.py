@@ -144,6 +144,26 @@ async def test_the_lock_in_range_is_preselected_and_a_bluetooth_error_can_be_ret
         assert result["step_id"] == "verify" and result["errors"] == {"base": key}
 
 
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("en", ["lock", "battery per cloud 70 %", "out of range"]),
+        ("de", ["Schloss", "Akku laut Cloud 70 %", "außer Reichweite"]),
+        ("fr", ["serrure", "batterie selon le cloud 70 %", "hors de portée"]),
+    ],
+)
+async def test_the_lock_list_is_translated(
+    hass: HomeAssistant, language: str, expected: list[str]
+) -> None:
+    hass.config.language = language
+    flow_id = await _start(hass)
+    with patch(IN_RANGE, return_value=False):
+        result = await _login(hass, flow_id, _account(ADDRESS))
+    label = result["data_schema"].schema[CONF_ADDRESS].container[ADDRESS]
+    for word in expected:
+        assert word in label, (language, label)
+
+
 async def test_a_lock_that_is_already_set_up_cannot_be_added_again(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:
