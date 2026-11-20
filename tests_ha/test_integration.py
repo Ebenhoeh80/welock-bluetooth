@@ -265,6 +265,9 @@ async def test_diagnostics_export_only_the_allowlisted_state(
     assert result["entry"]["unique_id"] == "**REDACTED**"
     # the challenge value of an attempt is not exported either
     assert all("random_factor" not in a for a in result["offline_unlock"]["statistics"]["history"])
+    figures = result["offline_unlock"]["key_figures"]
+    assert figures["unlock_attempts"] == 1 and figures["unlock_successes"] == 1
+    assert figures["success_rate"] == 1.0 and figures["connect_ms_max"] is not None
 
 
 async def test_entry_unloads_cleanly_after_an_unlock(

@@ -78,6 +78,7 @@ async def async_get_config_entry_diagnostics(
         "offline_unlock": {
             "enabled": coordinator.local_unlock,
             "learned_commands": coordinator.cache.count,
+            "key_figures": coordinator.stats.key_figures(),
             "statistics": _statistics(coordinator.stats.as_dict()),
         },
     }

@@ -252,6 +252,35 @@ class PhaseTimeTests(unittest.TestCase):
         asyncio.run(again.async_load())
         self.assertIsNone(again.latest.scanner)
 
+    def test_key_figures_come_from_what_is_recorded(self) -> None:
+        stats = _stats()
+        self.assertEqual(stats.key_figures()["unlock_attempts"], 0)
+        self.assertIsNone(stats.key_figures()["success_rate"])
+        self.assertIsNone(stats.key_figures()["connect_ms_median"])
+        stats.add(_attempt(PATH_CLOUD, RESULT_CONFIRMED, 5000, connect_ms=4000, connect_attempts=1))
+        stats.add(
+            _attempt(PATH_OFFLINE, RESULT_UNCONFIRMED, 6000, connect_ms=9000, connect_attempts=2)
+        )
+        stats.add(
+            _attempt(PATH_OFFLINE, RESULT_CONFIRMED, 7000, connect_ms=500, connect_attempts=1)
+        )
+        stats.add(
+            _attempt(
+                PATH_NONE, RESULT_FAILED, 300, error="WeLockBleError", scanner="scanner-0123abcd"
+            )
+        )
+        figures = stats.key_figures()
+        self.assertEqual(
+            (figures["unlock_attempts"], figures["unlock_successes"], figures["unlock_failures"]),
+            (4, 3, 1),
+        )
+        self.assertEqual(figures["unlock_confirmed"], 2)
+        self.assertEqual(figures["success_rate"], 0.75)
+        self.assertEqual((figures["connect_ms_median"], figures["connect_ms_max"]), (4000, 9000))
+        self.assertEqual(figures["connect_attempts"], {"1": 2, "2": 1})
+        self.assertEqual(figures["failures_by_error"], {"WeLockBleError": 1})
+        self.assertEqual(figures["scanners"], {"scanner-0123abcd": 1})
+
     def test_attempts_without_phase_times_still_load(self) -> None:
         # Statistics written by rc.1/rc.2 have no phase times.
         old = {"history": [{"time": "t", "path": "cloud", "result": "confirmed", "duration_ms": 9}]}

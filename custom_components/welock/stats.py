@@ -9,7 +9,8 @@ is stored: no commands, no account data, no addresses.
 from __future__ import annotations
 
 import re
-from collections import deque
+import statistics
+from collections import Counter, deque
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, TypedDict
 
@@ -234,6 +235,34 @@ class UnlockStats:
         if attempt.evicted:
             self.evictions += 1
         self.history.append(attempt)
+
+    def key_figures(self) -> dict[str, Any]:
+        """Return key figures from what is already recorded (no new measurement).
+
+        The totals cover all attempts since the statistics were last cleared; the
+        connection figures cover the kept history (the latest ``HISTORY_LIMIT``
+        attempts). Nothing in it identifies the lock, the account or a scanner.
+        """
+        totals = list(self.paths.values())
+        attempts = sum(p.attempts for p in totals)
+        delivered = sum(p.delivered for p in totals)
+        connects = [a.connect_ms for a in self.history if a.connect_ms is not None]
+        tries = Counter(a.connect_attempts for a in self.history if a.connect_attempts is not None)
+        return {
+            "unlock_attempts": attempts,
+            "unlock_successes": delivered,
+            "unlock_confirmed": sum(p.confirmed for p in totals),
+            "unlock_failures": sum(p.failed for p in totals),
+            "success_rate": round(delivered / attempts, 3) if attempts else None,
+            "history_size": len(self.history),
+            "connect_ms_median": round(statistics.median(connects)) if connects else None,
+            "connect_ms_max": max(connects) if connects else None,
+            "connect_attempts": {str(n): count for n, count in sorted(tries.items())},
+            "failures_by_error": dict(
+                Counter(a.error or "unknown" for a in self.history if a.result == RESULT_FAILED)
+            ),
+            "scanners": dict(Counter(a.scanner for a in self.history if a.scanner)),
+        }
 
     async def async_record(self, attempt: UnlockAttempt) -> None:
         """Count one attempt and persist the statistics."""
