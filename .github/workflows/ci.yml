@@ -33,6 +33,11 @@ jobs:
         run: |
           ruff check custom_components/ tools/ tests/ tests_ha/
 
+      - name: Complexity (xenon)
+        run: |
+          pip install xenon
+          xenon --max-absolute B --max-modules A --max-average A custom_components
+
       - name: Run Black Code Formatter Check
         run: |
           black --check custom_components/ tools/ tests/ tests_ha/

@@ -243,3 +243,35 @@ async def test_removing_the_entry_clears_its_data(
     await hass.async_block_till_done()
     assert hass.config_entries.async_get_entry(config_entry.entry_id) is None
     assert DEVICE_NUMBER
+
+
+async def test_the_software_part_of_an_unlock_stays_small(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    fake_lock: FakeLock,
+    cloud_command: MagicMock,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Budget: without radio and cloud latency an unlock costs the integration only milliseconds.
+
+    In the field a whole unlock takes 3 to 33 s, of which the Bluetooth connection is 99 %; this
+    guards the part the integration controls.
+    """
+    import asyncio
+    import statistics
+    import time
+
+    coordinator = await _setup(hass, config_entry)
+    samples: list[float] = []
+    for _ in range(8):
+        coordinator._last_unlock = float("-inf")
+        started = time.perf_counter()
+        await coordinator.async_unlock()
+        samples.append((time.perf_counter() - started) * 1000)
+        while coordinator._ble_lock.locked():  # the connection is closed in the background
+            await asyncio.sleep(0.01)
+        await hass.async_block_till_done()
+    with capsys.disabled():
+        print(f"
+unlock software overhead: median {statistics.median(samples):.1f} ms, max {max(samples):.1f} ms")
+    assert statistics.median(samples) < 250
