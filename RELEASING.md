@@ -13,9 +13,12 @@ feature the minor version, a fix the patch version.
 
 ## 2. Check locally
 
+`scripts/check.sh` (or `powershell -File scripts\check.ps1` on Windows) runs the same steps as the CI.
+The Home Assistant tests (`tests_ha/`, job `ha-tests`) run only in the CI or in WSL. Or by hand:
+
 ```bash
 python -m ruff check custom_components tests tools
-python -m ruff format --check custom_components tests tools
+python -m black --check custom_components tests tests_ha tools
 python -m pytest tests
 ```
 The tests run without Home Assistant (it is stubbed). The Home Assistant wiring (entities, options, the unlock path) is checked on a live system after the release; see step 7.

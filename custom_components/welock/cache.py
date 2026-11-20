@@ -40,13 +40,17 @@ class ImportResult:
 
 
 def _parse_table_entry(key: Any, value: Any) -> tuple[int, bytes] | str:
-    """Return ``(randomFactor, command)``, or a short label naming the bad entry."""
+    """Return ``(randomFactor, command)``, or a short label naming the bad entry.
+
+    The label is only ever a number or ``?``: a file whose keys are commands (a
+    mix-up) must not have them echoed in an error message.
+    """
     try:
         random_factor = int(key)
     except (TypeError, ValueError):
-        return str(key)[:12]
+        return "?"
     if not 0 <= random_factor <= 255 or not isinstance(value, str):
-        return str(key)[:12]
+        return str(random_factor)[:5]
     try:
         return random_factor, validate_unlock_command(value.encode("ascii"))
     except (ValueError, UnicodeEncodeError):

@@ -9,6 +9,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.selector import TextSelector, TextSelectorType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.welock.api import (
@@ -57,6 +58,27 @@ async def _login(hass: HomeAssistant, flow_id: str, devices=None, error: Excepti
         return await hass.config_entries.flow.async_configure(
             flow_id, {CONF_USERNAME: " user@example.com ", CONF_PASSWORD: "pw"}
         )
+
+
+def _password_field(result: dict) -> object:
+    return next(v for k, v in result["data_schema"].schema.items() if k == CONF_PASSWORD)
+
+
+async def test_the_login_asks_for_the_password_in_a_password_field(hass: HomeAssistant) -> None:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    field = _password_field(result)
+    assert isinstance(field, TextSelector)
+    assert field.config["type"] == TextSelectorType.PASSWORD
+
+
+async def test_the_reauthentication_asks_for_the_password_in_a_password_field(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    config_entry.add_to_hass(hass)
+    result = await config_entry.start_reauth_flow(hass)
+    field = _password_field(result)
+    assert isinstance(field, TextSelector)
+    assert field.config["type"] == TextSelectorType.PASSWORD
 
 
 async def test_the_full_setup_creates_an_entry(hass: HomeAssistant) -> None:
@@ -120,6 +142,26 @@ async def test_the_lock_in_range_is_preselected_and_a_bluetooth_error_can_be_ret
         with patch(EXCHANGE, side_effect=error):
             result = await hass.config_entries.flow.async_configure(flow_id, {})
         assert result["step_id"] == "verify" and result["errors"] == {"base": key}
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("en", ["lock", "battery per cloud 70 %", "out of range"]),
+        ("de", ["Schloss", "Akku laut Cloud 70 %", "außer Reichweite"]),
+        ("fr", ["serrure", "batterie selon le cloud 70 %", "hors de portée"]),
+    ],
+)
+async def test_the_lock_list_is_translated(
+    hass: HomeAssistant, language: str, expected: list[str]
+) -> None:
+    hass.config.language = language
+    flow_id = await _start(hass)
+    with patch(IN_RANGE, return_value=False):
+        result = await _login(hass, flow_id, _account(ADDRESS))
+    label = result["data_schema"].schema[CONF_ADDRESS].container[ADDRESS]
+    for word in expected:
+        assert word in label, (language, label)
 
 
 async def test_a_lock_that_is_already_set_up_cannot_be_added_again(

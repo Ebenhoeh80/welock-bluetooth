@@ -225,14 +225,52 @@ async def test_diagnostics_contain_no_secrets_or_commands(
     fake_lock: FakeLock,
     cloud_command: MagicMock,
 ) -> None:
-    await _setup(hass, config_entry)
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(config_entry, title="WeLockTEST")  # the module name
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
     await _unlock(hass)
+    # The title shows the lock number after setup; it must be part of what is searched for.
+    assert DEVICE_NUMBER in config_entry.title
     text = json.dumps(await async_get_config_entry_diagnostics(hass, config_entry), default=str)
-    assert "secret-password" not in text
-    assert "user@example.com" not in text
-    assert ADDRESS not in text
-    assert CLOUD_COMMAND.decode() not in text
-    assert CLOUD_COMMAND.hex() not in text
+    identifiers = (
+        "secret-password",
+        "user@example.com",
+        ADDRESS,
+        ADDRESS.lower(),
+        ADDRESS.replace(":", ""),
+        ADDRESS.replace(":", "-"),
+        DEVICE_NUMBER,
+        config_entry.title,
+        "WeLockTEST",
+        "WeLockTest",
+        config_entry.entry_id,
+        CLOUD_COMMAND.decode(),
+        CLOUD_COMMAND.hex(),
+    )
+    for identifier in identifiers:
+        assert identifier not in text, identifier
+
+
+async def test_diagnostics_export_only_the_allowlisted_state(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    fake_lock: FakeLock,
+    cloud_command: MagicMock,
+) -> None:
+    coordinator = await _setup(hass, config_entry)
+    await _unlock(hass)
+    coordinator.data = {**coordinator.data, "address": ADDRESS, "future_field": DEVICE_NUMBER}
+    result = await async_get_config_entry_diagnostics(hass, config_entry)
+    assert set(result["state"]) <= {"present", "rssi", "battery"}
+    assert DEVICE_NUMBER not in json.dumps(result, default=str)
+    assert result["entry"]["title"] == "**REDACTED**"
+    assert result["entry"]["unique_id"] == "**REDACTED**"
+    # the challenge value of an attempt is not exported either
+    assert all("random_factor" not in a for a in result["offline_unlock"]["statistics"]["history"])
+    figures = result["offline_unlock"]["key_figures"]
+    assert figures["unlock_attempts"] == 1 and figures["unlock_successes"] == 1
+    assert figures["success_rate"] == 1.0 and figures["connect_ms_max"] is not None
 
 
 async def test_entry_unloads_cleanly_after_an_unlock(

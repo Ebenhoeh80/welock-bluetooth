@@ -64,14 +64,24 @@
           "auto_relock_delay": "Als entriegelt anzeigen für (Sekunden)",
           "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
           "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)",
-          "local_unlock": "Gespeicherte Befehle zum Offline-Entsperren nutzen (experimentell; auch als Schalter „Offline-Entsperren“ verfügbar)"
+          "local_unlock": "Gelernte Befehle zum Offline-Entsperren nutzen (gelernt, an einem einzelnen Schloss geprüft: 45 von 45; standardmäßig aus; auch als Schalter „Offline-Entsperren“ verfügbar)"
         },
         "data_description": {
           "auto_relock_delay": "Wie lange das Schloss nach dem Entsperren „entsperrt“ anzeigt. Der Knauf bleibt etwa 10 s eingekuppelt.",
           "battery_interval": "Wie oft die Batterie per Bluetooth gelesen wird, in Stunden. 0 liest sie nur beim Entsperren und schont die Batterie des Schlosses.",
           "scan_interval": "Wie oft Erreichbarkeit und Signalstärke aus dem Bluetooth-Cache aktualisiert werden, in Sekunden. Das erzeugt keinen Funkverkehr.",
-          "local_unlock": "Experimentell: ohne Cloud entsperren, wenn der Challenge-Wert schon bekannt ist."
+          "local_unlock": "Ohne Cloud entsperren, wenn der Challenge-Wert schon bekannt ist. Die Befehle werden von der Cloud gelernt und wurden an einem einzelnen Schloss geprüft (45 von 45 Offline-Entsperrungen); standardmäßig aus."
         }
+      }
+    }
+  },
+  "selector": {
+    "lock_choice": {
+      "options": {
+        "lock": "Schloss",
+        "battery_cloud": "Akku laut Cloud",
+        "in_range": "in Reichweite",
+        "out_of_range": "außer Reichweite"
       }
     }
   },

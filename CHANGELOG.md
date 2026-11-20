@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-21
+
+Maintenance release. The unlock path, the command cache, the identity of the entry, entity IDs and
+device names are unchanged.
+
+### Security
+- **Diagnostics redact more.** The entry title (it contains the lock number since 2.5.1), the unique id, the
+  lock number, the Bluetooth address, the account and the password are redacted. The runtime state is an
+  allowlist (presence, signal strength, battery) and the challenge value of each attempt is left out. A test
+  searches the whole diagnostics JSON for every identifier.
+- **Import errors never echo table keys.** A command table whose keys were commands (a mix-up) put the first
+  characters of each key into the error message; the label of a bad entry is now only a number or `?`.
+- **`SECURITY.md`:** supported versions (2.6.x, 2.5.x) and a threat model: the learned commands (up to 256) live in
+  `.storage` and in backups, a copy of the table plus Bluetooth range can open the lock, delete the import file
+  `welock-oracle-table.json` after importing, encrypt backups. The README points to it.
+
+### Added
+- **Key figures in diagnostics** from the existing statistics: unlock attempts, successes and failures, median and
+  maximum connect time, how many connection attempts were needed, failures by error class. Nothing new is
+  measured in the unlock path.
+- **Scanner label per attempt (observation only).** Each recorded attempt notes which adapter or proxy heard the
+  lock, as a neutral label (a hash, never the address), next to the age and signal strength of the advertisement.
+  It appears in the statistics and in diagnostics and does not influence the connection.
+- **`scripts/check.sh` and `scripts/check.ps1`** run the CI steps locally.
+- **Tests:** setup, reload, unload and stop of Home Assistant leave no task or listener behind; an entry from
+  before 2.5 (titled with the module name) gets `WeLock (<number>)` while unique id and entity IDs stay the same.
+
+### Changed
+- The password is entered in a password field (login and re-authentication).
+- The offline unlock is no longer called "experimental": it is described as learned and verified on a single lock
+  (45 of 45 offline unlocks). It stays off by default. Strings, translations (en, de, es, fr), README and
+  `docs/PROTOCOL.md` were updated.
+- The lock list in the setup dialog takes its words (lock, battery per cloud, in range, out of range) from the
+  translations instead of hard-coded English.
+- CI: `permissions: contents: read`, actions pinned to commit SHAs (hassfest and hacs/action stay on their documented
+  references), the shared release workflow pinned to the commit of `v1`, the Home Assistant test package pinned in
+  `requirements_test.txt`. `RELEASING.md` asks for `black --check` like the CI. Job names and the Python matrix are
+  unchanged. `pyproject.toml` version brought in line with the manifest.
+
 ## [2.5.1] - 2026-11-20
 
 ### Changed

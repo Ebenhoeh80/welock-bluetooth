@@ -54,8 +54,18 @@
           "auto_relock_delay": "Mostrar como abierta durante (segundos)",
           "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
           "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)",
-          "local_unlock": "Usar comandos guardados para el desbloqueo sin conexión (experimental; también disponible como interruptor «Desbloqueo sin conexión»)"
+          "local_unlock": "Usar comandos aprendidos para el desbloqueo sin conexión (aprendidos y comprobados en una sola cerradura: 45 de 45; desactivado por defecto; también disponible como interruptor «Desbloqueo sin conexión»)"
         }
+      }
+    }
+  },
+  "selector": {
+    "lock_choice": {
+      "options": {
+        "lock": "cerradura",
+        "battery_cloud": "batería según la nube",
+        "in_range": "al alcance",
+        "out_of_range": "fuera de alcance"
       }
     }
   },

@@ -64,14 +64,24 @@
           "auto_relock_delay": "Show as unlocked for (seconds)",
           "battery_interval": "Read battery over Bluetooth every (hours, 0 = only when unlocking)",
           "scan_interval": "Check Bluetooth reachability every (seconds)",
-          "local_unlock": "Use stored commands for offline unlocking (experimental; also available as the Offline unlock switch)"
+          "local_unlock": "Use learned commands for offline unlocking (learned, verified on a single lock: 45 of 45; off by default; also available as the Offline unlock switch)"
         },
         "data_description": {
           "auto_relock_delay": "How long the lock shows 'unlocked' after an unlock. The knob stays engaged for about 10 s.",
           "battery_interval": "How often the battery is read over Bluetooth, in hours. 0 reads it only on unlock and saves the lock's battery.",
           "scan_interval": "How often reachability and signal strength are refreshed from the Bluetooth cache, in seconds. This creates no radio traffic.",
-          "local_unlock": "Experimental: unlock without the cloud when the challenge value is already known."
+          "local_unlock": "Unlock without the cloud when the challenge value is already known. The commands are learned from the cloud and were verified on a single lock (45 of 45 offline unlocks); off by default."
         }
+      }
+    }
+  },
+  "selector": {
+    "lock_choice": {
+      "options": {
+        "lock": "lock",
+        "battery_cloud": "battery per cloud",
+        "in_range": "in range",
+        "out_of_range": "out of range"
       }
     }
   },

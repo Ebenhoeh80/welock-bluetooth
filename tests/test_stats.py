@@ -31,7 +31,11 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.ble import ExchangeReport, _async_teardown  # noqa: E402
+from custom_components.welock.ble import (  # noqa: E402
+    ExchangeReport,
+    _async_teardown,
+    scanner_label,
+)
 from custom_components.welock.cache import (  # noqa: E402
     CommandCache,
     parse_command_table,
@@ -229,6 +233,54 @@ class PhaseTimeTests(unittest.TestCase):
         asyncio.run(reloaded.async_load())
         self.assertEqual((reloaded.latest.adv_age_ms, reloaded.latest.connect_attempts), (1800, 2))
 
+    def test_the_scanner_label_is_stored_and_a_foreign_value_is_dropped(self) -> None:
+        label = scanner_label("AA:BB:CC:DD:EE:FF")
+        self.assertRegex(label, r"^scanner-[0-9a-f]{8}$")
+        self.assertNotIn("AA:BB", label)
+        self.assertEqual(label, scanner_label("AA:BB:CC:DD:EE:FF"))
+        self.assertNotEqual(label, scanner_label("AA:BB:CC:DD:EE:00"))
+        self.assertIsNone(scanner_label(None))
+        self.assertIsNone(scanner_label(""))
+        stats = _stats()
+        asyncio.run(stats.async_record(_attempt(PATH_CLOUD, RESULT_CONFIRMED, scanner=label)))
+        data = stats._store.data
+        reloaded = _stats(data)
+        asyncio.run(reloaded.async_load())
+        self.assertEqual(reloaded.latest.scanner, label)
+        data["history"][0]["scanner"] = "AA:BB:CC:DD:EE:FF"  # not a label: ignored
+        again = _stats(data)
+        asyncio.run(again.async_load())
+        self.assertIsNone(again.latest.scanner)
+
+    def test_key_figures_come_from_what_is_recorded(self) -> None:
+        stats = _stats()
+        self.assertEqual(stats.key_figures()["unlock_attempts"], 0)
+        self.assertIsNone(stats.key_figures()["success_rate"])
+        self.assertIsNone(stats.key_figures()["connect_ms_median"])
+        stats.add(_attempt(PATH_CLOUD, RESULT_CONFIRMED, 5000, connect_ms=4000, connect_attempts=1))
+        stats.add(
+            _attempt(PATH_OFFLINE, RESULT_UNCONFIRMED, 6000, connect_ms=9000, connect_attempts=2)
+        )
+        stats.add(
+            _attempt(PATH_OFFLINE, RESULT_CONFIRMED, 7000, connect_ms=500, connect_attempts=1)
+        )
+        stats.add(
+            _attempt(
+                PATH_NONE, RESULT_FAILED, 300, error="WeLockBleError", scanner="scanner-0123abcd"
+            )
+        )
+        figures = stats.key_figures()
+        self.assertEqual(
+            (figures["unlock_attempts"], figures["unlock_successes"], figures["unlock_failures"]),
+            (4, 3, 1),
+        )
+        self.assertEqual(figures["unlock_confirmed"], 2)
+        self.assertEqual(figures["success_rate"], 0.75)
+        self.assertEqual((figures["connect_ms_median"], figures["connect_ms_max"]), (4000, 9000))
+        self.assertEqual(figures["connect_attempts"], {"1": 2, "2": 1})
+        self.assertEqual(figures["failures_by_error"], {"WeLockBleError": 1})
+        self.assertEqual(figures["scanners"], {"scanner-0123abcd": 1})
+
     def test_attempts_without_phase_times_still_load(self) -> None:
         # Statistics written by rc.1/rc.2 have no phase times.
         old = {"history": [{"time": "t", "path": "cloud", "result": "confirmed", "duration_ms": 9}]}
@@ -318,6 +370,16 @@ class ParseCommandTableTests(unittest.TestCase):
         for bad_key in ("256", "-1", "abc", ""):
             with self.assertRaises(ValueError):
                 parse_command_table(_table_file(**{bad_key: CMD_RF6}))
+
+    def test_error_text_never_echoes_keys_that_look_like_commands(self) -> None:
+        # A table keyed by commands instead of challenge numbers (a mix-up) is rejected without
+        # putting any of the commands into the message that is shown to the user.
+        with self.assertRaises(ValueError) as caught:
+            parse_command_table(_table_file(**{CMD_RF6: "6", CMD_RF7_STR: "7"}))
+        message = str(caught.exception)
+        self.assertNotIn(CMD_RF6[:6], message)
+        self.assertNotIn(CMD_RF7_STR[:6], message)
+        self.assertIn("2 invalid", message)
 
     def test_error_text_names_the_entry_but_never_a_command(self) -> None:
         with self.assertRaises(ValueError) as caught:

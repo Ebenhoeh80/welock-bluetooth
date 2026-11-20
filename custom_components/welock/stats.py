@@ -8,7 +8,10 @@ is stored: no commands, no account data, no addresses.
 
 from __future__ import annotations
 
-from collections import deque
+import re
+import statistics
+from collections import Counter, deque
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, TypedDict
 
@@ -57,6 +60,8 @@ class UnlockAttempt:
     # State when the connection was started (see ``ExchangeReport``).
     adv_age_ms: int | None = None
     connect_attempts: int | None = None
+    # Neutral label of the adapter or proxy that last heard the lock (see ``ble.scanner_label``).
+    scanner: str | None = None
 
 
 class PhaseTimes(TypedDict):
@@ -69,6 +74,7 @@ class PhaseTimes(TypedDict):
     teardown_ms: int | None
     adv_age_ms: int | None
     connect_attempts: int | None
+    scanner: str | None
 
 
 @dataclass
@@ -103,6 +109,8 @@ class PathStats:
         }
 
 
+_SCANNER_LABEL = re.compile(r"scanner-[0-9a-f]{8}")
+
 PHASE_KEYS = (
     "connect_ms",
     "status_ms",
@@ -128,6 +136,11 @@ def _optional_ms(value: object) -> int | None:
     return _valid_int(value, minimum=0)
 
 
+def _scanner(value: object) -> str | None:
+    """Return a stored scanner label, or ``None`` if it is not one."""
+    return value if isinstance(value, str) and _SCANNER_LABEL.fullmatch(value) else None
+
+
 def _non_negative_int(value: object) -> int:
     return _valid_int(value, minimum=0) or 0
 
@@ -151,8 +164,47 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
         error=error if isinstance(error, str) else None,
         rssi=_valid_int(item.get("rssi")),
         evicted=item.get("evicted") is True,
+        scanner=_scanner(item.get("scanner")),
         **{key: _optional_ms(item.get(key)) for key in PHASE_KEYS},
     )
+
+
+def _total_figures(paths: dict[str, PathStats]) -> dict[str, Any]:
+    """Return the all-time counts over every path."""
+    totals = list(paths.values())
+    attempts = sum(p.attempts for p in totals)
+    delivered = sum(p.delivered for p in totals)
+    return {
+        "unlock_attempts": attempts,
+        "unlock_successes": delivered,
+        "unlock_confirmed": sum(p.confirmed for p in totals),
+        "unlock_failures": sum(p.failed for p in totals),
+        "success_rate": round(delivered / attempts, 3) if attempts else None,
+    }
+
+
+def _connect_figures(history: Iterable[UnlockAttempt]) -> dict[str, Any]:
+    """Return median, maximum and the number of connection attempts needed."""
+    attempts = list(history)
+    connects = [a.connect_ms for a in attempts if a.connect_ms is not None]
+    tries = Counter(a.connect_attempts for a in attempts if a.connect_attempts is not None)
+    return {
+        "connect_ms_median": round(statistics.median(connects)) if connects else None,
+        "connect_ms_max": max(connects) if connects else None,
+        "connect_attempts": {str(n): count for n, count in sorted(tries.items())},
+    }
+
+
+def _history_figures(history: Iterable[UnlockAttempt]) -> dict[str, Any]:
+    """Return the figures that come from the kept history of attempts."""
+    attempts = list(history)
+    failed = [a for a in attempts if a.result == RESULT_FAILED]
+    return {
+        "history_size": len(attempts),
+        **_connect_figures(attempts),
+        "failures_by_error": dict(Counter(a.error or "unknown" for a in failed)),
+        "scanners": dict(Counter(a.scanner for a in attempts if a.scanner)),
+    }
 
 
 @dataclass
@@ -222,6 +274,15 @@ class UnlockStats:
         if attempt.evicted:
             self.evictions += 1
         self.history.append(attempt)
+
+    def key_figures(self) -> dict[str, Any]:
+        """Return key figures from what is already recorded (no new measurement).
+
+        The totals cover all attempts since the statistics were last cleared; the
+        connection figures cover the kept history (the latest ``HISTORY_LIMIT``
+        attempts). Nothing in it identifies the lock, the account or a scanner.
+        """
+        return {**_total_figures(self.paths), **_history_figures(self.history)}
 
     async def async_record(self, attempt: UnlockAttempt) -> None:
         """Count one attempt and persist the statistics."""

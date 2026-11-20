@@ -85,6 +85,7 @@ def _phase_times(report: ExchangeReport) -> PhaseTimes:
         "teardown_ms": report.teardown_ms,
         "adv_age_ms": report.adv_age_ms,
         "connect_attempts": report.connect_attempts,
+        "scanner": report.scanner,
     }
 
 

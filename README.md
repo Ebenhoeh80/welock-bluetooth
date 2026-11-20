@@ -26,7 +26,7 @@ A suite for **WeLock smart door locks** (e.g. Touch41, SECBN51, PCB41, SECBREBL0
 - [Setup in Home Assistant](#-setup-in-home-assistant)
 - [Entities](#-entities)
 - [Options](#-options)
-- [Local offline unlock (experimental)](#-local-offline-unlock-experimental)
+- [Local offline unlock](#-local-offline-unlock)
 - [Access log (service)](#-access-log-service)
 - [Operation & behaviour](#-operation--behaviour)
 - [Troubleshooting](#-troubleshooting)
@@ -115,8 +115,8 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_battery` | Sensor (diagnostic) | Battery level in %, read directly from the lock. |
 | `sensor.<name>_signal_strength` | Sensor (diagnostic, disabled by default) | RSSI of the latest Bluetooth advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_reachable` | Binary sensor (diagnostic) | On while a connectable adapter or proxy sees the lock. |
-| `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock-experimental). |
-| `switch.<name>_offline_unlock` | Switch (configuration) | Turns [offline unlocking](#-local-offline-unlock-experimental) on or off with immediate effect; the setting is remembered across restarts. Off by default. |
+| `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock). |
+| `switch.<name>_offline_unlock` | Switch (configuration) | Turns [offline unlocking](#-local-offline-unlock) on or off with immediate effect; the setting is remembered across restarts. Off by default. |
 | `sensor.<name>_unlocks_via_cloud` | Sensor | Number of unlocks whose command came from the WeLock cloud. Attributes: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
 | `sensor.<name>_unlocks_offline` | Sensor | Number of unlocks whose command came from the local cache (no cloud contact). Same attributes. |
 | `event.<name>_unlock_history` | Event | One event per unlock attempt (`unlock_cloud`, `unlock_offline`, `unlock_failed`) with path, result, duration and challenge value. Shows up in the logbook and history. |
@@ -146,11 +146,11 @@ The exact entity IDs depend on the BLE name and the HA language.
 | Show as unlocked for | 10 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
 | Read battery over Bluetooth every | 24 h | 0–168 h | Periodic BLE status read. `0` = only on unlock (saves the lock battery). |
 | Check Bluetooth reachability every | 60 s | 10–600 s | How often reachability and RSSI are refreshed from the HA Bluetooth cache. Creates **no** radio traffic. |
-| Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. Also available as a switch entity. See below. |
+| Build and use the local command cache | off | on/off | **Learned and checked on a single lock (45 of 45), off by default.** Unlocks locally without the cloud when the challenge value is already known. Also available as a switch entity. See below. |
 
 ---
 
-## 🔓 Local offline unlock (experimental)
+## 🔓 Local offline unlock
 
 The cloud unlock command depends **only on the `randomFactor` byte** of the BLE
 challenge (not on the battery level or the BLE key). There are therefore at most
@@ -258,7 +258,7 @@ example from a script or an automation that you trigger yourself.
 
 ## 🔄 Operation & behaviour
 
-* **Unlocking via the cloud logs the WeLock app out.** A fresh cloud login is then needed for the command — a property of the WeLock cloud. On a hit in the [local command cache](#-local-offline-unlock-experimental), the cloud login (and thus the logout) is skipped.
+* **Unlocking via the cloud logs the WeLock app out.** A fresh cloud login is then needed for the command — a property of the WeLock cloud. On a hit in the [local command cache](#-local-offline-unlock), the cloud login (and thus the logout) is skipped.
 * **At least 12 s between two unlocks.** The knob stays engaged for 10 s and the lock takes no further command meanwhile; an earlier attempt is rejected with a message.
 * **Assumed state:** the lock does not report its state. The cylinder engages the outer knob for 10 s (measured) and then re-locks mechanically on its own. “Lock” in HA only resets the display.
 * **Without Bluetooth range** the lock is *unavailable*. The cloud alone cannot unlock.
@@ -336,7 +336,7 @@ optional access log.
 - Unlocking needs a Bluetooth adapter or ESPHome Bluetooth proxy within a few metres; a weak signal is the usual
   reason for slow unlocks (see [Troubleshooting](#-troubleshooting)).
 - Every cloud login ends other sessions of the account (for example the WeLock app).
-- Offline unlocking is experimental and only works for challenge values the integration has learned.
+- Offline unlocking was verified on a single lock (one firmware) and only works for challenge values the integration has learned.
 
 ## 🗑️ Removal
 
@@ -351,6 +351,7 @@ integration in HACS if you wish, and change your WeLock password if you shared i
 * Email and password live only in the Home Assistant config entry. The cloud token is kept in memory only and discarded after every request.
 * Logs and error messages contain neither the password nor the token. The diagnostics redact the account and password.
 * Cloud communication runs exclusively over HTTPS to `clientapi.welock.com.cn`, without redirects.
+* The learned unlock commands (up to 256) are stored in `.storage` and therefore in every Home Assistant backup. Anyone who has them and is within Bluetooth range of the lock can open it: encrypt your backups, and delete the import file `welock-oracle-table.json` after importing it. Details in the [threat model](SECURITY.md#threat-model).
 * Please report security issues confidentially, see [SECURITY.md](SECURITY.md).
 
 ---
