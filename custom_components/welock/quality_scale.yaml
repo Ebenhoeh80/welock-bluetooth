@@ -12,8 +12,8 @@ rules:
     comment: Distributed via HACS, not submitted to the core brands repository; the brand folder is shipped with the integration.
   common-modules: done
   config-flow-test-coverage:
-    status: todo
-    comment: The Home Assistant tests do not yet walk through the config, options and re-authentication flows end to end.
+    status: done
+    comment: The config, Bluetooth discovery, re-authentication and options flows are tested end to end in a real Home Assistant core.
   config-flow: done
   dependency-transparency:
     status: done
@@ -49,8 +49,8 @@ rules:
   parallel-updates: done
   reauthentication-flow: done
   test-coverage:
-    status: todo
-    comment: Tests run in a real Home Assistant core in CI; the coverage figure has to reach 95 % before this is marked done.
+    status: done
+    comment: The unit tests and the tests in a real Home Assistant core together cover 98 %; CI fails below 95 %.
 
   # --- Gold ---
   devices: done

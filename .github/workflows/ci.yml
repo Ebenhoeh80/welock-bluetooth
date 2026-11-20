@@ -65,4 +65,4 @@ jobs:
       - name: Run Home Assistant tests
         run: |
           pytest -c tests_ha/pytest.ini tests_ha --cov=custom_components/welock
-          pytest tests -o asyncio_mode=auto -p no:cacheprovider --cov=custom_components/welock --cov-append --cov-report=term-missing
+          pytest tests -o asyncio_mode=auto -p no:cacheprovider --cov=custom_components/welock --cov-append --cov-report=term-missing --cov-fail-under=95
