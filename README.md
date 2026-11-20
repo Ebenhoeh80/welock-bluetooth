@@ -48,7 +48,7 @@ Home Assistant                          Lock (BLE)                 WeLock cloud
      │◀─────── 55 30 <random> <batt>  ───────│                            │
      │  2. login + /Command/UnLock (deviceNumber, deviceName, random, batt) ─▶│
      │◀──────────────────────────── 15-byte command "U1…" ─────────────────────│
-     │  3. write command  ──────────────────▶│  knob engages for ~7 s     │
+     │  3. write command  ──────────────────▶│  knob engages for ~10 s    │
 ```
 
 * The cloud is contacted **only** during setup, re-authentication and unlocking. There is **no cloud polling**.
@@ -133,7 +133,7 @@ The exact entity IDs depend on the BLE name and the HA language.
 
 | Option | Default | Range | Meaning |
 | :--- | :---: | :---: | :--- |
-| Show as unlocked for | 7 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
+| Show as unlocked for | 10 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
 | Read battery over Bluetooth every | 24 h | 0–168 h | Periodic BLE status read. `0` = only on unlock (saves the lock battery). |
 | Check Bluetooth reachability every | 60 s | 10–600 s | How often reachability and RSSI are refreshed from the HA Bluetooth cache. Creates **no** radio traffic. |
 | Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. Also available as a switch entity. See below. |
@@ -246,8 +246,8 @@ example from a script or an automation that you trigger yourself.
 ## 🔄 Operation & behaviour
 
 * **Unlocking via the cloud logs the WeLock app out.** A fresh cloud login is then needed for the command — a property of the WeLock cloud. On a hit in the [local command cache](#-local-offline-unlock-experimental), the cloud login (and thus the logout) is skipped.
-* **At least 30 s between two unlocks.** An earlier attempt is rejected with a message.
-* **Assumed state:** the lock does not report its state. The cylinder engages the outer knob for about 7 s and then re-locks mechanically on its own. “Lock” in HA only resets the display.
+* **At least 12 s between two unlocks.** The knob stays engaged for 10 s and the lock takes no further command meanwhile; an earlier attempt is rejected with a message.
+* **Assumed state:** the lock does not report its state. The cylinder engages the outer knob for 10 s (measured) and then re-locks mechanically on its own. “Lock” in HA only resets the display.
 * **Without Bluetooth range** the lock is *unavailable*. The cloud alone cannot unlock.
 * All BLE access to one lock is serialised so that battery reads and unlocks do not collide.
 
@@ -294,7 +294,7 @@ command was written, which helps to compare the timing of several attempts.
 | *No Bluetooth adapter or proxy reaches the lock* | Move the proxy closer to the door, set `active: true` on the ESPHome proxy, close the app (only one BLE connection at a time). |
 | *The lock did not answer the status request* | Wake the lock (touch the knob), check the batteries, retry. |
 | Lock permanently *unavailable* | Check the “Bluetooth reachable” binary sensor. HA cannot see the lock; causes as above. |
-| *Please wait … s* | The 30-second lock-out between two unlocks is still active. |
+| *Please wait … s* | The 12-second lock-out between two unlocks is still active. |
 
 **Debug logs** (`configuration.yaml`):
 ```yaml
@@ -403,7 +403,7 @@ actions:
 mode: single
 ```
 
-> Every unlock logs the WeLock app out, and there are at least 30 s between two unlocks.
+> Every unlock logs the WeLock app out, and there are at least 12 s between two unlocks.
 
 ---
 

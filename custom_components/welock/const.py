@@ -20,10 +20,12 @@ CONF_LOCAL_UNLOCK: Final = "local_unlock"
 
 # Defaults
 DEFAULT_SCAN_INTERVAL: Final = 60  # seconds, local Bluetooth presence/RSSI only
-DEFAULT_AUTO_RELOCK_DELAY: Final = 7  # seconds (knob engages for ~7 s)
+DEFAULT_AUTO_RELOCK_DELAY: Final = 10  # seconds (measured: the knob engages for 10 s)
 DEFAULT_BATTERY_INTERVAL: Final = 24  # hours between BLE battery reads, 0 = only on unlock
 DEFAULT_LOCAL_UNLOCK: Final = False  # use the locally learned command cache to unlock
-MIN_UNLOCK_INTERVAL: Final = 30  # seconds between two unlock commands
+# The lock cannot take another unlock command while its knob is engaged (measured: 10 s),
+# so the next one is held back a little longer than that.
+MIN_UNLOCK_INTERVAL: Final = 12  # seconds between two unlock commands
 BLE_TIMEOUT: Final = 15.0  # seconds to wait for the lock's status answer
 # After the unlock command was written the lock normally answers within about
 # half a second (seen in the app's Bluetooth trace). Waiting longer only delays

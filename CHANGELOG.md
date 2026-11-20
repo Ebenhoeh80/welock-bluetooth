@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ends other sessions of the account).
 
 ### Changed
+- **Shorter wait between two unlocks: 12 s instead of 30 s.** The knob stays engaged for 10 s (measured) and the lock takes no command meanwhile, so a short pause is enough. The default for *Show as unlocked for* is now 10 s (was 7 s).
 - **Faster unlock state.** After writing the unlock command the integration waited up
   to 15 s for a confirmation from the lock before showing "unlocked". The lock
   normally answers within about half a second, so the wait is now 3 s

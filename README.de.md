@@ -45,7 +45,7 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
      │◀─────── 55 30 <random> <akku>  ──────│                            │
      │  2. Login + /Command/UnLock (deviceNumber, deviceName, random, akku) ─▶│
      │◀──────────────────────────── 15-Byte-Befehl "U1…" ──────────────────────│
-     │  3. Befehl schreiben  ───────────────▶│  Knauf kuppelt ~7 s ein   │
+     │  3. Befehl schreiben  ───────────────▶│  Knauf kuppelt ~10 s ein  │
 ```
 
 * Die Cloud wird **nur** bei Einrichtung, erneuter Anmeldung und beim Entriegeln kontaktiert. Es gibt **kein Cloud-Polling**.
@@ -130,7 +130,7 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
 | Option | Standard | Bereich | Bedeutung |
 | :--- | :---: | :---: | :--- |
-| Als entriegelt anzeigen für | 7 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
+| Als entriegelt anzeigen für | 10 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
 | Akkustand per Bluetooth lesen alle | 24 h | 0–168 h | Regelmäßige BLE-Statusabfrage. `0` = nur beim Entriegeln (schont die Schlossbatterie). |
 | Bluetooth-Erreichbarkeit prüfen alle | 60 s | 10–600 s | Wie oft Erreichbarkeit und RSSI aus dem HA-Bluetooth-Cache aktualisiert werden. Erzeugt **keinen** Funkverkehr. |
 | Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Experimentell.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Auch als Schalter-Entität verfügbar. Siehe unten. |
@@ -250,8 +250,8 @@ du selbst auslöst.
 ## 🔄 Betrieb & Verhalten
 
 * **Entriegeln über die Cloud meldet die WeLock-App ab.** Für den Befehl ist dann ein frischer Cloud-Login nötig – eine Eigenschaft der WeLock-Cloud. Bei einem Treffer im [lokalen Befehls-Cache](#-lokaler-offline-unlock-experimentell) entfällt der Cloud-Login (und damit die Abmeldung).
-* **Mindestens 30 s zwischen zwei Entriegelungen.** Ein früherer Versuch wird mit einer Meldung abgelehnt.
-* **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf ca. 7 s ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
+* **Mindestens 12 s zwischen zwei Entriegelungen.** Der Knauf bleibt 10 s eingekuppelt und das Schloss nimmt dabei keinen weiteren Befehl an; ein früherer Versuch wird mit einer Meldung abgelehnt.
+* **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf 10 s (gemessen) ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.
 * Alle BLE-Zugriffe auf ein Schloss laufen nacheinander, damit Akkuabfrage und Entriegeln nicht kollidieren.
 
@@ -299,7 +299,7 @@ wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
 | *Kein Bluetooth-Adapter oder -Proxy erreicht das Schloss* | Proxy näher an die Tür stellen, beim ESPHome-Proxy `active: true` setzen, App schließen (nur eine BLE-Verbindung gleichzeitig). |
 | *Das Schloss hat nicht auf die Statusabfrage geantwortet* | Schloss wecken (Knauf berühren), Batterien prüfen, erneut versuchen. |
 | Lock dauerhaft *nicht verfügbar* | Binärsensor „Bluetooth erreichbar“ prüfen. HA sieht das Schloss nicht, Ursachen wie oben. |
-| *Bitte … s warten* | Die 30-Sekunden-Sperre zwischen zwei Entriegelungen ist noch aktiv. |
+| *Bitte … s warten* | Die 12-Sekunden-Sperre zwischen zwei Entriegelungen ist noch aktiv. |
 
 **Debug-Logs** (`configuration.yaml`):
 ```yaml
@@ -408,7 +408,7 @@ actions:
 mode: single
 ```
 
-> Jedes Entriegeln meldet die WeLock-App ab, und zwischen zwei Entriegelungen liegen mindestens 30 s.
+> Jedes Entriegeln meldet die WeLock-App ab, und zwischen zwei Entriegelungen liegen mindestens 12 s.
 
 ---
 
