@@ -7,15 +7,22 @@ Home Assistant with ``sys.modules`` and must never be collected in the same sess
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Coroutine, Iterator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.welock.const import (
+# The integration only calls a few functions of Home Assistant's Bluetooth component (is the lock
+# in range, how strong is the signal). The component itself needs a dozen native Bluetooth
+# packages and D-Bus, so it is replaced by a stand-in; the tests patch the calls they care about.
+sys.modules.setdefault("homeassistant.components.bluetooth", MagicMock())
+
+from homeassistant.core import HomeAssistant  # noqa: E402
+from pytest_homeassistant_custom_component.common import MockConfigEntry  # noqa: E402
+
+from custom_components.welock.const import (  # noqa: E402
     CONF_ADDRESS,
     CONF_BLE_NAME,
     CONF_DEVICE_NUMBER,
@@ -24,7 +31,7 @@ from custom_components.welock.const import (
     CONF_USERNAME,
     DOMAIN,
 )
-from custom_components.welock.protocol import BatteryResponse
+from custom_components.welock.protocol import BatteryResponse  # noqa: E402
 
 ADDRESS = "C4:43:4A:03:42:A9"
 DEVICE_NUMBER = "22231059"
