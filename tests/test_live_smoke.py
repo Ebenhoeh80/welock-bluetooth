@@ -164,7 +164,7 @@ def test_live_cloud_and_ha_cache(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(bleak.BleakClient, "write_gatt_char", forbidden, raising=False)
         monkeypatch.setattr(bleak.BleakClient, "connect", forbidden, raising=False)
     except ImportError:
-        pass
+        pass  # bleak is not installed: nothing to forbid
 
     results: list[tuple[str, str]] = []
     errors: list[str] = []

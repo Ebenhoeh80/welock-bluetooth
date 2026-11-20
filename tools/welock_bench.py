@@ -502,11 +502,11 @@ async def one_round(
         try:
             await client.stop_notify(NOTIFY_UUID)
         except (BleakError, asyncio.TimeoutError, OSError):
-            pass
+            pass  # already stopped or gone: the disconnect below is what counts
         try:
             await client.disconnect()
         except (BleakError, asyncio.TimeoutError, OSError):
-            pass
+            pass  # a failed disconnect only affects the timing row
         row.teardown_ms = _ms(phase)
     return row
 

@@ -8,7 +8,6 @@ is stored: no commands, no account data, no addresses.
 
 from __future__ import annotations
 
-import logging
 from collections import deque
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, TypedDict
@@ -27,8 +26,6 @@ from .const import (
     RESULT_UNCONFIRMED,
     STATS_STORAGE_VERSION,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 PATHS = (PATH_CLOUD, PATH_OFFLINE, PATH_NONE)
 RESULTS = (RESULT_CONFIRMED, RESULT_UNCONFIRMED, RESULT_FAILED)
