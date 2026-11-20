@@ -53,3 +53,14 @@ Thank you for your interest in improving this project! We welcome contributions,
 - `coordinator.py`: local state (presence, RSSI, battery); serialises BLE access.
 - `config_flow.py`: setup must keep the order discovery → login → selection → BLE check.
 - Reference any relevant issues in your PR description.
+
+## AI-assisted contributions
+
+AI assistants are fine to use, with these rules:
+
+- **Say so** in the pull request or issue (for example "prepared with an AI assistant"), so reviewers know to look closely.
+- **You are responsible** for the contribution. Read, understand and test everything you submit; do not send unreviewed AI output.
+- **Test on real hardware** where the change touches a device. Do not claim a test you did not run.
+- **No secrets** in prompts, logs or examples (passwords, tokens, addresses, serial numbers, unlock commands).
+
+The maintainer also works with AI tools. Every change is reviewed and tested by a human before it is released, and pull requests and issues created that way carry a note.
