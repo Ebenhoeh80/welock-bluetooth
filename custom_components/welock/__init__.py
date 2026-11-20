@@ -23,6 +23,8 @@ from .api import WeLockApiClient
 from .cache import CommandCache, parse_command_table
 from .const import (
     CONF_ADDRESS,
+    CONF_BLE_NAME,
+    CONF_DEVICE_NUMBER,
     CONF_PASSWORD,
     CONF_USERNAME,
     DEFAULT_ACCESS_LOG_PAGE_SIZE,
@@ -34,6 +36,7 @@ from .const import (
     SERVICE_IMPORT_COMMANDS,
 )
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
+from .identity import is_generated_title, lock_title
 from .issues import clear_issues
 from .stats import UnlockStats
 
@@ -163,6 +166,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bool:
     """Set up a WeLock lock from a config entry (no cloud login at startup)."""
+    _async_heal_title(hass, entry)
     api = WeLockApiClient(
         username=entry.data[CONF_USERNAME],
         password=entry.data[CONF_PASSWORD],
@@ -179,6 +183,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bo
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
     return True
+
+
+def _async_heal_title(hass: HomeAssistant, entry: WeLockConfigEntry) -> None:
+    """Show the lock number instead of the Bluetooth module name (a title the user chose stays)."""
+    title = lock_title(entry.data[CONF_DEVICE_NUMBER])
+    if entry.title != title and is_generated_title(entry.title, entry.data[CONF_BLE_NAME]):
+        hass.config_entries.async_update_entry(entry, title=title)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bool:

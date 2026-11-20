@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-11-20
+
+### Changed
+- **The entry title shows the lock number in parentheses** ("WeLock (22231059)") instead of the name of the Bluetooth
+  module ("WeLockFMHAE"), which says nothing to a person. An entry with a generated title is renamed at the next start;
+  a title you chose stays. Entities, entity ids, areas and the identity of the entry are not touched.
+
 ## [2.5.0] - 2026-11-20
 
 The code behind the unlock was split into smaller functions. Behaviour is unchanged; after the

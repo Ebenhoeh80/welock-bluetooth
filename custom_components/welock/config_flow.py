@@ -41,6 +41,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+from .identity import lock_title
 from .protocol import format_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 _LOGGER.debug("WeLock BLE check OK, battery %s %%", state.battery)
                 return self.async_create_entry(
-                    title=selected[CONF_BLE_NAME],
+                    title=lock_title(selected[CONF_DEVICE_NUMBER]),
                     data={
                         CONF_USERNAME: self._username,
                         CONF_PASSWORD: self._password,

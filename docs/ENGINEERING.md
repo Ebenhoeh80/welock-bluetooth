@@ -100,6 +100,11 @@ numbers above come from the integration's own phase times and a benchmark with a
   changes the recording of the attempt on the safety-relevant path; it needs a test at the lock first.
 - **Standing Bluetooth connection / connect on arrival** not done: battery drain and untestable without
   the lock; remains a strategic option.
+- **Identity of the entry = Bluetooth address of the module** (kept). Home Assistant's Bluetooth discovery
+  reports exactly this address, and the address of a lock module is fixed (unlike an IP address). Using the lock
+  number instead would rebuild discovery and the unlock path for a case that hardly happens (a replaced module)
+  and carries the risk of losing entities of a safety-relevant device. The title shows the lock number in
+  parentheses (`WeLock (22231059)`); the module name (`WeLockFMHAE`) is only what the cloud needs to unlock.
 - **Voluptuous to probatio:** Home Assistant's type hints already name another schema library; mypy
   reports it for three modules (`pyproject.toml`, documented override). Watch Home Assistant release notes.
 
