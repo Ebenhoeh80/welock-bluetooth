@@ -14,7 +14,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
-
 # read-only
 PARALLEL_UPDATES = 0
 

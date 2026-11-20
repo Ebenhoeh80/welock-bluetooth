@@ -14,7 +14,6 @@ from .const import COMMAND_SPACE
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
-
 # only changes a stored option
 PARALLEL_UPDATES = 0
 

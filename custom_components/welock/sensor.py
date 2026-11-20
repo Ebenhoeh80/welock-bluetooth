@@ -22,7 +22,6 @@ from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 from .health import QUALITIES
 
-
 # read-only
 PARALLEL_UPDATES = 0
 

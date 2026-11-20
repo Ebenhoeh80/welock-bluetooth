@@ -14,7 +14,6 @@ from .const import CONF_AUTO_RELOCK_DELAY, DEFAULT_AUTO_RELOCK_DELAY
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
-
 # BLE access to one lock is serialised
 PARALLEL_UPDATES = 1
 
