@@ -246,3 +246,33 @@ async def test_entry_unloads_cleanly_after_an_unlock(
     assert await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_a_title_made_of_the_module_name_shows_the_lock_number(
+    hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
+) -> None:
+    hass.config_entries.async_update_entry(config_entry, title="WeLockTEST")  # the module name
+    config_entry.add_to_hass(hass)
+    await _setup(hass, config_entry)
+    assert config_entry.title == "WeLock (22231059)"
+    # nothing else moved: same unique id, entities still found by it
+    assert config_entry.unique_id == ADDRESS
+    _entity_id(hass, "lock", "lock")
+
+
+async def test_a_title_chosen_by_the_user_stays(
+    hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
+) -> None:
+    hass.config_entries.async_update_entry(config_entry, title="Haustür")
+    await _setup(hass, config_entry)
+    assert config_entry.title == "Haustür"
+
+
+def test_the_generated_titles_are_recognised() -> None:
+    from custom_components.welock.identity import is_generated_title, lock_title
+
+    assert lock_title("22231059") == "WeLock (22231059)"
+    for title in ("WeLockFMHAE", "WeLock", "WeLock (22231059)"):
+        assert is_generated_title(title, "WeLockFMHAE")
+    for title in ("Haustür", "WeLock Keller", "my WeLock (1)", ""):
+        assert not is_generated_title(title, "WeLockFMHAE")
