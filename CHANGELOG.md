@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Connection quality sensor.** `sensor.<name>_connection_quality` rates how well Home Assistant
+  reaches the lock (good / fair / poor, or unknown until three unlock attempts exist) from the
+  latest unlock attempts: connect times, failures and signal strength. Its attributes show the
+  attempts considered, the failures, the median connect time and a suggestion (move the adapter or
+  a Bluetooth proxy closer when the signal is weak).
+- **Repairs hints.** Home Assistant now shows a repairs issue when the lock has been out of
+  Bluetooth range for more than 6 hours, when the battery is below 20 % (cleared above 25 %), and
+  when the connection is clearly poor (at least five attempts, median connect time of 15 s or more
+  or two failures). They clear themselves when the condition ends.
+- **Service `welock.clear_commands`** forgets all stored unlock commands (the table fills again
+  from the cloud's answers).
+- **Tests inside a real Home Assistant core** (`tests_ha/`, own CI job with
+  `pytest-homeassistant-custom-component`): setup and entities, unlock through the cloud and with
+  the stored command, the live offline switch, the minimum interval, failures, the repairs issue,
+  both services, diagnostics without secrets, and unloading.
+
 ## [2.3.0] - 2026-11-20
 
 Offline unlocking (a command from the local table instead of a cloud request) is kept, and

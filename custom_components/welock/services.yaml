@@ -34,3 +34,10 @@ import_commands:
       example: welock-oracle-table.json
       selector:
         text:
+
+clear_commands:
+  name: Clear stored unlock commands
+  description: >-
+    Forget all stored unlock commands of every lock. The table fills again from
+    the answers of the cloud; until then offline unlocking has nothing to use
+    (unless a table is imported again).

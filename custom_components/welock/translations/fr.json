@@ -81,6 +81,15 @@
       },
       "last_unlock": {
         "name": "Dernière tentative de déverrouillage"
+      },
+      "connection_quality": {
+        "name": "Qualité de la connexion",
+        "state": {
+          "unknown": "Données insuffisantes",
+          "good": "Bonne",
+          "fair": "Moyenne",
+          "poor": "Mauvaise"
+        }
       }
     },
     "binary_sensor": {
@@ -128,6 +137,10 @@
           "description": "Chemin du fichier de table, relatif au dossier de configuration de Home Assistant."
         }
       }
+    },
+    "clear_commands": {
+      "name": "Effacer les commandes de déverrouillage enregistrées",
+      "description": "Oublie toutes les commandes de déverrouillage enregistrées de toutes les serrures. Le tableau se remplit de nouveau avec les réponses du cloud ; d'ici là, le déverrouillage hors ligne n'a rien à utiliser (sauf si vous importez à nouveau un tableau)."
     }
   },
   "exceptions": {
@@ -160,6 +173,20 @@
     },
     "import_wrong_lock": {
       "message": "La table de commandes appartient à une autre serrure ; aucune entrée WeLock chargée n'a ce numéro d'appareil."
+    }
+  },
+  "issues": {
+    "lock_unreachable": {
+      "title": "{name} est resté hors de portée Bluetooth",
+      "description": "Home Assistant n'a pas pu joindre {name} par Bluetooth depuis plus de {hours} heures. Vérifiez l'adaptateur ou le proxy Bluetooth près de la serrure et la batterie de la serrure. Le déverrouillage refonctionne dès que la serrure est à portée."
+    },
+    "battery_low": {
+      "title": "{name} : batterie faible ({percent} %)",
+      "description": "La batterie de {name} est à {percent} %. Remplacez bientôt les piles pour que la serrure ne tombe pas en panne."
+    },
+    "poor_connection": {
+      "title": "Mauvaise connexion Bluetooth avec {name}",
+      "description": "La connexion à {name} prend environ {seconds} s et {failures} des dernières tentatives ont échoué. Rapprochez autant que possible l'adaptateur Bluetooth ou un proxy Bluetooth de la serrure (lors des essais, 20 cm au lieu de 50 cm a rendu la connexion environ 2,5 fois plus rapide) et éloignez-le du métal et des ports USB 3."
     }
   }
 }

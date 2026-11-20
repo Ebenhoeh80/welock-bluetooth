@@ -28,10 +28,12 @@ from .const import (
     DEFAULT_IMPORT_FILE,
     DOMAIN,
     MAX_IMPORT_FILE_BYTES,
+    SERVICE_CLEAR_COMMANDS,
     SERVICE_FETCH_ACCESS_LOG,
     SERVICE_IMPORT_COMMANDS,
 )
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
+from .issues import clear_issues
 from .stats import UnlockStats
 
 if TYPE_CHECKING:
@@ -126,6 +128,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             }
         raise ServiceValidationError(translation_domain=DOMAIN, translation_key="import_wrong_lock")
 
+    async def _handle_clear_commands(call: ServiceCall) -> None:
+        """Forget the stored unlock commands of every configured lock."""
+        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+            coordinator = entry.runtime_data
+            await coordinator.cache.async_clear()
+            coordinator.async_update_listeners()
+            _LOGGER.info("Cleared the stored unlock commands of %s", entry.title)
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_FETCH_ACCESS_LOG,
@@ -138,6 +148,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         _handle_import_commands,
         schema=_IMPORT_COMMANDS_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CLEAR_COMMANDS,
+        _handle_clear_commands,
+        schema=vol.Schema({}),
     )
     return True
 
@@ -183,6 +199,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Remove the learned command cache and the statistics when the entry is deleted."""
     await CommandCache(hass, entry.entry_id).async_clear()
     await UnlockStats(hass, entry.entry_id).async_clear()
+    clear_issues(hass, entry.entry_id)
 
 
 async def _async_reload_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> None:

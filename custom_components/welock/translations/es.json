@@ -81,6 +81,15 @@
       },
       "last_unlock": {
         "name": "Último intento de desbloqueo"
+      },
+      "connection_quality": {
+        "name": "Calidad de la conexión",
+        "state": {
+          "unknown": "Datos insuficientes",
+          "good": "Buena",
+          "fair": "Aceptable",
+          "poor": "Mala"
+        }
       }
     },
     "binary_sensor": {
@@ -128,6 +137,10 @@
           "description": "Ruta del archivo de tabla, relativa a la carpeta de configuración de Home Assistant."
         }
       }
+    },
+    "clear_commands": {
+      "name": "Borrar los comandos de apertura guardados",
+      "description": "Olvida todos los comandos de apertura guardados de todas las cerraduras. La tabla se vuelve a llenar con las respuestas de la nube; hasta entonces la apertura sin conexión no tiene nada que usar (salvo que importes una tabla de nuevo)."
     }
   },
   "exceptions": {
@@ -160,6 +173,20 @@
     },
     "import_wrong_lock": {
       "message": "La tabla de comandos pertenece a otra cerradura; ninguna entrada WeLock cargada tiene este número de dispositivo."
+    }
+  },
+  "issues": {
+    "lock_unreachable": {
+      "title": "{name} ha estado fuera del alcance Bluetooth",
+      "description": "Home Assistant no ha podido conectar con {name} por Bluetooth durante más de {hours} horas. Comprueba el adaptador o el proxy Bluetooth cerca de la cerradura y la batería de la cerradura. La apertura vuelve a funcionar en cuanto la cerradura esté al alcance."
+    },
+    "battery_low": {
+      "title": "{name}: batería baja ({percent} %)",
+      "description": "La batería de {name} está al {percent} %. Cambia las pilas pronto para que la cerradura no falle."
+    },
+    "poor_connection": {
+      "title": "Mala conexión Bluetooth con {name}",
+      "description": "Conectar con {name} tarda unos {seconds} s y {failures} de los últimos intentos han fallado. Acerca el adaptador Bluetooth o un proxy Bluetooth lo máximo posible a la cerradura (en las pruebas, 20 cm en lugar de 50 cm hizo la conexión unas 2,5 veces más rápida) y lejos de metal y de puertos USB 3."
     }
   }
 }

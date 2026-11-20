@@ -20,6 +20,7 @@ from .api import access_records_from_attributes
 from .const import COMMAND_SPACE, PATH_CLOUD, PATH_OFFLINE
 from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
+from .health import QUALITIES
 
 
 async def async_setup_entry(
@@ -36,6 +37,7 @@ async def async_setup_entry(
             WeLockUnlockCountSensor(coordinator, entry, PATH_CLOUD),
             WeLockUnlockCountSensor(coordinator, entry, PATH_OFFLINE),
             WeLockLastUnlockSensor(coordinator, entry),
+            WeLockConnectionQualitySensor(coordinator, entry),
         ]
     )
 
@@ -246,3 +248,34 @@ class WeLockLastUnlockSensor(WeLockEntity, SensorEntity):
                 rssi=latest.rssi,
             )
         return attributes
+
+
+class WeLockConnectionQualitySensor(WeLockEntity, SensorEntity):
+    """How well Home Assistant reaches the lock, judged from the latest unlock attempts."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(QUALITIES)
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "connection_quality"
+
+    def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the connection-quality sensor."""
+        super().__init__(coordinator, entry, "connection_quality")
+
+    @property
+    def native_value(self) -> str:
+        """Return good, fair, poor, or unknown while there are too few attempts."""
+        return self.coordinator.quality_report.level
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Explain the rating: sample size, failures, median connect time, a suggestion."""
+        report = self.coordinator.quality_report
+        return {
+            "attempts_considered": report.sample,
+            "failures": report.failures,
+            "median_connect_seconds": (
+                None if report.median_connect_s is None else round(report.median_connect_s, 1)
+            ),
+            "suggestion": report.suggestion,
+        }

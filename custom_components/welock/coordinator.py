@@ -44,6 +44,8 @@ from .const import (
     RESULT_FAILED,
     RESULT_UNCONFIRMED,
 )
+from .health import QualityReport, connection_quality
+from .issues import WeLockIssues
 from .protocol import BatteryResponse
 from .stats import UnlockAttempt, UnlockStats
 
@@ -141,6 +143,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._battery_interval = hours * 3600
         self._ble_lock = asyncio.Lock()
         self._last_unlock = 0.0
+        self.issues = WeLockIssues(hass, entry.entry_id, entry.title)
         # Connections that are being closed in the background after an unlock.
         self._teardown_tasks: set[asyncio.Task[None]] = set()
         # First battery read a minute after start, so setup is not blocked by BLE.
@@ -191,7 +194,13 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self.stats.async_record(attempt)
         for listener in list(self._unlock_listeners):
             listener(attempt)
+        self.issues.update_quality(self.quality_report)
         self.async_update_listeners()
+
+    @property
+    def quality_report(self) -> QualityReport:
+        """How well Home Assistant reaches the lock, from the latest unlock attempts."""
+        return connection_quality(list(self.stats.history), (self.data or {}).get("rssi"))
 
     def _run_teardown_in_background(
         self, teardown: Awaitable[None], report: ExchangeReport, recorded: asyncio.Event
@@ -270,6 +279,8 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     BATTERY_RETRY_INTERVAL, self._battery_interval
                 )
                 _LOGGER.debug("Battery read from %s failed: %s", self.address, err)
+        self.issues.update_presence(present)
+        self.issues.update_battery(self.battery)
         return {
             "present": present,
             "rssi": info.rssi if info else None,
@@ -368,6 +379,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._last_unlock = time.monotonic()
         self.battery = state.battery
+        self.issues.update_battery(self.battery)
         await self._async_record_unlock(
             UnlockAttempt(
                 time=datetime.now(timezone.utc).isoformat(timespec="seconds"),

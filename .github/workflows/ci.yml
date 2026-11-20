@@ -31,11 +31,11 @@ jobs:
 
       - name: Run Ruff Linter
         run: |
-          ruff check custom_components/ tools/ tests/
+          ruff check custom_components/ tools/ tests/ tests_ha/
 
       - name: Run Black Code Formatter Check
         run: |
-          black --check custom_components/ tools/ tests/
+          black --check custom_components/ tools/ tests/ tests_ha/
 
       - name: Run Unit Tests
         # Live tests against the real WELOCK cloud never run in CI.
@@ -43,3 +43,25 @@ jobs:
           WELOCK_LIVE_TEST: "0"
         run: |
           pytest -m "not live"
+
+  ha-tests:
+    # The integration running inside a real Home Assistant core (pytest-homeassistant-custom-component).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: 'pip'
+
+      - name: Install Home Assistant test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest-homeassistant-custom-component
+          pip install bleak bleak-retry-connector
+
+      - name: Run Home Assistant tests
+        run: |
+          pytest -c tests_ha/pytest.ini tests_ha
