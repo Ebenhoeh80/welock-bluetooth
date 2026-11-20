@@ -37,7 +37,7 @@ def _record(time: str = "2026-11-20 10:00:00") -> WeLockAccessRecord:
 async def test_the_access_log_is_fetched_and_shown(
     hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
 ) -> None:
-    coordinator = await _setup(hass, config_entry)
+    await _setup(hass, config_entry)
     entity_id = _entity_id(hass, "sensor", "last_access")
     er.async_get(hass).async_update_entity(entity_id, disabled_by=None)
     await hass.config_entries.async_reload(config_entry.entry_id)

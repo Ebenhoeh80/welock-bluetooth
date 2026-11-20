@@ -1,0 +1,8 @@
+name: welock CodeQL configuration
+# MD5 is part of the WeLock cloud protocol: the request signature and a client identifier are
+# MD5 hashes (api.py: md5_hex, called with usedforsecurity=False). The data hashed is a random
+# per-installation UUID, not a secret and not the password, and the hash cannot be replaced by the
+# client. This single query is switched off for that reason; every other query stays active.
+query-filters:
+  - exclude:
+      id: py/weak-sensitive-data-hashing

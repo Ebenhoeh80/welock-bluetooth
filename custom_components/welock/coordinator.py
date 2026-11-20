@@ -344,6 +344,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             return command
 
+        state: BatteryResponse | None = None
         error: Exception | None = None
         recorded = asyncio.Event()
         handed_off = False
@@ -373,12 +374,13 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # which can be up to a minute old.
             rssi=report.rssi if report.rssi is not None else (self.data or {}).get("rssi"),
         )
-        if error is not None:
-            await self._async_record_failed_unlock(error, outcome)
-            mapped = self._map_unlock_error(error)
+        if state is None:
+            failure = error or WeLockBleError("The exchange ended without a status answer")
+            await self._async_record_failed_unlock(failure, outcome)
+            mapped = self._map_unlock_error(failure)
             if mapped is None:
-                raise error
-            raise mapped from error
+                raise failure
+            raise mapped from failure
 
         await self._async_record_successful_unlock(state, outcome)
         recorded.set()
