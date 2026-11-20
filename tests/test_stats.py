@@ -31,6 +31,7 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
+from custom_components.welock.ble import ExchangeReport, _async_teardown  # noqa: E402
 from custom_components.welock.cache import (  # noqa: E402
     CommandCache,
     parse_command_table,
@@ -385,6 +386,42 @@ class LiveOptionTests(unittest.TestCase):
             options_change_is_live(applied, {"scan_interval": 30, CONF_LOCAL_UNLOCK: True})
         )
         self.assertFalse(options_change_is_live({}, {"auto_relock_delay": 9}))
+
+
+class BackgroundTeardownTests(unittest.TestCase):
+    def test_teardown_stops_notifications_then_disconnects_and_times_itself(self) -> None:
+        calls: list[str] = []
+
+        class Client:
+            async def stop_notify(self, _uuid: str) -> None:
+                calls.append("stop_notify")
+
+            async def disconnect(self) -> None:
+                calls.append("disconnect")
+
+        report = ExchangeReport()
+        asyncio.run(_async_teardown(Client(), report))  # type: ignore[arg-type]
+        self.assertEqual(calls, ["stop_notify", "disconnect"])
+        self.assertIsNotNone(report.teardown_ms)
+
+    def test_teardown_time_is_added_to_the_latest_attempt(self) -> None:
+        stats = _stats()
+        first = _attempt(PATH_CLOUD, RESULT_CONFIRMED, 8000)
+        asyncio.run(stats.async_record(first))
+        self.assertTrue(asyncio.run(stats.async_update_latest(first, teardown_ms=1900)))
+        self.assertEqual(stats.latest.teardown_ms, 1900)
+        self.assertEqual(stats.latest.duration_ms, 8000)
+        reloaded = _stats(stats._store.data)
+        asyncio.run(reloaded.async_load())
+        self.assertEqual(reloaded.latest.teardown_ms, 1900)
+
+    def test_a_newer_attempt_is_never_overwritten(self) -> None:
+        stats = _stats()
+        old = _attempt(PATH_CLOUD, RESULT_CONFIRMED, 8000)
+        asyncio.run(stats.async_record(old))
+        asyncio.run(stats.async_record(_attempt(PATH_OFFLINE, RESULT_CONFIRMED, 6000)))
+        self.assertFalse(asyncio.run(stats.async_update_latest(old, teardown_ms=1)))
+        self.assertIsNone(stats.latest.teardown_ms)
 
 
 if __name__ == "__main__":

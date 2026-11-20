@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Unlock is reported as soon as the lock confirms.** The connection is now closed in the
+  background afterwards (about 0.2 s on a PC, around 2 s in Home Assistant), so the lock shows
+  *unlocked* sooner. The Bluetooth connection stays reserved until it is closed, and the
+  teardown time is added to the unlock history afterwards.
+- The unlock history now counts the connection attempts correctly (the first attempt was missing).
 - **Connection diagnostics for unlock attempts.** Each attempt now also records the
   age of the lock's last advertisement, the signal strength when the connection started and
   the number of connection attempts, to tell "the lock was not heard" apart from "the

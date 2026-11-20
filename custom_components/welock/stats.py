@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -213,6 +213,18 @@ class UnlockStats:
         """Count one attempt and persist the statistics."""
         self.add(attempt)
         await self._store.async_save(self.as_dict())
+
+    async def async_update_latest(self, expected: UnlockAttempt, **changes: Any) -> bool:
+        """Change fields of the newest attempt if it is still ``expected``; persist it.
+
+        Used to add the teardown time once the connection has been closed in the
+        background. Returns ``False`` if a newer attempt has been recorded since.
+        """
+        if not self.history or self.history[-1] is not expected:
+            return False
+        self.history[-1] = replace(expected, **changes)
+        await self._store.async_save(self.as_dict())
+        return True
 
     async def async_clear(self) -> None:
         """Forget all statistics and remove the stored file."""

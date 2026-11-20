@@ -43,6 +43,8 @@ class LockNotInRange(WeLockBleError):
 
 
 CommandProvider = Callable[[BatteryResponse], Awaitable[bytes]]
+# Receives the coroutine that closes the connection and runs it in the background.
+TeardownRunner = Callable[[Awaitable[None]], None]
 
 
 @dataclass
@@ -94,6 +96,7 @@ async def async_exchange(
     timeout: float = BLE_TIMEOUT,
     report: ExchangeReport | None = None,
     confirm_timeout: float = CONFIRM_TIMEOUT,
+    teardown_runner: TeardownRunner | None = None,
 ) -> BatteryResponse:
     """Run the WeLock challenge exchange.
 
@@ -102,6 +105,11 @@ async def async_exchange(
        challenge and write it once to the lock.
 
     Without a ``command_provider`` this is a read-only status/battery check.
+
+    With a ``teardown_runner`` the connection is not closed before returning:
+    after a completed unlock exchange the closing coroutine is handed to the
+    runner, so the caller can report success right away. The runner must run it
+    to completion; on any error the connection is closed here as before.
     """
     ble_device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
     if ble_device is None:
@@ -130,7 +138,7 @@ async def async_exchange(
     attempts = 0
 
     def _fresh_device() -> BLEDevice:
-        # Called by the retry helper before every attempt: use the newest device
+        # Called by the retry helper before every *retry*: use the newest device
         # object (it may now come from a different adapter or proxy) and count.
         nonlocal attempts
         attempts += 1
@@ -150,12 +158,13 @@ async def async_exchange(
     except (BleakError, asyncio.TimeoutError, OSError) as err:
         if report is not None:
             report.connect_ms = _elapsed_ms(phase)
-            report.connect_attempts = attempts or None
+            report.connect_attempts = attempts + 1
         raise WeLockBleError(f"Could not connect to {address}: {err}") from err
     if report is not None:
         report.connect_ms = _elapsed_ms(phase)
-        report.connect_attempts = attempts or None
+        report.connect_attempts = attempts + 1
 
+    handed_off = False
     try:
         phase = time.monotonic()
         await client.start_notify(NOTIFY_UUID, _on_notify)
@@ -182,19 +191,30 @@ async def async_exchange(
                 _LOGGER.debug("No confirmation notification from %s after unlock", address)
             if report is not None:
                 report.confirm_ms = _elapsed_ms(phase)
+            if teardown_runner is not None:
+                teardown_runner(_async_teardown(client, report))
+                handed_off = True
         return state
     except (BleakError, asyncio.TimeoutError, ValueError) as err:
         raise WeLockBleError(f"BLE exchange with {address} failed: {err}") from err
     finally:
-        teardown = time.monotonic()
-        try:
-            await client.stop_notify(NOTIFY_UUID)
-        except (BleakError, asyncio.TimeoutError, OSError):
-            pass
-        try:
-            await client.disconnect()
-        except (BleakError, asyncio.TimeoutError, OSError):
-            # Never let a disconnect error mask the real exchange exception.
-            pass
-        if report is not None:
-            report.teardown_ms = _elapsed_ms(teardown)
+        if not handed_off:
+            await _async_teardown(client, report)
+
+
+async def _async_teardown(
+    client: BleakClientWithServiceCache, report: ExchangeReport | None
+) -> None:
+    """Stop notifications and disconnect; never raises."""
+    started = time.monotonic()
+    try:
+        await client.stop_notify(NOTIFY_UUID)
+    except (BleakError, asyncio.TimeoutError, OSError):
+        pass
+    try:
+        await client.disconnect()
+    except (BleakError, asyncio.TimeoutError, OSError):
+        # Never let a disconnect error mask the real exchange exception.
+        pass
+    if report is not None:
+        report.teardown_ms = _elapsed_ms(started)

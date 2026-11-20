@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -113,6 +113,8 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._battery_interval = hours * 3600
         self._ble_lock = asyncio.Lock()
         self._last_unlock = 0.0
+        # Connections that are being closed in the background after an unlock.
+        self._teardown_tasks: set[asyncio.Task[None]] = set()
         # First battery read a minute after start, so setup is not blocked by BLE.
         self._next_battery_read = time.monotonic() + 60
         self.battery: int | None = None
@@ -162,6 +164,39 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for listener in list(self._unlock_listeners):
             listener(attempt)
         self.async_update_listeners()
+
+    def _run_teardown_in_background(
+        self, teardown: Awaitable[None], report: ExchangeReport, recorded: asyncio.Event
+    ) -> None:
+        """Close the connection after the unlock was reported; hold the BLE lock until done.
+
+        The lock stays reserved so no other exchange starts while the connection is
+        still closing. The teardown time is added to the recorded attempt afterwards.
+        """
+
+        async def _run() -> None:
+            try:
+                await teardown
+            finally:
+                self._ble_lock.release()
+            try:
+                await asyncio.wait_for(recorded.wait(), 10)
+            except asyncio.TimeoutError:
+                return
+            attempt = self.stats.latest
+            if attempt is not None and attempt.teardown_ms is None:
+                if await self.stats.async_update_latest(attempt, teardown_ms=report.teardown_ms):
+                    self.async_update_listeners()
+
+        task = self.hass.async_create_background_task(_run(), f"welock teardown {self.address}")
+        self._teardown_tasks.add(task)
+        task.add_done_callback(self._teardown_tasks.discard)
+
+    async def async_shutdown(self) -> None:
+        """Let connections that are still closing finish, then shut down."""
+        if self._teardown_tasks:
+            await asyncio.wait(self._teardown_tasks, timeout=10)
+        await super().async_shutdown()
 
     def _map_unlock_error(self, err: Exception) -> HomeAssistantError | None:
         """Translate an unlock error for the user; ``None`` if it is not one of ours."""
@@ -257,11 +292,24 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return command
 
         error: Exception | None = None
+        recorded = asyncio.Event()
+        handed_off = False
+
+        def _hand_off(teardown: Awaitable[None]) -> None:
+            nonlocal handed_off
+            handed_off = True
+            self._run_teardown_in_background(teardown, report, recorded)
+
+        await self._ble_lock.acquire()
         try:
-            async with self._ble_lock:
-                state = await async_exchange(self.hass, self.address, _command, report=report)
+            state = await async_exchange(
+                self.hass, self.address, _command, report=report, teardown_runner=_hand_off
+            )
         except Exception as err:  # noqa: BLE001 - recorded, then re-raised below
             error = err
+        finally:
+            if not handed_off:
+                self._ble_lock.release()
 
         duration_ms = round((time.monotonic() - started) * 1000)
         # The signal strength when the connection started beats the polled value,
@@ -308,6 +356,7 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 **_phase_times(report),
             )
         )
+        recorded.set()
         self.async_set_updated_data({**(self.data or {}), "battery": state.battery})
 
     async def async_fetch_access_log(self, page_size: int) -> int:
