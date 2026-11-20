@@ -351,6 +351,7 @@ integration in HACS if you wish, and change your WeLock password if you shared i
 * Email and password live only in the Home Assistant config entry. The cloud token is kept in memory only and discarded after every request.
 * Logs and error messages contain neither the password nor the token. The diagnostics redact the account and password.
 * Cloud communication runs exclusively over HTTPS to `clientapi.welock.com.cn`, without redirects.
+* The learned unlock commands (up to 256) are stored in `.storage` and therefore in every Home Assistant backup. Anyone who has them and is within Bluetooth range of the lock can open it: encrypt your backups, and delete the import file `welock-oracle-table.json` after importing it. Details in the [threat model](SECURITY.md#threat-model).
 * Please report security issues confidentially, see [SECURITY.md](SECURITY.md).
 
 ---

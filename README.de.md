@@ -360,6 +360,7 @@ weitergegeben hast.
 * E-Mail und Passwort liegen ausschließlich im Config-Entry von Home Assistant. Der Cloud-Token wird nur im Speicher gehalten und nach jeder Anfrage verworfen.
 * Logs und Fehlermeldungen enthalten weder Passwort noch Token. Die Diagnosedaten schwärzen Konto und Passwort.
 * Die Cloud-Kommunikation läuft ausschließlich per HTTPS zu `clientapi.welock.com.cn`, ohne Redirects.
+* Die gelernten Entsperrbefehle (bis zu 256) liegen in `.storage` und damit in jedem Home-Assistant-Backup. Wer sie besitzt und in Bluetooth-Reichweite des Schlosses ist, kann es öffnen: Backups verschlüsseln und die Importdatei `welock-oracle-table.json` nach dem Import löschen. Einzelheiten im [Bedrohungsmodell](SECURITY.md#threat-model) (englisch).
 * Sicherheitslücken bitte vertraulich melden, siehe [SECURITY.md](SECURITY.md).
 
 ---
