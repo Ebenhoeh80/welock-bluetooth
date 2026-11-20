@@ -81,6 +81,15 @@
       },
       "last_unlock": {
         "name": "Last unlock attempt"
+      },
+      "connection_quality": {
+        "name": "Connection quality",
+        "state": {
+          "unknown": "Not enough data",
+          "good": "Good",
+          "fair": "Fair",
+          "poor": "Poor"
+        }
       }
     },
     "binary_sensor": {
@@ -128,6 +137,10 @@
           "description": "Path of the table file, relative to the Home Assistant configuration folder."
         }
       }
+    },
+    "clear_commands": {
+      "name": "Clear stored unlock commands",
+      "description": "Forget all stored unlock commands of every lock. The table fills again from the cloud's answers; until then offline unlocking has nothing to use (unless you import a table again)."
     }
   },
   "exceptions": {
@@ -160,6 +173,20 @@
     },
     "import_wrong_lock": {
       "message": "The command table belongs to a different lock; no loaded WeLock entry has this device number."
+    }
+  },
+  "issues": {
+    "lock_unreachable": {
+      "title": "{name} has been out of Bluetooth range",
+      "description": "Home Assistant has not reached {name} over Bluetooth for more than {hours} hours. Check the Bluetooth adapter or proxy near the lock and the lock's battery. Unlocking works again as soon as the lock is in range."
+    },
+    "battery_low": {
+      "title": "{name}: battery is low ({percent} %)",
+      "description": "The battery of {name} is at {percent} %. Replace the batteries soon so the lock does not fail."
+    },
+    "poor_connection": {
+      "title": "Poor Bluetooth connection to {name}",
+      "description": "Connecting to {name} takes about {seconds} s and {failures} of the latest attempts failed. Move the Bluetooth adapter or a Bluetooth proxy as close to the lock as possible (in tests, 20 cm instead of 50 cm made connecting about 2.5 times faster), and away from metal and USB 3 ports."
     }
   }
 }

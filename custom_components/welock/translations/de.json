@@ -81,6 +81,15 @@
       },
       "last_unlock": {
         "name": "Letzter Entsperrversuch"
+      },
+      "connection_quality": {
+        "name": "Verbindungsqualität",
+        "state": {
+          "unknown": "Zu wenig Daten",
+          "good": "Gut",
+          "fair": "Mittel",
+          "poor": "Schlecht"
+        }
       }
     },
     "binary_sensor": {
@@ -128,6 +137,10 @@
           "description": "Pfad der Tabellendatei, relativ zum Home-Assistant-Konfigurationsordner."
         }
       }
+    },
+    "clear_commands": {
+      "name": "Gespeicherte Entsperrbefehle löschen",
+      "description": "Vergisst alle gespeicherten Entsperrbefehle aller Schlösser. Die Tabelle füllt sich aus den Antworten der Cloud wieder auf; bis dahin hat das Offline-Entsperren nichts zu verwenden (außer du importierst eine Tabelle erneut)."
     }
   },
   "exceptions": {
@@ -160,6 +173,20 @@
     },
     "import_wrong_lock": {
       "message": "Die Befehlstabelle gehört zu einem anderen Schloss; kein geladener WeLock-Eintrag hat diese Gerätenummer."
+    }
+  },
+  "issues": {
+    "lock_unreachable": {
+      "title": "{name} war außer Bluetooth-Reichweite",
+      "description": "Home Assistant hat {name} seit mehr als {hours} Stunden nicht über Bluetooth erreicht. Prüfe den Bluetooth-Adapter oder -Proxy in der Nähe des Schlosses und die Batterie des Schlosses. Das Entsperren funktioniert wieder, sobald das Schloss in Reichweite ist."
+    },
+    "battery_low": {
+      "title": "{name}: Batterie schwach ({percent} %)",
+      "description": "Die Batterie von {name} steht bei {percent} %. Wechsle die Batterien bald, damit das Schloss nicht ausfällt."
+    },
+    "poor_connection": {
+      "title": "Schlechte Bluetooth-Verbindung zu {name}",
+      "description": "Das Verbinden mit {name} dauert etwa {seconds} s, und {failures} der letzten Versuche sind fehlgeschlagen. Stelle den Bluetooth-Adapter oder einen Bluetooth-Proxy so nah wie möglich ans Schloss (in Tests war das Verbinden bei 20 cm statt 50 cm etwa 2,5-mal schneller) und weg von Metall und USB-3-Anschlüssen."
     }
   }
 }
