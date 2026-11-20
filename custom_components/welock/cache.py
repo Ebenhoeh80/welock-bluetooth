@@ -39,6 +39,20 @@ class ImportResult:
     conflicts: list[int] = field(default_factory=list)
 
 
+def _parse_table_entry(key: Any, value: Any) -> tuple[int, bytes] | str:
+    """Return ``(randomFactor, command)``, or a short label naming the bad entry."""
+    try:
+        random_factor = int(key)
+    except (TypeError, ValueError):
+        return str(key)[:12]
+    if not 0 <= random_factor <= 255 or not isinstance(value, str):
+        return str(key)[:12]
+    try:
+        return random_factor, validate_unlock_command(value.encode("ascii"))
+    except (ValueError, UnicodeEncodeError):
+        return str(random_factor)
+
+
 def parse_command_table(data: Any) -> tuple[str, dict[int, bytes]]:
     """Validate a command-table file and return ``(device_number, table)``.
 
@@ -58,18 +72,11 @@ def parse_command_table(data: Any) -> tuple[str, dict[int, bytes]]:
     table: dict[int, bytes] = {}
     bad: list[str] = []
     for key, value in raw_table.items():
-        try:
-            random_factor = int(key)
-        except (TypeError, ValueError):
-            bad.append(str(key)[:12])
-            continue
-        if not 0 <= random_factor <= 255 or not isinstance(value, str):
-            bad.append(str(key)[:12])
-            continue
-        try:
-            table[random_factor] = validate_unlock_command(value.encode("ascii"))
-        except (ValueError, UnicodeEncodeError):
-            bad.append(str(random_factor))
+        entry = _parse_table_entry(key, value)
+        if isinstance(entry, str):
+            bad.append(entry)
+        else:
+            table[entry[0]] = entry[1]
     if bad:
         raise ValueError(f"{len(bad)} invalid table entries (randomFactor: {', '.join(bad[:10])})")
     return device_number.strip(), table

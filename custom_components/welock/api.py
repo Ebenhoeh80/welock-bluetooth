@@ -136,42 +136,49 @@ def _as_int(value: Any) -> int | None:
         return None
 
 
+def _non_blank(value: Any) -> str | None:
+    """Return ``value`` if it is a string with visible characters, else ``None``."""
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def _parse_ble_module(entry: Any) -> WeLockBleModule | None:
+    """Parse one ``ble`` entry of a device; ``None`` if it has no usable name."""
+    if not isinstance(entry, dict):
+        return None
+    ble_name = _non_blank(entry.get("deviceName"))
+    if ble_name is None:
+        return None
+    return WeLockBleModule(
+        name=ble_name.strip(),
+        address=format_mac(str(entry.get("deviceMac") or "")),
+        battery=_as_int(entry.get("power")),
+        position=_as_int(entry.get("position")),
+    )
+
+
+def _parse_device(item: Any) -> WeLockDevice | None:
+    """Parse one device of the list; ``None`` if it has no device number."""
+    if not isinstance(item, dict):
+        return None
+    number = _non_blank(item.get("deviceNumber"))
+    if number is None:
+        return None
+    modules = (_parse_ble_module(entry) for entry in item.get("ble") or [])
+    name = _non_blank(item.get("deviceName"))
+    return WeLockDevice(
+        device_number=number.strip(),
+        name=name.strip() if name else number.strip(),
+        model=item.get("model") if isinstance(item.get("model"), str) else None,
+        ble=tuple(module for module in modules if module is not None),
+    )
+
+
 def parse_device_list(data: Any) -> list[WeLockDevice]:
     """Parse the ``data`` list of ``/Device/GetDevices``."""
     if not isinstance(data, list):
         raise WeLockApiError("Device list has an unknown format")
-    devices: list[WeLockDevice] = []
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-        number = item.get("deviceNumber")
-        if not isinstance(number, str) or not number.strip():
-            continue
-        modules: list[WeLockBleModule] = []
-        for entry in item.get("ble") or []:
-            if not isinstance(entry, dict):
-                continue
-            ble_name = entry.get("deviceName")
-            if not isinstance(ble_name, str) or not ble_name.strip():
-                continue
-            modules.append(
-                WeLockBleModule(
-                    name=ble_name.strip(),
-                    address=format_mac(str(entry.get("deviceMac") or "")),
-                    battery=_as_int(entry.get("power")),
-                    position=_as_int(entry.get("position")),
-                )
-            )
-        name = item.get("deviceName")
-        devices.append(
-            WeLockDevice(
-                device_number=number.strip(),
-                name=name.strip() if isinstance(name, str) and name.strip() else number.strip(),
-                model=item.get("model") if isinstance(item.get("model"), str) else None,
-                ble=tuple(modules),
-            )
-        )
-    return devices
+    devices = (_parse_device(item) for item in data)
+    return [device for device in devices if device is not None]
 
 
 # Observed, not exhaustively confirmed meanings (app 4.5.x, model SECBREBL01).
@@ -203,18 +210,32 @@ def parse_access_records(data: Any) -> list[WeLockAccessRecord]:
             continue
         state = _as_int(item.get("operatingState"))
         result = _as_int(item.get("unlockResult"))
-        user = item.get("nickName") or item.get("userName")
-        time = item.get("unlockingTime")
+        user = _non_blank(item.get("nickName") or item.get("userName"))
         records.append(
             WeLockAccessRecord(
-                time=time if isinstance(time, str) and time.strip() else None,
-                user=user.strip() if isinstance(user, str) and user.strip() else None,
+                time=_non_blank(item.get("unlockingTime")),
+                user=user.strip() if user else None,
                 method=_OPERATING_STATE.get(state, "unknown") if state is not None else "unknown",
                 success=(result == 1) if result is not None else None,
                 position=_as_int(item.get("position")),
             )
         )
     return records
+
+
+def _record_from_attributes(item: Any) -> WeLockAccessRecord | None:
+    """Rebuild one record from a restored attribute entry; ``None`` if it is not a dict."""
+    if not isinstance(item, dict):
+        return None
+    method = item.get("method")
+    success = item.get("success")
+    return WeLockAccessRecord(
+        time=_non_blank(item.get("time")),
+        user=_non_blank(item.get("user")),
+        method=method if isinstance(method, str) and method else "unknown",
+        success=success if isinstance(success, bool) else None,
+        position=None,
+    )
 
 
 def access_records_from_attributes(attributes: Any) -> list[WeLockAccessRecord]:
@@ -228,24 +249,8 @@ def access_records_from_attributes(attributes: Any) -> list[WeLockAccessRecord]:
     items = attributes.get("records")
     if not isinstance(items, list):
         return []
-    records: list[WeLockAccessRecord] = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        time = item.get("time")
-        user = item.get("user")
-        method = item.get("method")
-        success = item.get("success")
-        records.append(
-            WeLockAccessRecord(
-                time=time if isinstance(time, str) and time.strip() else None,
-                user=user if isinstance(user, str) and user.strip() else None,
-                method=method if isinstance(method, str) and method else "unknown",
-                success=success if isinstance(success, bool) else None,
-                position=None,
-            )
-        )
-    return records
+    records = (_record_from_attributes(item) for item in items)
+    return [record for record in records if record is not None]
 
 
 def parse_unlock_command(data: Any) -> bytes:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -78,81 +79,83 @@ def _read_table_file(config_dir: str, name: str) -> Any:
     return json.loads(file.read_text(encoding="utf-8"))
 
 
+async def _async_fetch_access_log(hass: HomeAssistant, call: ServiceCall) -> None:
+    page_size = call.data["page_size"]
+    # Each lock is a separate cloud login; most accounts have a single lock.
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        coordinator = entry.runtime_data
+        count = await coordinator.async_fetch_access_log(page_size)
+        _LOGGER.debug("Fetched %d access-log entries for %s", count, coordinator.device_number)
+
+
+async def _async_import_commands(hass: HomeAssistant, call: ServiceCall) -> dict[str, Any]:
+    """Import a command table into the cache of the lock it belongs to."""
+    try:
+        data = await hass.async_add_executor_job(
+            _read_table_file, hass.config.config_dir, call.data["path"]
+        )
+    except _PathNotAllowed as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN, translation_key="import_path_not_allowed"
+        ) from err
+    except (OSError, ValueError) as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="import_file_unreadable",
+            translation_placeholders={"error": type(err).__name__},
+        ) from err
+    try:
+        device_number, table = parse_command_table(data)
+    except ValueError as err:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="import_invalid_table",
+            translation_placeholders={"error": str(err)},
+        ) from err
+    # The table belongs to one lock; never import it into another one.
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        coordinator = entry.runtime_data
+        if coordinator.device_number != device_number:
+            continue
+        result = await coordinator.cache.async_import(table)
+        coordinator.async_update_listeners()
+        return {
+            "added": result.added,
+            "unchanged": result.unchanged,
+            "conflicts": result.conflicts,
+            "known": coordinator.cache.count,
+        }
+    raise ServiceValidationError(translation_domain=DOMAIN, translation_key="import_wrong_lock")
+
+
+async def _async_clear_commands(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Forget the stored unlock commands of every configured lock."""
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        coordinator = entry.runtime_data
+        await coordinator.cache.async_clear()
+        coordinator.async_update_listeners()
+        _LOGGER.info("Cleared the stored unlock commands of %s", entry.title)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the integration-wide access-log service once."""
-
-    async def _handle_fetch_access_log(call: ServiceCall) -> None:
-        page_size = call.data["page_size"]
-        # Each lock is a separate cloud login; most accounts have a single lock.
-        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
-            coordinator = entry.runtime_data
-            count = await coordinator.async_fetch_access_log(page_size)
-            _LOGGER.debug("Fetched %d access-log entries for %s", count, coordinator.device_number)
-
-    async def _handle_import_commands(call: ServiceCall) -> dict[str, Any]:
-        """Import a command table into the cache of the lock it belongs to."""
-        try:
-            data = await hass.async_add_executor_job(
-                _read_table_file, hass.config.config_dir, call.data["path"]
-            )
-        except _PathNotAllowed as err:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN, translation_key="import_path_not_allowed"
-            ) from err
-        except (OSError, ValueError) as err:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="import_file_unreadable",
-                translation_placeholders={"error": type(err).__name__},
-            ) from err
-        try:
-            device_number, table = parse_command_table(data)
-        except ValueError as err:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="import_invalid_table",
-                translation_placeholders={"error": str(err)},
-            ) from err
-        # The table belongs to one lock; never import it into another one.
-        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
-            coordinator = entry.runtime_data
-            if coordinator.device_number != device_number:
-                continue
-            result = await coordinator.cache.async_import(table)
-            coordinator.async_update_listeners()
-            return {
-                "added": result.added,
-                "unchanged": result.unchanged,
-                "conflicts": result.conflicts,
-                "known": coordinator.cache.count,
-            }
-        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="import_wrong_lock")
-
-    async def _handle_clear_commands(call: ServiceCall) -> None:
-        """Forget the stored unlock commands of every configured lock."""
-        for entry in hass.config_entries.async_loaded_entries(DOMAIN):
-            coordinator = entry.runtime_data
-            await coordinator.cache.async_clear()
-            coordinator.async_update_listeners()
-            _LOGGER.info("Cleared the stored unlock commands of %s", entry.title)
-
+    """Register the integration-wide services once."""
     hass.services.async_register(
         DOMAIN,
         SERVICE_FETCH_ACCESS_LOG,
-        _handle_fetch_access_log,
+        partial(_async_fetch_access_log, hass),
         schema=_FETCH_ACCESS_LOG_SCHEMA,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_IMPORT_COMMANDS,
-        _handle_import_commands,
+        partial(_async_import_commands, hass),
         schema=_IMPORT_COMMANDS_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_CLEAR_COMMANDS,
-        _handle_clear_commands,
+        partial(_async_clear_commands, hass),
         schema=vol.Schema({}),
     )
     return True
