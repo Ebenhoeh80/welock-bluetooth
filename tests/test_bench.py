@@ -99,6 +99,32 @@ class RatingTests(unittest.TestCase):
         self.assertEqual(bench.rate(rounds)[0], "SCHLECHT")
 
 
+class TimeToConnectedTests(unittest.TestCase):
+    def test_includes_the_search(self) -> None:
+        self.assertEqual(bench.time_to_connected(_round(scan_ms=7000, connect_ms=5000)), 12000)
+        self.assertEqual(bench.time_to_connected(_round(connect_ms=5000)), 5000)
+
+    def test_failed_connect_does_not_count(self) -> None:
+        row = _round(scan_ms=1000, connect_ms=60000, error="connect_timeout")
+        self.assertIsNone(bench.time_to_connected(row))
+
+    def test_rating_counts_the_search_time(self) -> None:
+        # 7 s search + 7 s connect = 14 s: wobbly, not good.
+        rounds = [_round(i, scan_ms=7000, connect_ms=7000, status_ms=60) for i in range(1, 4)]
+        self.assertEqual(bench.rate(rounds)[0], "WACKELIG")
+
+    def test_comparison_uses_search_plus_connect(self) -> None:
+        # The PC needs 7 s + 13 s = 20 s in total, like Home Assistant's 20 s.
+        rounds = [_round(i, scan_ms=7000, connect_ms=13000, status_ms=60) for i in range(1, 4)]
+        text = " ".join(bench.conclusions(rounds, 20.0))
+        self.assertIn("gleichen Größenordnung", text)
+
+    def test_error_detail_is_shown_and_shortened(self) -> None:
+        self.assertLessEqual(len(bench.describe(ValueError("x" * 300))), 100)
+        row = _round(error="exchange_failed", error_detail="BleakError: not connected")
+        self.assertIn("BleakError: not connected", bench.result_text(row)[1])
+
+
 class ConclusionTests(unittest.TestCase):
     def test_slow_connect_with_fast_status_points_to_the_lock(self) -> None:
         text = " ".join(bench.conclusions([_ok(17500, i) for i in range(1, 4)], None))

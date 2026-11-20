@@ -106,6 +106,7 @@ class Round:
     unlocked: bool = False  # Befehl wurde an das Schloss geschrieben
     confirmed: bool | None = None  # Schloss hat geantwortet (nur wenn unlocked)
     error: str | None = None  # Schlüssel aus ERRORS
+    error_detail: str | None = None  # Ausnahmetyp und -text der Bluetooth-Bibliothek
 
     @property
     def ok(self) -> bool:
@@ -138,10 +139,32 @@ def paint(text: str, code: str, enabled: bool) -> str:
     return f"\033[{code}m{text}\033[0m" if enabled else text
 
 
+def describe(err: BaseException) -> str:
+    """Kurzer Ausnahmetext für die Fehlersuche (Typ und gekürzte Meldung)."""
+    message = str(err).strip().replace("\n", " ")
+    return f"{type(err).__name__}: {message}"[:100] if message else type(err).__name__
+
+
 def percentile(sorted_values: list[int], fraction: float) -> int:
     """Wert am Anteil ``fraction`` (0..1) einer sortierten, nicht leeren Liste (Nearest-Rank)."""
     index = min(len(sorted_values) - 1, max(0, round(fraction * (len(sorted_values) - 1))))
     return sorted_values[index]
+
+
+def time_to_connected(r: Round) -> int | None:
+    """Zeit bis zur Verbindung inkl. Suche (scan + connect); nur wenn verbunden wurde.
+
+    Home Assistant meldet als ``connect`` die Zeit bis zur Verbindung, einschließlich des
+    Wartens auf das nächste Werbepaket des Schlosses. Damit der Vergleich fair bleibt, zählt
+    hier die Suche mit.
+    """
+    if r.connect_ms is None or r.error in ("connect_timeout", "connect_failed"):
+        return None
+    return r.connect_ms + (r.scan_ms or 0)
+
+
+def total_values(rounds: list[Round]) -> list[int]:
+    return sorted(v for r in rounds if (v := time_to_connected(r)) is not None)
 
 
 def phase_values(rounds: list[Round], key: str) -> list[int]:
@@ -158,12 +181,12 @@ def rate(rounds: list[Round]) -> tuple[str, str]:
     if len(rounds) < MIN_ROUNDS_FOR_RATING:
         return "ZU WENIG DATEN", f"mindestens {MIN_ROUNDS_FOR_RATING} Durchgänge nötig"
     ok = sum(r.ok for r in rounds)
-    connects = phase_values(rounds, "connect_ms")
+    connects = total_values(rounds)
     if not connects:
         return "SCHLECHT", "keine einzige Verbindung kam zustande"
     median_s = statistics.median(connects) / 1000
     failures = len(rounds) - ok
-    why = f"Verbinden dauert im Median {num(median_s)} s"
+    why = f"Verbindung steht im Median nach {num(median_s)} s (inkl. Suche)"
     if failures:
         why += f", {failures} Ausfall" + ("" if failures == 1 else "e")
     if failures == 0 and median_s < GOOD_MEDIAN_S:
@@ -177,7 +200,7 @@ def conclusions(rounds: list[Round], ha_connect_s: float | None) -> list[str]:
     """Regelbasierte Hinweise zur Einordnung (Richtwerte, keine Garantie)."""
     lines: list[str] = []
     scans = phase_values(rounds, "scan_ms")
-    connects = phase_values(rounds, "connect_ms")
+    connects = total_values(rounds)
     statuses = phase_values(rounds, "status_ms")
     if scans and statistics.median(scans) / 1000 > SLOW_SCAN_S:
         lines.append(
@@ -202,7 +225,7 @@ def conclusions(rounds: list[Round], ha_connect_s: float | None) -> list[str]:
                 "ist die Ursache."
             )
             lines.append(
-                f"Vergleich Verbinden: hier {num(connect_s)} s, Home Assistant "
+                f"Vergleich bis zur Verbindung (inkl. Suche): hier {num(connect_s)} s, Home Assistant "
                 f"{num(ha_connect_s)} s. {verdict}"
             )
     lines.append(
@@ -230,7 +253,8 @@ def result_text(r: Round) -> tuple[str, str]:
     """(Status, Details) einer Zeile; der Status ist immer auch als Text lesbar."""
     if r.error:
         message, step = ERRORS[r.error]
-        return "FEHLER", f"{message}\n       -> {step}"
+        detail = f" [{r.error_detail}]" if r.error_detail else ""
+        return "FEHLER", f"{message}{detail}\n       -> {step}"
     parts = [f"RSSI {r.rssi} dBm" if r.rssi is not None else "RSSI nicht erfasst"]
     if r.battery is not None:
         parts.append(f"Akku {r.battery} %")
@@ -259,6 +283,10 @@ def format_summary(
         if values:
             stats = (fmt_seconds(v) for v in phase_stats(values))
             lines.append(f"  {name:<10} " + " ".join(f"{s:>7}" for s in stats))
+    totals = total_values(rounds)
+    if totals:
+        stats = (fmt_seconds(v) for v in phase_stats(totals))
+        lines.append(f"  {'Bis verb.':<10} " + " ".join(f"{s:>7}" for s in stats))
     level, why = rate(rounds)
     code = {"GUT": "32", "WACKELIG": "33", "SCHLECHT": "31"}.get(level, "0")
     lines.append(f"Bewertung: {paint(level, code, color)} - {why} (Richtwerte)")
@@ -395,10 +423,10 @@ async def _connect(
     except asyncio.CancelledError:
         task.cancel()
         raise
-    except asyncio.TimeoutError:
-        row.error = "connect_timeout"
-    except (BleakError, OSError):
-        row.error = "connect_failed"
+    except asyncio.TimeoutError as err:
+        row.error, row.error_detail = "connect_timeout", describe(err)
+    except (BleakError, OSError) as err:
+        row.error, row.error_detail = "connect_failed", describe(err)
     finally:
         row.connect_ms = _ms(started)
         progress.clear()
@@ -467,8 +495,8 @@ async def one_round(
                 except asyncio.TimeoutError:
                     row.confirmed = False
                 row.confirm_ms = _ms(phase)
-    except (BleakError, asyncio.TimeoutError, ValueError, OSError):
-        row.error = "exchange_failed"
+    except (BleakError, asyncio.TimeoutError, ValueError, OSError) as err:
+        row.error, row.error_detail = "exchange_failed", describe(err)
     finally:
         phase = time.monotonic()
         try:
