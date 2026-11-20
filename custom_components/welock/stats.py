@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import statistics
 from collections import Counter, deque
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, TypedDict
 
@@ -168,6 +169,44 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
     )
 
 
+def _total_figures(paths: dict[str, PathStats]) -> dict[str, Any]:
+    """Return the all-time counts over every path."""
+    totals = list(paths.values())
+    attempts = sum(p.attempts for p in totals)
+    delivered = sum(p.delivered for p in totals)
+    return {
+        "unlock_attempts": attempts,
+        "unlock_successes": delivered,
+        "unlock_confirmed": sum(p.confirmed for p in totals),
+        "unlock_failures": sum(p.failed for p in totals),
+        "success_rate": round(delivered / attempts, 3) if attempts else None,
+    }
+
+
+def _connect_figures(history: Iterable[UnlockAttempt]) -> dict[str, Any]:
+    """Return median, maximum and the number of connection attempts needed."""
+    attempts = list(history)
+    connects = [a.connect_ms for a in attempts if a.connect_ms is not None]
+    tries = Counter(a.connect_attempts for a in attempts if a.connect_attempts is not None)
+    return {
+        "connect_ms_median": round(statistics.median(connects)) if connects else None,
+        "connect_ms_max": max(connects) if connects else None,
+        "connect_attempts": {str(n): count for n, count in sorted(tries.items())},
+    }
+
+
+def _history_figures(history: Iterable[UnlockAttempt]) -> dict[str, Any]:
+    """Return the figures that come from the kept history of attempts."""
+    attempts = list(history)
+    failed = [a for a in attempts if a.result == RESULT_FAILED]
+    return {
+        "history_size": len(attempts),
+        **_connect_figures(attempts),
+        "failures_by_error": dict(Counter(a.error or "unknown" for a in failed)),
+        "scanners": dict(Counter(a.scanner for a in attempts if a.scanner)),
+    }
+
+
 @dataclass
 class UnlockStats:
     """Totals per path plus the most recent attempts, backed by HA storage."""
@@ -243,26 +282,7 @@ class UnlockStats:
         connection figures cover the kept history (the latest ``HISTORY_LIMIT``
         attempts). Nothing in it identifies the lock, the account or a scanner.
         """
-        totals = list(self.paths.values())
-        attempts = sum(p.attempts for p in totals)
-        delivered = sum(p.delivered for p in totals)
-        connects = [a.connect_ms for a in self.history if a.connect_ms is not None]
-        tries = Counter(a.connect_attempts for a in self.history if a.connect_attempts is not None)
-        return {
-            "unlock_attempts": attempts,
-            "unlock_successes": delivered,
-            "unlock_confirmed": sum(p.confirmed for p in totals),
-            "unlock_failures": sum(p.failed for p in totals),
-            "success_rate": round(delivered / attempts, 3) if attempts else None,
-            "history_size": len(self.history),
-            "connect_ms_median": round(statistics.median(connects)) if connects else None,
-            "connect_ms_max": max(connects) if connects else None,
-            "connect_attempts": {str(n): count for n, count in sorted(tries.items())},
-            "failures_by_error": dict(
-                Counter(a.error or "unknown" for a in self.history if a.result == RESULT_FAILED)
-            ),
-            "scanners": dict(Counter(a.scanner for a in self.history if a.scanner)),
-        }
+        return {**_total_figures(self.paths), **_history_figures(self.history)}
 
     async def async_record(self, attempt: UnlockAttempt) -> None:
         """Count one attempt and persist the statistics."""
