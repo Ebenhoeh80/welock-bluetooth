@@ -227,12 +227,44 @@ async def test_diagnostics_contain_no_secrets_or_commands(
 ) -> None:
     await _setup(hass, config_entry)
     await _unlock(hass)
+    # The title shows the lock number after setup; it must be part of what is searched for.
+    assert DEVICE_NUMBER in config_entry.title
     text = json.dumps(await async_get_config_entry_diagnostics(hass, config_entry), default=str)
-    assert "secret-password" not in text
-    assert "user@example.com" not in text
-    assert ADDRESS not in text
-    assert CLOUD_COMMAND.decode() not in text
-    assert CLOUD_COMMAND.hex() not in text
+    identifiers = (
+        "secret-password",
+        "user@example.com",
+        ADDRESS,
+        ADDRESS.lower(),
+        ADDRESS.replace(":", ""),
+        ADDRESS.replace(":", "-"),
+        DEVICE_NUMBER,
+        config_entry.title,
+        "WeLockTEST",
+        "WeLockTest",
+        config_entry.entry_id,
+        CLOUD_COMMAND.decode(),
+        CLOUD_COMMAND.hex(),
+    )
+    for identifier in identifiers:
+        assert identifier not in text, identifier
+
+
+async def test_diagnostics_export_only_the_allowlisted_state(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    fake_lock: FakeLock,
+    cloud_command: MagicMock,
+) -> None:
+    coordinator = await _setup(hass, config_entry)
+    await _unlock(hass)
+    coordinator.data = {**coordinator.data, "address": ADDRESS, "future_field": DEVICE_NUMBER}
+    result = await async_get_config_entry_diagnostics(hass, config_entry)
+    assert set(result["state"]) <= {"present", "rssi", "battery"}
+    assert DEVICE_NUMBER not in json.dumps(result, default=str)
+    assert result["entry"]["title"] == "**REDACTED**"
+    assert result["entry"]["unique_id"] == "**REDACTED**"
+    # the challenge value of an attempt is not exported either
+    assert all("random_factor" not in a for a in result["offline_unlock"]["statistics"]["history"])
 
 
 async def test_entry_unloads_cleanly_after_an_unlock(
