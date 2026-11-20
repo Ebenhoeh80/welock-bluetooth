@@ -20,7 +20,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import CannotConnect, InvalidAuth, WeLockApiClient, WeLockApiError, WeLockDevice
@@ -262,7 +261,9 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class WeLockOptionsFlowHandler(config_entries.OptionsFlow):
     """Options: relock delay, battery read interval, presence poll interval."""
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
