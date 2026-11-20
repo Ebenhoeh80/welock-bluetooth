@@ -21,6 +21,7 @@ from homeassistant import config_entries
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
 
 from .api import CannotConnect, InvalidAuth, WeLockApiClient, WeLockApiError, WeLockDevice
 from .ble import LockNotInRange, WeLockBleError, async_exchange, lock_in_range
@@ -46,7 +47,12 @@ from .protocol import format_mac
 
 _LOGGER = logging.getLogger(__name__)
 
-LOGIN_SCHEMA = vol.Schema({vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str})
+# The password is a password field (masked, offered to password managers), not a plain string.
+PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
+LOGIN_SCHEMA = vol.Schema(
+    {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR}
+)
 
 
 def _candidates(devices: list[WeLockDevice]) -> dict[str, dict[str, Any]]:
@@ -245,7 +251,7 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR}),
             errors=errors,
             description_placeholders={"username": self._username},
         )

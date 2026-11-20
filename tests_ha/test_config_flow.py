@@ -9,6 +9,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.selector import TextSelector, TextSelectorType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.welock.api import (
@@ -57,6 +58,27 @@ async def _login(hass: HomeAssistant, flow_id: str, devices=None, error: Excepti
         return await hass.config_entries.flow.async_configure(
             flow_id, {CONF_USERNAME: " user@example.com ", CONF_PASSWORD: "pw"}
         )
+
+
+def _password_field(result: dict) -> object:
+    return next(v for k, v in result["data_schema"].schema.items() if k == CONF_PASSWORD)
+
+
+async def test_the_login_asks_for_the_password_in_a_password_field(hass: HomeAssistant) -> None:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    field = _password_field(result)
+    assert isinstance(field, TextSelector)
+    assert field.config["type"] == TextSelectorType.PASSWORD
+
+
+async def test_the_reauthentication_asks_for_the_password_in_a_password_field(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    config_entry.add_to_hass(hass)
+    result = await config_entry.start_reauth_flow(hass)
+    field = _password_field(result)
+    assert isinstance(field, TextSelector)
+    assert field.config["type"] == TextSelectorType.PASSWORD
 
 
 async def test_the_full_setup_creates_an_entry(hass: HomeAssistant) -> None:
