@@ -204,7 +204,7 @@ of unlocks and read the counters:
 
 1. Let the table fill (normal use with the switch **off**) or check
    `learned_commands` on the switch.
-2. Turn the switch **on**. Unlock the door several times, at least 30 s apart,
+2. Turn the switch **on**. Unlock the door several times, at least 12 s apart,
    and note by eye each time whether the cylinder really released.
 3. Compare *Unlocks offline* with your notes: `confirmed` + `unconfirmed` is what
    the lock was sent, your observation is the ground truth. Challenge values that
@@ -217,13 +217,16 @@ of unlocks and read the counters:
 5. Optionally run `welock.fetch_access_log` afterwards. The lock's own log
    should list the same unlocks (this logs the WeLock app out once).
 
-> ⚠️ **Not yet mechanically verified on hardware.** The option is therefore **off**
-> by default and the cloud stays the default path. Only enable it once you have
-> successfully tested a locally generated command on the actual lock.
+> ✅ **Verified so far on the maintainer's lock (2026-11-20):** in three offline
+> unlocks, each with a command from the local table and without a cloud request,
+> the cylinder released every time (checked by eye); the lock also confirmed all
+> 15 offline unlocks counted so far. A longer series (30+ unlocks) and a test with
+> the cloud blocked are still to be documented. The option stays **off** by default
+> and the cloud remains the default path; enable it once you have tested it on
+> your own lock (see above).
 
-> 📚 **How this was found:** the full reverse-engineering methodology (BLE
-> protocol, cloud API, differential analysis, legal basis § 69e UrhG / German
-> copyright law) is documented under [`docs/`](docs/README.md).
+> 📚 **How it works:** a short description of the Bluetooth exchange and the cloud
+> request is in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## 📜 Access log (service)
 
@@ -251,33 +254,21 @@ example from a script or an automation that you trigger yourself.
 * **Without Bluetooth range** the lock is *unavailable*. The cloud alone cannot unlock.
 * All BLE access to one lock is serialised so that battery reads and unlocks do not collide.
 
-### How long is the cylinder free? (measure it)
+### How long is the cylinder free?
 
-After a successful unlock the outer knob can be turned for a limited time. That
-time is **not documented and has not been measured yet**; the "about 7 s" used
-as the default of *Show as unlocked for* is an assumption. That option only
-controls how long Home Assistant *displays* "unlocked" - it does not change the
-lock. The lock does not report its state, so the real window can only be found
-by trying it:
+On the maintainer's lock the outer knob stays engaged for **10 seconds** after the
+unlock command arrives and then re-locks mechanically on its own (the lock reports
+no state, so this was measured by trying: the knob still turned at 10 s). That is
+why *Show as unlocked for* defaults to 10 s and why the lock takes **no second
+command** during that time (see the 12 s minimum between two unlocks above).
+*Show as unlocked for* only controls how long Home Assistant *displays*
+"unlocked"; it does not change the lock.
 
-1. Unlock through Home Assistant and start a stopwatch the moment the door
-   switches to *unlocked* in Home Assistant (the command has just arrived).
-2. Try to turn the cylinder after a fixed time: **3, 5, 7, 10 and 15 s**. Use a
-   fresh unlock for every attempt and wait at least 30 s in between.
-3. Write down for each attempt whether the cylinder still turned.
-4. Repeat the values around the point where it stops working, to see where the
-   window really ends, and do the series with the switch *Offline unlock* both
-   on and off (the cloud path is slower, so the window may start later).
-5. Set *Show as unlocked for* to the measured value (a little below the end of
-   the window) and note the result here.
-
-| Attempt after | Cylinder still turned? (cloud) | Cylinder still turned? (offline) |
-| :---: | :---: | :---: |
-| 3 s | not measured | not measured |
-| 5 s | not measured | not measured |
-| 7 s | not measured | not measured |
-| 10 s | not measured | not measured |
-| 15 s | not measured | not measured |
+Other lock models or firmware may differ. To check yours: unlock through Home
+Assistant, start a stopwatch when the door switches to *unlocked*, and try to turn
+the cylinder after 5, 10 and 15 s (a fresh unlock for each attempt, at least 12 s
+apart). Then set *Show as unlocked for* a little below the point where it stops
+working.
 
 The *Unlock history* event and the *Last unlock attempt* sensor record when the
 command was written, which helps to compare the timing of several attempts.
@@ -434,7 +425,7 @@ welock-bluetooth/
 │   ├── diagnostics.py             # Diagnostics (redacted)
 │   ├── strings.json               # Base strings (EN)
 │   └── translations/              # de, en, es, fr
-├── docs/                          # Reverse-engineering methodology (anonymised, § 69e UrhG)
+├── docs/                          # Short protocol description
 ├── tools/                         # BLE & cloud diagnostic tools (see tools/README.md)
 ├── tests/                         # Unit tests + optional live smoke test (marker "live")
 ├── src/, index.html, package.json # Companion web app (AI Studio)

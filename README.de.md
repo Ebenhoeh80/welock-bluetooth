@@ -206,7 +206,7 @@ funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
 1. Lass die Tabelle sich füllen (normaler Betrieb bei **ausgeschaltetem**
    Schalter) oder prüfe `learned_commands` am Schalter.
 2. Schalte den Schalter **ein**. Entsperre die Tür mehrmals im Abstand von
-   mindestens 30 s und notiere jedes Mal per Augenschein, ob der Zylinder wirklich
+   mindestens 12 s und notiere jedes Mal per Augenschein, ob der Zylinder wirklich
    freigegeben hat.
 3. Vergleiche *Entsperrungen offline* mit deinen Notizen: `confirmed` +
    `unconfirmed` ist das, was dem Schloss gesendet wurde, dein Augenschein ist die
@@ -220,13 +220,17 @@ funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
    Schlosses sollte dieselben Entsperrungen auflisten (das meldet die WeLock-App
    einmal ab).
 
-> ⚠️ **Noch nicht am Schloss mechanisch verifiziert.** Deshalb ist die Option
-> standardmäßig **aus** und die Cloud bleibt der Standardpfad. Schalte sie erst
-> ein, wenn du einen lokal erzeugten Befehl vor Ort erfolgreich getestet hast.
+> ✅ **Bisher am Schloss des Maintainers verifiziert (20.11.2026):** Bei drei
+> Offline-Entsperrungen, jeweils mit einem Befehl aus der lokalen Tabelle und ohne
+> Cloud-Anfrage, gab der Zylinder jedes Mal frei (per Augenschein geprüft); das
+> Schloss bestätigte außerdem alle bisher gezählten 15 Offline-Entsperrungen. Eine
+> längere Serie (30+ Entsperrungen) und ein Test mit gesperrter Cloud sind noch zu
+> dokumentieren. Die Option bleibt standardmäßig **aus**, die Cloud bleibt der
+> Standardpfad; schalte sie ein, nachdem du es an deinem eigenen Schloss getestet
+> hast (siehe oben).
 
-> 📚 **Wie das herausgefunden wurde:** Die vollständige Reverse-Engineering-
-> Methodik (BLE-Protokoll, Cloud-API, differenzielle Analyse, Rechtsgrundlage
-> § 69e UrhG) ist unter [`docs/`](docs/README.md) dokumentiert.
+> 📚 **Wie es funktioniert:** Eine kurze Beschreibung des Bluetooth-Austauschs und
+> der Cloud-Anfrage steht in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## 📜 Zutrittsprotokoll (Dienst)
 
@@ -255,34 +259,22 @@ du selbst auslöst.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.
 * Alle BLE-Zugriffe auf ein Schloss laufen nacheinander, damit Akkuabfrage und Entriegeln nicht kollidieren.
 
-### Wie lange ist der Zylinder frei? (messen)
+### Wie lange ist der Zylinder frei?
 
-Nach einer erfolgreichen Entriegelung lässt sich der Außenknauf nur begrenzte
-Zeit drehen. Diese Zeit ist **nicht dokumentiert und noch nicht gemessen**; die
-„ca. 7 s“ als Standard von *Als entriegelt anzeigen für* sind eine Annahme. Die
-Option steuert nur, wie lange Home Assistant „entriegelt“ *anzeigt* – am Schloss
-ändert sie nichts. Das Schloss meldet seinen Zustand nicht, das echte Zeitfenster
-lässt sich deshalb nur durch Ausprobieren finden:
+Beim Schloss des Maintainers bleibt der Außenknauf nach dem Eintreffen des
+Entsperrbefehls **10 Sekunden** eingekuppelt und verriegelt danach mechanisch von
+selbst (das Schloss meldet keinen Zustand, der Wert wurde durch Ausprobieren
+ermittelt: bei 10 s ließ sich der Knauf noch drehen). Deshalb ist *Als entriegelt
+anzeigen für* standardmäßig 10 s, und deshalb nimmt das Schloss in dieser Zeit
+**keinen zweiten Befehl** an (siehe die 12 s Mindestabstand zwischen zwei
+Entriegelungen oben). *Als entriegelt anzeigen für* steuert nur, wie lange Home
+Assistant „entriegelt“ *anzeigt*; am Schloss ändert es nichts.
 
-1. Über Home Assistant entriegeln und die Stoppuhr starten, sobald die Tür in
-   Home Assistant auf *entriegelt* springt (der Befehl ist gerade angekommen).
-2. Nach einer festen Zeit versuchen, den Zylinder zu drehen: **3, 5, 7, 10 und
-   15 s**. Für jeden Versuch neu entriegeln und mindestens 30 s warten.
-3. Pro Versuch notieren, ob sich der Zylinder noch drehen ließ.
-4. Die Werte rund um den Punkt, an dem es nicht mehr geht, wiederholen, um das
-   Ende des Fensters genau zu finden. Die Serie mit dem Schalter
-   *Offline-Entsperren* sowohl an als auch aus durchführen (der Cloud-Weg ist
-   langsamer, das Fenster beginnt dadurch eventuell später).
-5. *Als entriegelt anzeigen für* auf den gemessenen Wert setzen (etwas unter dem
-   Ende des Fensters) und das Ergebnis hier eintragen.
-
-| Versuch nach | Zylinder noch drehbar? (Cloud) | Zylinder noch drehbar? (offline) |
-| :---: | :---: | :---: |
-| 3 s | nicht gemessen | nicht gemessen |
-| 5 s | nicht gemessen | nicht gemessen |
-| 7 s | nicht gemessen | nicht gemessen |
-| 10 s | nicht gemessen | nicht gemessen |
-| 15 s | nicht gemessen | nicht gemessen |
+Andere Schlossmodelle oder Firmware können abweichen. So prüfst du deines: Über
+Home Assistant entriegeln, die Stoppuhr starten, sobald die Tür auf *entriegelt*
+springt, und nach 5, 10 und 15 s versuchen, den Zylinder zu drehen (für jeden
+Versuch neu entriegeln, mindestens 12 s Abstand). Dann *Als entriegelt anzeigen
+für* etwas unter den Punkt setzen, an dem es nicht mehr geht.
 
 Das Event *Entsperr-Verlauf* und der Sensor *Letzter Entsperrversuch* halten fest,
 wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
@@ -437,7 +429,7 @@ welock-bluetooth/
 │   ├── diagnostics.py             # Diagnosedaten (geschwärzt)
 │   ├── strings.json               # Basistexte (EN)
 │   └── translations/              # de, en, es, fr
-├── docs/                          # Reverse-Engineering-Methodik (anonymisiert, § 69e UrhG)
+├── docs/                          # Kurze Protokollbeschreibung
 ├── tools/                         # BLE- & Cloud-Diagnosetools (siehe tools/README.md)
 ├── tests/                         # Unit-Tests + optionaler Live-Smoke-Test (Marker "live")
 ├── src/, index.html, package.json # Begleitende Web-App (AI Studio)
