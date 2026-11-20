@@ -29,7 +29,11 @@ Thank you for your interest in improving this project! We welcome contributions,
 
 - Ensure your branch is based on `main` and up to date.
 - Write clear, descriptive commit messages.
-- Run tests before opening a pull request:
+- Run all local checks with one command (the same steps as the CI: ruff, black, complexity, mypy where
+  possible, unit tests): `scripts/check.sh` (Linux, macOS, WSL, Git Bash) or
+  `powershell -File scripts\check.ps1` (Windows). The tests in `tests_ha/` need Python 3.14 and
+  `pip install -r requirements_test.txt`; they run in the CI (job `ha-tests`) or in WSL.
+- Or run the steps by hand:
   ```bash
   pytest                                   # live test is skipped automatically
   ruff check custom_components/ tools/ tests/
