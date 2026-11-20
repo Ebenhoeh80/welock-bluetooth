@@ -217,13 +217,13 @@ of unlocks and read the counters:
 5. Optionally run `welock.fetch_access_log` afterwards. The lock's own log
    should list the same unlocks (this logs the WeLock app out once).
 
-> ✅ **Verified so far on the maintainer's lock (2026-11-20):** in three offline
+> ✅ **Verified on the maintainer's lock (2026-11-20):** in a series of 30 offline
 > unlocks, each with a command from the local table and without a cloud request,
-> the cylinder released every time (checked by eye); the lock also confirmed all
-> 15 offline unlocks counted so far. A longer series (30+ unlocks) and a test with
-> the cloud blocked are still to be documented. The option stays **off** by default
-> and the cloud remains the default path; enable it once you have tested it on
-> your own lock (see above).
+> the cylinder released every time (checked by eye), and the lock confirmed all of
+> them (45 of 45 offline unlocks counted in total, none failed). This is one lock
+> with one firmware. A test with the cloud blocked is still to be documented. The
+> option stays **off** by default and the cloud remains the default path; enable it
+> once you have tested it on your own lock (see above).
 
 > 📚 **How it works:** a short description of the Bluetooth exchange and the cloud
 > request is in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).

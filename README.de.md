@@ -220,14 +220,14 @@ funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
    Schlosses sollte dieselben Entsperrungen auflisten (das meldet die WeLock-App
    einmal ab).
 
-> ✅ **Bisher am Schloss des Maintainers verifiziert (20.11.2026):** Bei drei
+> ✅ **Am Schloss des Maintainers verifiziert (20.11.2026):** In einer Serie von 30
 > Offline-Entsperrungen, jeweils mit einem Befehl aus der lokalen Tabelle und ohne
-> Cloud-Anfrage, gab der Zylinder jedes Mal frei (per Augenschein geprüft); das
-> Schloss bestätigte außerdem alle bisher gezählten 15 Offline-Entsperrungen. Eine
-> längere Serie (30+ Entsperrungen) und ein Test mit gesperrter Cloud sind noch zu
-> dokumentieren. Die Option bleibt standardmäßig **aus**, die Cloud bleibt der
-> Standardpfad; schalte sie ein, nachdem du es an deinem eigenen Schloss getestet
-> hast (siehe oben).
+> Cloud-Anfrage, gab der Zylinder jedes Mal frei (per Augenschein geprüft), und das
+> Schloss bestätigte alle (insgesamt 45 von 45 gezählten Offline-Entsperrungen,
+> keine fehlgeschlagen). Das gilt für ein Schloss mit einer Firmware. Ein Test mit
+> gesperrter Cloud ist noch zu dokumentieren. Die Option bleibt standardmäßig **aus**,
+> die Cloud bleibt der Standardpfad; schalte sie ein, nachdem du es an deinem
+> eigenen Schloss getestet hast (siehe oben).
 
 > 📚 **Wie es funktioniert:** Eine kurze Beschreibung des Bluetooth-Austauschs und
 > der Cloud-Anfrage steht in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
