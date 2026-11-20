@@ -87,7 +87,9 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._selected: dict[str, Any] | None = None
 
     # Step 1 (optional): Bluetooth discovery
-    async def async_step_bluetooth(self, discovery_info: BluetoothServiceInfoBleak) -> FlowResult:
+    async def async_step_bluetooth(
+        self, discovery_info: BluetoothServiceInfoBleak
+    ) -> config_entries.ConfigFlowResult:
         """Handle a WeLock module discovered by Home Assistant Bluetooth."""
         address = format_mac(discovery_info.address) or discovery_info.address
         await self.async_set_unique_id(address)
@@ -97,7 +99,9 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_user()
 
     # Step 2: cloud login
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
         """Log in to the WeLock cloud and load the device list."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -135,7 +139,9 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     # Step 3: pick the lock / BLE module
-    async def async_step_select(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_select(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
         """Choose which BLE module of the account to set up."""
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
@@ -164,7 +170,9 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     # Step 4: Bluetooth reachability + status/challenge check (no unlock)
-    async def async_step_verify(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_verify(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
         """Check that Home Assistant reaches the lock and the lock answers."""
         assert self._selected is not None
         selected = self._selected
@@ -203,14 +211,16 @@ class WeLockConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     # Reauth: new password, lock must still be in the account
-    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+    async def async_step_reauth(
+        self, entry_data: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
         """Start reauthentication."""
         self._username = entry_data[CONF_USERNAME]
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Ask for the password again and check the lock is still in the account."""
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         assert entry is not None

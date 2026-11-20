@@ -60,3 +60,9 @@ ignore_missing_imports = true
 check_untyped_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+# Home Assistant's own type hints for schemas name a newer schema library than voluptuous, which
+# the integrations (and Home Assistant itself) still use at run time.
+[[tool.mypy.overrides]]
+module = ["custom_components.welock.config_flow", "custom_components.welock"]
+disable_error_code = ["arg-type"]
