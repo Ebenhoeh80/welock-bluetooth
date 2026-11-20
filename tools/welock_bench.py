@@ -423,7 +423,7 @@ async def _connect(
     except asyncio.CancelledError:
         task.cancel()
         raise
-    except asyncio.TimeoutError as err:
+    except (asyncio.TimeoutError, TimeoutError) as err:  # two different classes before Python 3.11
         row.error, row.error_detail = "connect_timeout", describe(err)
     except (BleakError, OSError) as err:
         row.error, row.error_detail = "connect_failed", describe(err)
