@@ -3,7 +3,7 @@
 This page records how the integration works, where its time goes, what can fail and how it
 recovers, what is checked automatically, and which options were rejected and why. Numbers are
 measured, with date and method; where something was not measured, it says so.
-Last updated: 2026-11-20 (version 2.5.0-rc.1).
+Last updated: 2026-11-20 (version 2.5.0).
 
 ## 1. Architecture and data flow
 
@@ -106,4 +106,4 @@ numbers above come from the integration's own phase times and a benchmark with a
 ## 7. Open items
 
 - Platinum rule `strict-typing`.
-- Field test of every release candidate at the lock (unlock several times, offline and cloud).
+- Field test of every release candidate at the lock (unlock several times, offline and cloud). 2.5.0-rc.1 was tested on 2026-11-20 and released as 2.5.0.

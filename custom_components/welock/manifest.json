@@ -17,5 +17,5 @@
   "loggers": ["custom_components.welock"],
   "quality_scale": "gold",
   "requirements": ["bleak-retry-connector>=3.1.0"],
-  "version": "2.5.0-rc.1"
+  "version": "2.5.0"
 }
