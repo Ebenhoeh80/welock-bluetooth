@@ -229,7 +229,7 @@ def conclusions(rounds: list[Round], ha_connect_s: float | None) -> list[str]:
                 f"{num(ha_connect_s)} s. {verdict}"
             )
     lines.append(
-        "Der Test nutzt den Bluetooth-Adapter dieses PCs, nicht den Dongle von Home Assistant."
+        "Der Test nutzt den Bluetooth-Adapter dieses Rechners an dessen Standort, nicht den von Home Assistant."
     )
     return lines
 
