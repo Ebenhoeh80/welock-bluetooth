@@ -6,8 +6,10 @@ We provide security patches and updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.1.x   | :white_check_mark: |
-| < 2.1.0 | :x:                |
+| 2.3.x   | :white_check_mark: |
+| < 2.3.0 | :x:                |
+
+Only the latest release receives security fixes.
 
 ## Security Considerations for Smart Locks
 
@@ -16,7 +18,8 @@ This project interfaces with physical access control hardware (smart door locks)
 - **Challenge-Response freshness**: Unlocking requests require an active, fresh `random_factor` challenge from the lock to prevent replay attacks.
 - **TLS & Redirect Restrictions**: Cloud API calls enforce strict HTTPS and do not follow HTTP redirects.
 - **Token handling**: The cloud access token is kept in memory only and discarded after each request; it is never logged or written to disk.
-- **Command validation**: Only 15-byte `U1…` commands returned by the cloud for the current challenge are written to the lock; at least 30 seconds between unlocks.
+- **Command validation**: Only 15-byte `U1…` commands are written to the lock: the one the cloud returned for the current challenge, or (only with the *Offline unlock* switch on) a stored command for exactly that challenge value. A stored command that fails while being written is dropped. At least 12 seconds between unlocks.
+- **Stored commands are sensitive**: the local command table lets anyone who can read Home Assistant's storage and is within Bluetooth range open the lock. Diagnostics contain only the number of stored commands, never the commands. Protect access to your Home Assistant configuration and backups.
 - **Least cloud contact**: The integration contacts the cloud only for setup, reauthentication and unlocking; it never polls.
 - **Tests**: The optional live smoke test is read-only, blocks every unlock / BLE write path and never prints the password or token.
 
