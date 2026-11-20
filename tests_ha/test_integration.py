@@ -251,9 +251,10 @@ async def test_entry_unloads_cleanly_after_an_unlock(
 async def test_a_title_made_of_the_module_name_shows_the_lock_number(
     hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
 ) -> None:
-    hass.config_entries.async_update_entry(config_entry, title="WeLockTEST")  # the module name
     config_entry.add_to_hass(hass)
-    await _setup(hass, config_entry)
+    hass.config_entries.async_update_entry(config_entry, title="WeLockTEST")  # the module name
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
     assert config_entry.title == "WeLock (22231059)"
     # nothing else moved: same unique id, entities still found by it
     assert config_entry.unique_id == ADDRESS
@@ -263,8 +264,10 @@ async def test_a_title_made_of_the_module_name_shows_the_lock_number(
 async def test_a_title_chosen_by_the_user_stays(
     hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
 ) -> None:
+    config_entry.add_to_hass(hass)
     hass.config_entries.async_update_entry(config_entry, title="Haustür")
-    await _setup(hass, config_entry)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
     assert config_entry.title == "Haustür"
 
 
