@@ -24,6 +24,10 @@ def event_type_for(attempt: UnlockAttempt) -> str:
     return EVENT_UNLOCK_OFFLINE if attempt.path == PATH_OFFLINE else EVENT_UNLOCK_CLOUD
 
 
+# events are pushed by the coordinator
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -40,7 +44,6 @@ class WeLockUnlockEvent(WeLockEntity, EventEntity):
     only) and whether the stored command was dropped (``evicted``).
     """
 
-    _attr_icon = "mdi:history"
     _attr_translation_key = "unlock"
     _attr_event_types = [EVENT_UNLOCK_CLOUD, EVENT_UNLOCK_OFFLINE, EVENT_UNLOCK_FAILED]
 

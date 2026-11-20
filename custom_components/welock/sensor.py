@@ -23,6 +23,10 @@ from .entity import WeLockEntity
 from .health import QUALITIES
 
 
+# read-only
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -123,7 +127,6 @@ class WeLockLastAccessSensor(WeLockEntity, RestoreEntity, SensorEntity):
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
-    _attr_icon = "mdi:history"
     _attr_translation_key = "last_access"
 
     def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:
@@ -204,7 +207,6 @@ class WeLockLastUnlockSensor(WeLockEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_icon = "mdi:history"
     _attr_translation_key = "last_unlock"
 
     def __init__(self, coordinator: WeLockCoordinator, entry: ConfigEntry) -> None:

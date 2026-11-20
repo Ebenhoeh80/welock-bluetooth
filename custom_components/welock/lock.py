@@ -15,6 +15,10 @@ from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
 
+# BLE access to one lock is serialised
+PARALLEL_UPDATES = 1
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:

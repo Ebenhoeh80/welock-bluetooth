@@ -1,0 +1,91 @@
+# Home Assistant Integration Quality Scale status for welock.
+# https://developers.home-assistant.io/docs/core/integration-quality-scale/
+# Honest status: "todo" means not done yet, "exempt" always carries the reason.
+rules:
+  # --- Bronze ---
+  action-setup: done
+  appropriate-polling:
+    status: done
+    comment: Local polling reads only the Bluetooth cache (no radio traffic); the battery is read over Bluetooth every 24 h by default and the interval is configurable.
+  brands:
+    status: exempt
+    comment: Distributed via HACS, not submitted to the core brands repository; the brand folder is shipped with the integration.
+  common-modules: done
+  config-flow-test-coverage:
+    status: todo
+    comment: The Home Assistant tests do not yet walk through the config, options and re-authentication flows end to end.
+  config-flow: done
+  dependency-transparency:
+    status: done
+    comment: The only requirement is bleak-retry-connector, published on PyPI from a public repository.
+  docs-actions: done
+  docs-conditions:
+    status: exempt
+    comment: The integration offers no conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  docs-triggers:
+    status: exempt
+    comment: The integration offers no triggers; unlock attempts are exposed as an event entity.
+  entity-event-setup:
+    status: done
+    comment: Entities derive from CoordinatorEntity, which manages the subscription.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # --- Silver ---
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage:
+    status: todo
+    comment: Tests run in a real Home Assistant core in CI; the coverage figure has to reach 95 % before this is marked done.
+
+  # --- Gold ---
+  devices: done
+  diagnostics: done
+  discovery: done
+  discovery-update-info:
+    status: exempt
+    comment: A lock is identified by its fixed Bluetooth address; it has no network address that could change.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: One config entry is exactly one lock; there are no devices that appear later.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow:
+    status: exempt
+    comment: The only connection setting is the account password, which the re-authentication flow changes; the lock's Bluetooth address cannot change.
+  repair-issues: done
+  stale-devices:
+    status: exempt
+    comment: One config entry is exactly one lock; removing the lock means deleting the entry.
+
+  # --- Platinum ---
+  async-dependency: done
+  inject-websession: done
+  strict-typing:
+    status: todo
+    comment: Type hints are present but the code is not checked with strict mypy.

@@ -315,6 +315,46 @@ Die **Diagnosedaten** (Gerät → Diagnose herunterladen) enthalten weder Konto 
 
 ---
 
+## 🔌 Unterstützte Geräte & Funktionen
+
+| Gerät | Unterstützt |
+| :--- | :--- |
+| WeLock-Smart-Lock mit Bluetooth-Modul (BLE-Name `WeLock*`) | ja, ein Eintrag pro Schloss |
+| WeLock-Schlösser ohne Bluetooth-Modul | nein |
+| Schlösser anderer Hersteller | nein |
+
+**Funktionen:** Entsperren (BLE, mit dem Befehl aus der WeLock-Cloud oder optional aus der lokalen Tabelle),
+Anzeige „entsperrt“ für die Verriegelungs-Verzögerung, Batteriestand, Erreichbarkeit und Verbindungsqualität,
+Signalstärke, Entsperr-Statistik und -Verlauf, Zutrittsprotokoll (Dienst). **Nicht unterstützt:** Verriegeln aus
+Home Assistant (das Schloss verriegelt von selbst), Schlosseinstellungen ändern, Benutzer oder Schlüssel verwalten,
+Schlösser anderer Hersteller.
+
+## 🔄 Datenaktualisierung
+
+Home Assistant hält keine dauerhafte Bluetooth-Verbindung (das würde die Batterie leeren). Das Schloss wird bei
+Bedarf und nach Zeitplan gelesen: Batterie standardmäßig alle 24 Stunden und eine Erreichbarkeitsprüfung alle 60 Sekunden (diese nutzt nur den
+Bluetooth-Cache und erzeugt keinen Funkverkehr; siehe [Optionen](#-optionen)). Beim Entsperren verbindet sich die Integration, liest die Challenge des
+Schlosses, holt den Befehl aus der Cloud (oder nimmt den gespeicherten), sendet ihn und trennt wieder. Die
+WeLock-Cloud wird nur zum Entsperren, bei der Einrichtung und für das optionale Zutrittsprotokoll gefragt.
+
+## ⚠️ Bekannte Einschränkungen
+
+- Der Schlosszustand ist *angenommen*: Das Schloss meldet nicht, ob es offen ist. Die Entität zeigt nach einem
+  Entsperren für die eingestellte Zeit (standardmäßig 10 s, solange der Knauf eingekuppelt bleibt) *entsperrt* und sonst *verriegelt*.
+- Zum Entsperren braucht es einen Bluetooth-Adapter oder ESPHome-Bluetooth-Proxy in wenigen Metern Abstand; ein
+  schwaches Signal ist der übliche Grund für langsames Entsperren (siehe [Fehlerbehebung](#-fehlerbehebung)).
+- Jede Cloud-Anmeldung beendet andere Sitzungen des Kontos (zum Beispiel die WeLock-App).
+- Offline-Entsperren ist experimentell und funktioniert nur für Challenge-Werte, die die Integration gelernt hat.
+
+## 🗑️ Entfernen
+
+**Einstellungen → Geräte & Dienste → WeLock Smart Lock BLE → ⋮ → Löschen.** Das Schloss, seine Entitäten und die
+gespeicherte Befehlstabelle dieses Eintrags verschwinden aus Home Assistant. Am Schloss ändert sich nichts. Danach
+bei Bedarf die Integration in HACS entfernen und das WeLock-Passwort ändern, falls du es beim Fehlersuchen
+weitergegeben hast.
+
+---
+
 ## 🛡 Datenschutz & Sicherheit
 
 * E-Mail und Passwort liegen ausschließlich im Config-Entry von Home Assistant. Der Cloud-Token wird nur im Speicher gehalten und nach jeder Anfrage verworfen.

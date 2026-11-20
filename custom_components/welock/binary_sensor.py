@@ -15,6 +15,10 @@ from .coordinator import WeLockConfigEntry, WeLockCoordinator
 from .entity import WeLockEntity
 
 
+# read-only
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: WeLockConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
