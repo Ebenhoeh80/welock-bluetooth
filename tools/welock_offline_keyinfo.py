@@ -47,7 +47,7 @@ def analyze_device(info: dict) -> list[dict]:
 
 
 def print_report(info: dict, modules: list[dict], *, show_pii: bool) -> None:
-    show = (lambda v: str(v)) if show_pii else mask
+    show = str if show_pii else mask
     print("\n" + "=" * 72)
     print("  BLE-KOMMUNIKATIONSSCHLUESSEL-ANALYSE (read-only)")
     print("=" * 72)
