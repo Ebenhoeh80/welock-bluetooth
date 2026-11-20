@@ -69,7 +69,7 @@ def config_entry() -> MockConfigEntry:
             CONF_DEVICE_NUMBER: DEVICE_NUMBER,
             CONF_MODEL: "Smart Lock",
         },
-        options={},
+        options={"auto_relock_delay": 3},  # the shortest display time keeps the tests quick
     )
 
 

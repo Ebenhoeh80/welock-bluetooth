@@ -35,11 +35,13 @@ def _entity_id(hass: HomeAssistant, domain: str, key: str) -> str:
     return entity_id
 
 
-async def _unlock(hass: HomeAssistant) -> None:
+async def _unlock(hass: HomeAssistant, settle: bool = True) -> None:
+    """Unlock through the lock entity; ``settle`` waits for background work (teardown, relock)."""
     await hass.services.async_call(
         "lock", "unlock", {"entity_id": _entity_id(hass, "lock", "lock")}, blocking=True
     )
-    await hass.async_block_till_done()
+    if settle:
+        await hass.async_block_till_done()
 
 
 async def test_setup_creates_all_entities(
@@ -72,9 +74,11 @@ async def test_unlock_through_the_cloud_is_recorded_and_learned(
     cloud_command: MagicMock,
 ) -> None:
     coordinator = await _setup(hass, config_entry)
-    await _unlock(hass)
+    await _unlock(hass, settle=False)
 
+    # Reported as soon as the lock confirms; the connection is still being closed.
     assert hass.states.get(_entity_id(hass, "lock", "lock")).state == "unlocked"
+    await hass.async_block_till_done()
     assert fake_lock.commands_written == [CLOUD_COMMAND]
     cloud = coordinator.stats.paths["cloud"]
     assert (cloud.attempts, cloud.confirmed, cloud.failed) == (1, 1, 0)
