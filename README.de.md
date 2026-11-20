@@ -467,7 +467,7 @@ Geplant und in Prüfung — **gib dem ein 👍, was dir wichtig ist**, und bring
 
 ## 📄 Lizenz
 
-Lizenziert unter der MIT-Lizenz, siehe [LICENSE](LICENSE).
+MIT © 2026 Daniel Ebenhöh — siehe [LICENSE](LICENSE).
 
 ---
 
