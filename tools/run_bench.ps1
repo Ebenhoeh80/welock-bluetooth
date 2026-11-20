@@ -8,9 +8,9 @@
 .EXAMPLE
     .\run_bench.ps1
 .EXAMPLE
-    .\run_bench.ps1 -a "AA:BB:CC:DD:EE:FF" -u "user@example.com" -n "C41..."
+    .\run_bench.ps1 "C4:43:4A:03:42:A9" --rounds 10
 .EXAMPLE
-    .\run_bench.ps1 "AA:BB:CC:DD:EE:FF" --timeout 20.0
+    .\run_bench.ps1 "C4:43:4A:03:42:A9" --listen 60 --rounds 0
 .EXAMPLE
     .\run_bench.ps1 --help
 #>
