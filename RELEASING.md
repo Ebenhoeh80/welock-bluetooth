@@ -15,7 +15,7 @@ feature the minor version, a fix the patch version.
 
 ```bash
 python -m ruff check custom_components tests tools
-python -m ruff format --check custom_components tests tools
+python -m black --check custom_components tests tests_ha tools
 python -m pytest tests
 ```
 The tests run without Home Assistant (it is stubbed). The Home Assistant wiring (entities, options, the unlock path) is checked on a live system after the release; see step 7.

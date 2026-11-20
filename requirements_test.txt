@@ -1,0 +1,3 @@
+# Test dependencies of the "ha-tests" CI job (Home Assistant core is installed by this package).
+# Pinned so a CI run is reproducible; Dependabot proposes updates.
+pytest-homeassistant-custom-component==0.13.375
