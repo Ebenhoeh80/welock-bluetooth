@@ -69,6 +69,8 @@ def _phase_times(report: ExchangeReport) -> dict[str, int | None]:
         "command_ms": report.command_ms,
         "confirm_ms": report.confirm_ms,
         "teardown_ms": report.teardown_ms,
+        "adv_age_ms": report.adv_age_ms,
+        "connect_attempts": report.connect_attempts,
     }
 
 
@@ -262,7 +264,9 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             error = err
 
         duration_ms = round((time.monotonic() - started) * 1000)
-        rssi = (self.data or {}).get("rssi")
+        # The signal strength when the connection started beats the polled value,
+        # which can be up to a minute old.
+        rssi = report.rssi if report.rssi is not None else (self.data or {}).get("rssi")
         if error is not None:
             evicted = False
             if path == PATH_OFFLINE and report.command_written and random_factor is not None:

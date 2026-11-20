@@ -57,6 +57,9 @@ class UnlockAttempt:
     command_ms: int | None = None
     confirm_ms: int | None = None
     teardown_ms: int | None = None
+    # State when the connection was started (see ``ExchangeReport``).
+    adv_age_ms: int | None = None
+    connect_attempts: int | None = None
 
 
 @dataclass
@@ -91,7 +94,15 @@ class PathStats:
         }
 
 
-PHASE_KEYS = ("connect_ms", "status_ms", "command_ms", "confirm_ms", "teardown_ms")
+PHASE_KEYS = (
+    "connect_ms",
+    "status_ms",
+    "command_ms",
+    "confirm_ms",
+    "teardown_ms",
+    "adv_age_ms",
+    "connect_attempts",
+)
 
 
 def _optional_ms(value: object) -> int | None:

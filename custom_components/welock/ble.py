@@ -10,6 +10,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from bleak.exc import BleakError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
@@ -26,6 +27,9 @@ from .protocol import (
     parse_battery_response,
     validate_unlock_command,
 )
+
+if TYPE_CHECKING:
+    from bleak.backends.device import BLEDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,6 +67,15 @@ class ExchangeReport:
     command_ms: int | None = None
     confirm_ms: int | None = None
     teardown_ms: int | None = None
+    # What Home Assistant knew about the lock when the connection was started:
+    # age of the last advertisement (a large value means the lock was not heard
+    # for a while, a small one that it was advertising but the connection still
+    # took long), its signal strength then, and how many connection attempts the
+    # retry helper needed. These tell "lock not advertising" apart from "adapter
+    # could not connect".
+    adv_age_ms: int | None = None
+    rssi: int | None = None
+    connect_attempts: int | None = None
 
 
 def _elapsed_ms(since: float) -> int:
@@ -110,17 +123,38 @@ async def async_exchange(
         except ValueError as err:
             status.set_exception(err)
 
+    info = bluetooth.async_last_service_info(hass, address, connectable=True)
+    if report is not None and info is not None:
+        report.adv_age_ms = max(0, round((time.monotonic() - info.time) * 1000))
+        report.rssi = info.rssi
+    attempts = 0
+
+    def _fresh_device() -> BLEDevice:
+        # Called by the retry helper before every attempt: use the newest device
+        # object (it may now come from a different adapter or proxy) and count.
+        nonlocal attempts
+        attempts += 1
+        return (
+            bluetooth.async_ble_device_from_address(hass, address, connectable=True) or ble_device
+        )
+
     phase = time.monotonic()
     try:
         client = await establish_connection(
-            BleakClientWithServiceCache, ble_device, ble_device.name or address, max_attempts=3
+            BleakClientWithServiceCache,
+            ble_device,
+            ble_device.name or address,
+            max_attempts=3,
+            ble_device_callback=_fresh_device,
         )
     except (BleakError, asyncio.TimeoutError, OSError) as err:
         if report is not None:
             report.connect_ms = _elapsed_ms(phase)
+            report.connect_attempts = attempts or None
         raise WeLockBleError(f"Could not connect to {address}: {err}") from err
     if report is not None:
         report.connect_ms = _elapsed_ms(phase)
+        report.connect_attempts = attempts or None
 
     try:
         phase = time.monotonic()

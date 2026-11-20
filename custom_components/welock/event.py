@@ -69,6 +69,9 @@ class WeLockUnlockEvent(WeLockEntity, EventEntity):
                 "command_ms": attempt.command_ms,
                 "confirm_ms": attempt.confirm_ms,
                 "teardown_ms": attempt.teardown_ms,
+                "adv_age_ms": attempt.adv_age_ms,
+                "connect_attempts": attempt.connect_attempts,
+                "rssi": attempt.rssi,
             },
         )
         self.async_write_ha_state()

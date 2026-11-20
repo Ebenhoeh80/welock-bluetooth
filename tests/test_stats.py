@@ -215,6 +215,17 @@ class PhaseTimeTests(unittest.TestCase):
         )
         self.assertEqual((latest.confirm_ms, latest.teardown_ms), (400, 200))
 
+    def test_connection_diagnostics_survive_a_save_and_load(self) -> None:
+        stats = _stats()
+        asyncio.run(
+            stats.async_record(
+                _attempt(PATH_CLOUD, RESULT_CONFIRMED, 9000, adv_age_ms=1800, connect_attempts=2)
+            )
+        )
+        reloaded = _stats(stats._store.data)
+        asyncio.run(reloaded.async_load())
+        self.assertEqual((reloaded.latest.adv_age_ms, reloaded.latest.connect_attempts), (1800, 2))
+
     def test_attempts_without_phase_times_still_load(self) -> None:
         # Statistics written by rc.1/rc.2 have no phase times.
         old = {"history": [{"time": "t", "path": "cloud", "result": "confirmed", "duration_ms": 9}]}

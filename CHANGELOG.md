@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Connection diagnostics for unlock attempts.** Each attempt now also records the
+  age of the lock's last advertisement, the signal strength when the connection started and
+  the number of connection attempts, to tell "the lock was not heard" apart from "the
+  adapter could not connect". Retries use the newest Bluetooth device object.
 - **Offline-unlock switch.** `switch.<name>_offline_unlock` turns the local
   command cache on or off from the UI or an automation. It takes effect
   immediately (no reload) and is remembered across restarts. It is the same

@@ -241,5 +241,8 @@ class WeLockLastUnlockSensor(WeLockEntity, SensorEntity):
                 command_ms=latest.command_ms,
                 confirm_ms=latest.confirm_ms,
                 teardown_ms=latest.teardown_ms,
+                adv_age_ms=latest.adv_age_ms,
+                connect_attempts=latest.connect_attempts,
+                rssi=latest.rssi,
             )
         return attributes
