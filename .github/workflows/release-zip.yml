@@ -1,0 +1,42 @@
+name: Build HACS release zip
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build zip (root files, no folder)
+        run: |
+          set -euxo pipefail
+          DOMAIN="welock"
+          ZIP_NAME="${DOMAIN}.zip"
+
+          rm -f "${ZIP_NAME}"
+          rm -rf dist
+          mkdir -p dist
+
+          # Put integration files directly in ZIP root (no top-level folder),
+          # which is what HACS extracts into custom_components/<domain>/.
+          cp -a "custom_components/${DOMAIN}/." "dist/"
+
+          (cd dist && zip -r "../${ZIP_NAME}" . \
+            -x "**/__pycache__/**" "**/*.pyc" "**/.DS_Store")
+
+          # Sanity checks: manifest.json must sit at the ZIP root.
+          unzip -l "${ZIP_NAME}" | head -n 50
+          unzip -l "${ZIP_NAME}" | grep -q "^ *[0-9].*manifest.json$"
+
+      - name: Upload zip to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: welock.zip

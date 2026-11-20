@@ -54,7 +54,7 @@
           "auto_relock_delay": "Als entriegelt anzeigen für (Sekunden)",
           "battery_interval": "Akkustand per Bluetooth lesen alle (Stunden, 0 = nur beim Entriegeln)",
           "scan_interval": "Bluetooth-Erreichbarkeit prüfen alle (Sekunden)",
-          "local_unlock": "Lokalen Befehls-Cache für Offline-Entriegelung aufbauen und nutzen (experimentell)"
+          "local_unlock": "Gespeicherte Befehle zum Offline-Entsperren nutzen (experimentell; auch als Schalter „Offline-Entsperren“ verfügbar)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Letzter Zugriff"
+      },
+      "unlocks_cloud": {
+        "name": "Entsperrungen über die Cloud"
+      },
+      "unlocks_offline": {
+        "name": "Entsperrungen offline"
+      },
+      "last_unlock": {
+        "name": "Letzter Entsperrversuch"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth erreichbar"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Offline-Entsperren"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Entsperr-Verlauf",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Über die Cloud entsperrt",
+              "unlock_offline": "Offline entsperrt",
+              "unlock_failed": "Entsperren fehlgeschlagen"
+            }
+          }
+        }
       }
     }
   },
@@ -88,6 +116,16 @@
         "page_size": {
           "name": "Anzahl der Einträge",
           "description": "Wie viele der neuesten Protokolleinträge abgerufen werden."
+        }
+      }
+    },
+    "import_commands": {
+      "name": "Befehlstabelle importieren",
+      "description": "Fügt Entriegelungsbefehle aus einer JSON-Tabellendatei dem lokalen Befehls-Cache des Schlosses hinzu. Vorhandene Befehle werden nie überschrieben. Das Offline-Entsperren wird dadurch nicht eingeschaltet.",
+      "fields": {
+        "path": {
+          "name": "Datei",
+          "description": "Pfad der Tabellendatei, relativ zum Home-Assistant-Konfigurationsordner."
         }
       }
     }
@@ -110,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Bluetooth-Fehler: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "Der Dateipfad ist nicht erlaubt: Es muss eine .json-Datei im Home-Assistant-Konfigurationsordner sein."
+    },
+    "import_file_unreadable": {
+      "message": "Die Befehlstabelle konnte nicht gelesen werden ({error})."
+    },
+    "import_invalid_table": {
+      "message": "Die Befehlstabelle ist ungültig: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "Die Befehlstabelle gehört zu einem anderen Schloss; kein geladener WeLock-Eintrag hat diese Gerätenummer."
     }
   }
 }

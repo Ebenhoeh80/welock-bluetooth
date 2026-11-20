@@ -7,6 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Donate via PayPal](https://img.shields.io/badge/❤%20Donate-PayPal-00457C.svg?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/pool/9p84qTHCFr?sr=wccr)
+[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-FFDD00.svg?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/daneben)
 
 **🌍 Language:** **🇬🇧 English** · [🇩🇪 Deutsch](README.de.md)
 
@@ -47,7 +48,7 @@ Home Assistant                          Lock (BLE)                 WeLock cloud
      │◀─────── 55 30 <random> <batt>  ───────│                            │
      │  2. login + /Command/UnLock (deviceNumber, deviceName, random, batt) ─▶│
      │◀──────────────────────────── 15-byte command "U1…" ─────────────────────│
-     │  3. write command  ──────────────────▶│  knob engages for ~7 s     │
+     │  3. write command  ──────────────────▶│  knob engages for ~10 s    │
 ```
 
 * The cloud is contacted **only** during setup, re-authentication and unlocking. There is **no cloud polling**.
@@ -115,6 +116,11 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_signal_strength` | Sensor (diagnostic, disabled by default) | RSSI of the latest Bluetooth advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_reachable` | Binary sensor (diagnostic) | On while a connectable adapter or proxy sees the lock. |
 | `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock-experimental). |
+| `switch.<name>_offline_unlock` | Switch (configuration) | Turns [offline unlocking](#-local-offline-unlock-experimental) on or off with immediate effect; the setting is remembered across restarts. Off by default. |
+| `sensor.<name>_unlocks_via_cloud` | Sensor | Number of unlocks whose command came from the WeLock cloud. Attributes: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
+| `sensor.<name>_unlocks_offline` | Sensor | Number of unlocks whose command came from the local cache (no cloud contact). Same attributes. |
+| `event.<name>_unlock_history` | Event | One event per unlock attempt (`unlock_cloud`, `unlock_offline`, `unlock_failed`) with path, result, duration and challenge value. Shows up in the logbook and history. |
+| `sensor.<name>_last_unlock_attempt` | Sensor (diagnostic) | Time of the last unlock attempt; attributes carry its result and the ten most recent attempts. |
 | `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
 
 The exact entity IDs depend on the BLE name and the HA language.
@@ -127,10 +133,10 @@ The exact entity IDs depend on the BLE name and the HA language.
 
 | Option | Default | Range | Meaning |
 | :--- | :---: | :---: | :--- |
-| Show as unlocked for | 7 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
+| Show as unlocked for | 10 s | 3–60 s | How long the lock shows “unlocked” after unlocking. Then it returns to “locked”. |
 | Read battery over Bluetooth every | 24 h | 0–168 h | Periodic BLE status read. `0` = only on unlock (saves the lock battery). |
 | Check Bluetooth reachability every | 60 s | 10–600 s | How often reachability and RSSI are refreshed from the HA Bluetooth cache. Creates **no** radio traffic. |
-| Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. See below. |
+| Build and use the local command cache | off | on/off | **Experimental.** Unlocks locally without the cloud when the challenge value is already known. Also available as a switch entity. See below. |
 
 ---
 
@@ -149,13 +155,78 @@ cloud returns and stores it per config entry.
 * A stored command is **byte-identical** to what the cloud would return (no
   self-generated payload) and is re-validated before every use.
 
-> ⚠️ **Not yet mechanically verified on hardware.** The option is therefore **off**
-> by default and the cloud stays the default path. Only enable it once you have
-> successfully tested a locally generated command on the actual lock.
+* **Switch:** `switch.<name>_offline_unlock` turns the feature on or off at any
+  time, from the UI or an automation. It applies immediately (no reload), is
+  remembered across restarts and is the same setting as the option in the
+  integration's *Configure* dialog.
+* **Statistics and history:** every unlock made through Home Assistant is
+  recorded with the path that delivered the command (`cloud` or `offline`), the
+  result and the duration. The counters and the last 100 attempts survive
+  restarts and appear as the *Unlocks via cloud* / *Unlocks offline* sensors, the
+  *Unlock history* event entity (logbook) and in the diagnostics download.
+  *Confirmed* means the lock answered the command with a notification;
+  *unconfirmed* means the command was written but no answer was seen (the lock
+  does not always send one); *failed* means an error before or while writing.
+* **Safety net:** if writing a **stored** command fails, that command is dropped
+  from the cache, so the next unlock for that challenge value asks the cloud
+  again.
 
-> 📚 **How this was found:** the full reverse-engineering methodology (BLE
-> protocol, cloud API, differential analysis, legal basis § 69e UrhG / German
-> copyright law) is documented under [`docs/`](docs/README.md).
+### Importing a command table
+
+If you already have the commands of your lock (a JSON file with `device_number`
+and a `table` of randomFactor `"0"`..`"255"` to command, as written by
+`tools/welock_offline_oracle.py --harvest`), you do not have to wait until the
+integration has learned them one by one:
+
+1. Copy the file into the Home Assistant configuration folder, for example as
+   `welock-oracle-table.json` (the File editor add-on or Samba will do).
+2. **Developer tools → Actions → WeLock: Import command table**, set the file
+   name (the default is `welock-oracle-table.json`) and run it. The response
+   shows `added`, `unchanged`, `conflicts` and `known`.
+3. Turn the *Offline unlock* switch on when you want to use the commands.
+
+The file is checked completely before anything is stored: a wrong format, an
+invalid command or a table of a different lock (the `device_number` must match
+the lock) rejects it. A command that is already stored is never overwritten; if
+the file differs from a command learned from the cloud, the randomFactor is
+listed under `conflicts` and the learned command stays. The service neither
+switches offline unlocking on nor writes anything to the lock.
+
+> ⚠️ A command table is **security-sensitive**: together with Bluetooth range it
+> may be enough to unlock your door if the lock accepts the commands again. Keep
+> the file private, never commit or share it, and delete it from the
+> configuration folder after the import if you do not need it.
+
+### Testing offline unlock on your own lock
+
+To check that offline unlocking really works (and to document it), run a series
+of unlocks and read the counters:
+
+1. Let the table fill (normal use with the switch **off**) or check
+   `learned_commands` on the switch.
+2. Turn the switch **on**. Unlock the door several times, at least 12 s apart,
+   and note by eye each time whether the cylinder really released.
+3. Compare *Unlocks offline* with your notes: `confirmed` + `unconfirmed` is what
+   the lock was sent, your observation is the ground truth. Challenge values that
+   are not yet stored are answered by the cloud and show up under *Unlocks via
+   cloud* instead.
+4. For proof that **no cloud is needed**, block internet access for Home
+   Assistant (or the WeLock cloud host) while repeating step 2. Offline unlocks
+   still count; `unlock_failed` events with `path: cloud` show the cloud being
+   unreachable.
+5. Optionally run `welock.fetch_access_log` afterwards. The lock's own log
+   should list the same unlocks (this logs the WeLock app out once).
+
+> ✅ **Verified on the maintainer's lock (2026-11-20):** in a series of 30 offline
+> unlocks, each with a command from the local table and without a cloud request,
+> the cylinder released every time (checked by eye), and the lock confirmed all of
+> them (45 of 45 offline unlocks counted in total, none failed). This is one lock
+> with one firmware. A test with the cloud blocked is still to be documented. The
+> option stays **off** by default and the cloud remains the default path; enable it
+> once you have tested it on your own lock (see above).
+
+> 📚 **How it works:** a short description of the Bluetooth exchange and the cloud
+> request is in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## 📜 Access log (service)
 
@@ -178,10 +249,29 @@ example from a script or an automation that you trigger yourself.
 ## 🔄 Operation & behaviour
 
 * **Unlocking via the cloud logs the WeLock app out.** A fresh cloud login is then needed for the command — a property of the WeLock cloud. On a hit in the [local command cache](#-local-offline-unlock-experimental), the cloud login (and thus the logout) is skipped.
-* **At least 30 s between two unlocks.** An earlier attempt is rejected with a message.
-* **Assumed state:** the lock does not report its state. The cylinder engages the outer knob for about 7 s and then re-locks mechanically on its own. “Lock” in HA only resets the display.
+* **At least 12 s between two unlocks.** The knob stays engaged for 10 s and the lock takes no further command meanwhile; an earlier attempt is rejected with a message.
+* **Assumed state:** the lock does not report its state. The cylinder engages the outer knob for 10 s (measured) and then re-locks mechanically on its own. “Lock” in HA only resets the display.
 * **Without Bluetooth range** the lock is *unavailable*. The cloud alone cannot unlock.
 * All BLE access to one lock is serialised so that battery reads and unlocks do not collide.
+
+### How long is the cylinder free?
+
+On the maintainer's lock the outer knob stays engaged for **10 seconds** after the
+unlock command arrives and then re-locks mechanically on its own (the lock reports
+no state, so this was measured by trying: the knob still turned at 10 s). That is
+why *Show as unlocked for* defaults to 10 s and why the lock takes **no second
+command** during that time (see the 12 s minimum between two unlocks above).
+*Show as unlocked for* only controls how long Home Assistant *displays*
+"unlocked"; it does not change the lock.
+
+Other lock models or firmware may differ. To check yours: unlock through Home
+Assistant, start a stopwatch when the door switches to *unlocked*, and try to turn
+the cylinder after 5, 10 and 15 s (a fresh unlock for each attempt, at least 12 s
+apart). Then set *Show as unlocked for* a little below the point where it stops
+working.
+
+The *Unlock history* event and the *Last unlock attempt* sensor record when the
+command was written, which helps to compare the timing of several attempts.
 
 ---
 
@@ -195,7 +285,7 @@ example from a script or an automation that you trigger yourself.
 | *No Bluetooth adapter or proxy reaches the lock* | Move the proxy closer to the door, set `active: true` on the ESPHome proxy, close the app (only one BLE connection at a time). |
 | *The lock did not answer the status request* | Wake the lock (touch the knob), check the batteries, retry. |
 | Lock permanently *unavailable* | Check the “Bluetooth reachable” binary sensor. HA cannot see the lock; causes as above. |
-| *Please wait … s* | The 30-second lock-out between two unlocks is still active. |
+| *Please wait … s* | The 12-second lock-out between two unlocks is still active. |
 
 **Debug logs** (`configuration.yaml`):
 ```yaml
@@ -304,7 +394,7 @@ actions:
 mode: single
 ```
 
-> Every unlock logs the WeLock app out, and there are at least 30 s between two unlocks.
+> Every unlock logs the WeLock app out, and there are at least 12 s between two unlocks.
 
 ---
 
@@ -335,7 +425,7 @@ welock-bluetooth/
 │   ├── diagnostics.py             # Diagnostics (redacted)
 │   ├── strings.json               # Base strings (EN)
 │   └── translations/              # de, en, es, fr
-├── docs/                          # Reverse-engineering methodology (anonymised, § 69e UrhG)
+├── docs/                          # Short protocol description
 ├── tools/                         # BLE & cloud diagnostic tools (see tools/README.md)
 ├── tests/                         # Unit tests + optional live smoke test (marker "live")
 ├── src/, index.html, package.json # Companion web app (AI Studio)

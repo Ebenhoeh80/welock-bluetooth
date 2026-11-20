@@ -54,7 +54,7 @@
           "auto_relock_delay": "Mostrar como abierta durante (segundos)",
           "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
           "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)",
-          "local_unlock": "Crear y usar la caché local de comandos para el desbloqueo sin conexión (experimental)"
+          "local_unlock": "Usar comandos guardados para el desbloqueo sin conexión (experimental; también disponible como interruptor «Desbloqueo sin conexión»)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Último acceso"
+      },
+      "unlocks_cloud": {
+        "name": "Desbloqueos mediante la nube"
+      },
+      "unlocks_offline": {
+        "name": "Desbloqueos sin conexión"
+      },
+      "last_unlock": {
+        "name": "Último intento de desbloqueo"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accesible"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Desbloqueo sin conexión"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Historial de desbloqueos",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Desbloqueado mediante la nube",
+              "unlock_offline": "Desbloqueado sin conexión",
+              "unlock_failed": "Fallo al desbloquear"
+            }
+          }
+        }
       }
     }
   },
@@ -88,6 +116,16 @@
         "page_size": {
           "name": "Número de entradas",
           "description": "Cuántas de las entradas más recientes del registro obtener."
+        }
+      }
+    },
+    "import_commands": {
+      "name": "Importar tabla de comandos",
+      "description": "Añade comandos de desbloqueo de un archivo de tabla JSON a la caché local de comandos de la cerradura. Los comandos existentes nunca se sobrescriben. Esto no activa el desbloqueo sin conexión.",
+      "fields": {
+        "path": {
+          "name": "Archivo",
+          "description": "Ruta del archivo de tabla, relativa a la carpeta de configuración de Home Assistant."
         }
       }
     }
@@ -110,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Error de Bluetooth: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "La ruta del archivo no está permitida: debe ser un archivo .json dentro de la carpeta de configuración de Home Assistant."
+    },
+    "import_file_unreadable": {
+      "message": "No se pudo leer el archivo de la tabla de comandos ({error})."
+    },
+    "import_invalid_table": {
+      "message": "La tabla de comandos no es válida: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "La tabla de comandos pertenece a otra cerradura; ninguna entrada WeLock cargada tiene este número de dispositivo."
     }
   }
 }

@@ -54,7 +54,7 @@
           "auto_relock_delay": "Show as unlocked for (seconds)",
           "battery_interval": "Read battery over Bluetooth every (hours, 0 = only when unlocking)",
           "scan_interval": "Check Bluetooth reachability every (seconds)",
-          "local_unlock": "Build and use the local command cache for offline unlocking (experimental)"
+          "local_unlock": "Use stored commands for offline unlocking (experimental; also available as the Offline unlock switch)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Last access"
+      },
+      "unlocks_cloud": {
+        "name": "Unlocks via cloud"
+      },
+      "unlocks_offline": {
+        "name": "Unlocks offline"
+      },
+      "last_unlock": {
+        "name": "Last unlock attempt"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth reachable"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Offline unlock"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Unlock history",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Unlocked via cloud",
+              "unlock_offline": "Unlocked offline",
+              "unlock_failed": "Unlock failed"
+            }
+          }
+        }
       }
     }
   },
@@ -88,6 +116,16 @@
         "page_size": {
           "name": "Number of entries",
           "description": "How many of the most recent access-log entries to fetch."
+        }
+      }
+    },
+    "import_commands": {
+      "name": "Import command table",
+      "description": "Add unlock commands from a JSON table file to the lock's local command cache. Existing commands are never overwritten. This does not switch offline unlocking on.",
+      "fields": {
+        "path": {
+          "name": "File",
+          "description": "Path of the table file, relative to the Home Assistant configuration folder."
         }
       }
     }
@@ -110,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Bluetooth error: {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "The file path is not allowed: it must be a .json file inside the Home Assistant configuration folder."
+    },
+    "import_file_unreadable": {
+      "message": "The command table file could not be read ({error})."
+    },
+    "import_invalid_table": {
+      "message": "The command table is not valid: {error}."
+    },
+    "import_wrong_lock": {
+      "message": "The command table belongs to a different lock; no loaded WeLock entry has this device number."
     }
   }
 }

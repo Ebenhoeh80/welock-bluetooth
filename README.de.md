@@ -45,7 +45,7 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
      │◀─────── 55 30 <random> <akku>  ──────│                            │
      │  2. Login + /Command/UnLock (deviceNumber, deviceName, random, akku) ─▶│
      │◀──────────────────────────── 15-Byte-Befehl "U1…" ──────────────────────│
-     │  3. Befehl schreiben  ───────────────▶│  Knauf kuppelt ~7 s ein   │
+     │  3. Befehl schreiben  ───────────────▶│  Knauf kuppelt ~10 s ein  │
 ```
 
 * Die Cloud wird **nur** bei Einrichtung, erneuter Anmeldung und beim Entriegeln kontaktiert. Es gibt **kein Cloud-Polling**.
@@ -113,6 +113,11 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_signalstarke` | Sensor (Diagnose, standardmäßig deaktiviert) | RSSI der letzten Bluetooth-Advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_erreichbar` | Binärsensor (Diagnose) | An, solange ein verbindungsfähiger Adapter oder Proxy das Schloss sieht. |
 | `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock-experimentell). |
+| `switch.<name>_offline_entsperren` | Schalter (Konfiguration) | Schaltet das [Offline-Entsperren](#-lokaler-offline-unlock-experimentell) mit sofortiger Wirkung ein oder aus; die Einstellung bleibt über Neustarts erhalten. Standardmäßig aus. |
+| `sensor.<name>_entsperrungen_uber_die_cloud` | Sensor | Anzahl der Entsperrungen, deren Befehl von der WeLock-Cloud kam. Attribute: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
+| `sensor.<name>_entsperrungen_offline` | Sensor | Anzahl der Entsperrungen, deren Befehl aus dem lokalen Cache kam (ohne Cloud-Kontakt). Gleiche Attribute. |
+| `event.<name>_entsperr_verlauf` | Event | Ein Ereignis je Entsperrversuch (`unlock_cloud`, `unlock_offline`, `unlock_failed`) mit Pfad, Ergebnis, Dauer und Challenge-Wert. Erscheint im Logbuch und im Verlauf. |
+| `sensor.<name>_letzter_entsperrversuch` | Sensor (Diagnose) | Zeitpunkt des letzten Entsperrversuchs; die Attribute enthalten Ergebnis und die zehn letzten Versuche. |
 | `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Bleibt `unbekannt`, bis der Dienst `welock.fetch_access_log` einmal ausgeführt wurde; die zuletzt abgerufenen Einträge bleiben über Neustarts erhalten. |
 
 Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
@@ -125,10 +130,10 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
 | Option | Standard | Bereich | Bedeutung |
 | :--- | :---: | :---: | :--- |
-| Als entriegelt anzeigen für | 7 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
+| Als entriegelt anzeigen für | 10 s | 3–60 s | So lange zeigt das Lock nach dem Entriegeln „entriegelt“. Danach wieder „verriegelt“. |
 | Akkustand per Bluetooth lesen alle | 24 h | 0–168 h | Regelmäßige BLE-Statusabfrage. `0` = nur beim Entriegeln (schont die Schlossbatterie). |
 | Bluetooth-Erreichbarkeit prüfen alle | 60 s | 10–600 s | Wie oft Erreichbarkeit und RSSI aus dem HA-Bluetooth-Cache aktualisiert werden. Erzeugt **keinen** Funkverkehr. |
-| Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Experimentell.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Siehe unten. |
+| Lokalen Befehls-Cache aufbauen und nutzen | aus | an/aus | **Experimentell.** Entriegelt bei bekanntem Challenge-Wert lokal ohne Cloud. Auch als Schalter-Entität verfügbar. Siehe unten. |
 
 ---
 
@@ -147,13 +152,85 @@ Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
 * Ein gespeicherter Befehl ist **byte-identisch** zu dem, den die Cloud liefern
   würde (kein selbst erzeugter Payload), und wird vor jeder Nutzung erneut geprüft.
 
-> ⚠️ **Noch nicht am Schloss mechanisch verifiziert.** Deshalb ist die Option
-> standardmäßig **aus** und die Cloud bleibt der Standardpfad. Schalte sie erst
-> ein, wenn du einen lokal erzeugten Befehl vor Ort erfolgreich getestet hast.
+* **Schalter:** `switch.<name>_offline_entsperren` schaltet die Funktion jederzeit
+  ein oder aus, per Oberfläche oder Automation. Die Änderung gilt sofort (ohne
+  Neuladen), bleibt über Neustarts erhalten und ist dieselbe Einstellung wie die
+  Option im Dialog *Konfigurieren* der Integration.
+* **Statistik und Verlauf:** Jede Entsperrung über Home Assistant wird mit dem
+  Pfad, der den Befehl geliefert hat (`cloud` oder `offline`), dem Ergebnis und
+  der Dauer festgehalten. Die Zähler und die letzten 100 Versuche überstehen
+  Neustarts und erscheinen als Sensoren *Entsperrungen über die Cloud* /
+  *Entsperrungen offline*, als Event-Entität *Entsperr-Verlauf* (Logbuch) und im
+  Diagnose-Download. *Confirmed* heißt: Das Schloss hat den Befehl mit einer
+  Benachrichtigung beantwortet; *unconfirmed*: Der Befehl wurde geschrieben, aber
+  keine Antwort gesehen (das Schloss sendet nicht immer eine); *failed*: Fehler
+  vor oder beim Schreiben.
+* **Sicherheitsnetz:** Schlägt das Schreiben eines **gespeicherten** Befehls fehl,
+  wird dieser Befehl aus dem Cache entfernt; die nächste Entsperrung für diesen
+  Challenge-Wert fragt wieder die Cloud.
 
-> 📚 **Wie das herausgefunden wurde:** Die vollständige Reverse-Engineering-
-> Methodik (BLE-Protokoll, Cloud-API, differenzielle Analyse, Rechtsgrundlage
-> § 69e UrhG) ist unter [`docs/`](docs/README.md) dokumentiert.
+### Befehlstabelle importieren
+
+Wenn du die Befehle deines Schlosses schon hast (eine JSON-Datei mit
+`device_number` und einer `table` mit randomFactor `"0"`..`"255"` auf Befehl, wie
+sie `tools/welock_offline_oracle.py --harvest` schreibt), musst du nicht warten,
+bis die Integration sie einzeln gelernt hat:
+
+1. Kopiere die Datei in den Home-Assistant-Konfigurationsordner, zum Beispiel als
+   `welock-oracle-table.json` (das File-Editor-Add-on oder Samba genügen).
+2. **Entwicklerwerkzeuge → Aktionen → WeLock: Befehlstabelle importieren**,
+   Dateinamen setzen (Standard ist `welock-oracle-table.json`) und ausführen. Die
+   Antwort zeigt `added`, `unchanged`, `conflicts` und `known`.
+3. Schalte den Schalter *Offline-Entsperren* ein, wenn du die Befehle nutzen
+   willst.
+
+Die Datei wird vollständig geprüft, bevor etwas gespeichert wird: Ein falsches
+Format, ein ungültiger Befehl oder die Tabelle eines anderen Schlosses (die
+`device_number` muss zum Schloss passen) lehnt sie ab. Ein bereits gespeicherter
+Befehl wird nie überschrieben; weicht die Datei von einem aus der Cloud gelernten
+Befehl ab, steht der randomFactor unter `conflicts` und der gelernte Befehl
+bleibt. Der Dienst schaltet das Offline-Entsperren nicht ein und schreibt nichts
+an das Schloss.
+
+> ⚠️ Eine Befehlstabelle ist **sicherheitsrelevant**: Zusammen mit
+> Bluetooth-Reichweite kann sie genügen, deine Tür zu entriegeln, falls das
+> Schloss die Befehle erneut akzeptiert. Halte die Datei privat, lade sie nie in
+> ein Repository und gib sie nicht weiter. Lösche sie nach dem Import aus dem
+> Konfigurationsordner, wenn du sie nicht mehr brauchst.
+
+### Offline-Entsperren am eigenen Schloss prüfen
+
+Um zu prüfen (und zu dokumentieren), dass das Offline-Entsperren wirklich
+funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
+
+1. Lass die Tabelle sich füllen (normaler Betrieb bei **ausgeschaltetem**
+   Schalter) oder prüfe `learned_commands` am Schalter.
+2. Schalte den Schalter **ein**. Entsperre die Tür mehrmals im Abstand von
+   mindestens 12 s und notiere jedes Mal per Augenschein, ob der Zylinder wirklich
+   freigegeben hat.
+3. Vergleiche *Entsperrungen offline* mit deinen Notizen: `confirmed` +
+   `unconfirmed` ist das, was dem Schloss gesendet wurde, dein Augenschein ist die
+   Wahrheit. Noch nicht gespeicherte Challenge-Werte beantwortet die Cloud; sie
+   erscheinen stattdessen unter *Entsperrungen über die Cloud*.
+4. Als Beleg, dass **keine Cloud nötig** ist, sperre den Internetzugang für Home
+   Assistant (oder den WeLock-Cloud-Host) und wiederhole Schritt 2.
+   Offline-Entsperrungen werden weiter gezählt; `unlock_failed`-Ereignisse mit
+   `path: cloud` zeigen, dass die Cloud nicht erreichbar war.
+5. Optional danach `welock.fetch_access_log` ausführen. Das eigene Protokoll des
+   Schlosses sollte dieselben Entsperrungen auflisten (das meldet die WeLock-App
+   einmal ab).
+
+> ✅ **Am Schloss des Maintainers verifiziert (20.11.2026):** In einer Serie von 30
+> Offline-Entsperrungen, jeweils mit einem Befehl aus der lokalen Tabelle und ohne
+> Cloud-Anfrage, gab der Zylinder jedes Mal frei (per Augenschein geprüft), und das
+> Schloss bestätigte alle (insgesamt 45 von 45 gezählten Offline-Entsperrungen,
+> keine fehlgeschlagen). Das gilt für ein Schloss mit einer Firmware. Ein Test mit
+> gesperrter Cloud ist noch zu dokumentieren. Die Option bleibt standardmäßig **aus**,
+> die Cloud bleibt der Standardpfad; schalte sie ein, nachdem du es an deinem
+> eigenen Schloss getestet hast (siehe oben).
+
+> 📚 **Wie es funktioniert:** Eine kurze Beschreibung des Bluetooth-Austauschs und
+> der Cloud-Anfrage steht in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## 📜 Zutrittsprotokoll (Dienst)
 
@@ -177,10 +254,30 @@ du selbst auslöst.
 ## 🔄 Betrieb & Verhalten
 
 * **Entriegeln über die Cloud meldet die WeLock-App ab.** Für den Befehl ist dann ein frischer Cloud-Login nötig – eine Eigenschaft der WeLock-Cloud. Bei einem Treffer im [lokalen Befehls-Cache](#-lokaler-offline-unlock-experimentell) entfällt der Cloud-Login (und damit die Abmeldung).
-* **Mindestens 30 s zwischen zwei Entriegelungen.** Ein früherer Versuch wird mit einer Meldung abgelehnt.
-* **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf ca. 7 s ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
+* **Mindestens 12 s zwischen zwei Entriegelungen.** Der Knauf bleibt 10 s eingekuppelt und das Schloss nimmt dabei keinen weiteren Befehl an; ein früherer Versuch wird mit einer Meldung abgelehnt.
+* **Angenommener Zustand:** Das Schloss meldet seinen Zustand nicht. Der Zylinder kuppelt den Außenknauf 10 s (gemessen) ein und verriegelt danach mechanisch von selbst. „Verriegeln“ in HA setzt nur die Anzeige zurück.
 * **Ohne Bluetooth-Reichweite** ist das Lock *nicht verfügbar*. Die Cloud allein kann nicht entriegeln.
 * Alle BLE-Zugriffe auf ein Schloss laufen nacheinander, damit Akkuabfrage und Entriegeln nicht kollidieren.
+
+### Wie lange ist der Zylinder frei?
+
+Beim Schloss des Maintainers bleibt der Außenknauf nach dem Eintreffen des
+Entsperrbefehls **10 Sekunden** eingekuppelt und verriegelt danach mechanisch von
+selbst (das Schloss meldet keinen Zustand, der Wert wurde durch Ausprobieren
+ermittelt: bei 10 s ließ sich der Knauf noch drehen). Deshalb ist *Als entriegelt
+anzeigen für* standardmäßig 10 s, und deshalb nimmt das Schloss in dieser Zeit
+**keinen zweiten Befehl** an (siehe die 12 s Mindestabstand zwischen zwei
+Entriegelungen oben). *Als entriegelt anzeigen für* steuert nur, wie lange Home
+Assistant „entriegelt“ *anzeigt*; am Schloss ändert es nichts.
+
+Andere Schlossmodelle oder Firmware können abweichen. So prüfst du deines: Über
+Home Assistant entriegeln, die Stoppuhr starten, sobald die Tür auf *entriegelt*
+springt, und nach 5, 10 und 15 s versuchen, den Zylinder zu drehen (für jeden
+Versuch neu entriegeln, mindestens 12 s Abstand). Dann *Als entriegelt anzeigen
+für* etwas unter den Punkt setzen, an dem es nicht mehr geht.
+
+Das Event *Entsperr-Verlauf* und der Sensor *Letzter Entsperrversuch* halten fest,
+wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
 
 ---
 
@@ -194,7 +291,7 @@ du selbst auslöst.
 | *Kein Bluetooth-Adapter oder -Proxy erreicht das Schloss* | Proxy näher an die Tür stellen, beim ESPHome-Proxy `active: true` setzen, App schließen (nur eine BLE-Verbindung gleichzeitig). |
 | *Das Schloss hat nicht auf die Statusabfrage geantwortet* | Schloss wecken (Knauf berühren), Batterien prüfen, erneut versuchen. |
 | Lock dauerhaft *nicht verfügbar* | Binärsensor „Bluetooth erreichbar“ prüfen. HA sieht das Schloss nicht, Ursachen wie oben. |
-| *Bitte … s warten* | Die 30-Sekunden-Sperre zwischen zwei Entriegelungen ist noch aktiv. |
+| *Bitte … s warten* | Die 12-Sekunden-Sperre zwischen zwei Entriegelungen ist noch aktiv. |
 
 **Debug-Logs** (`configuration.yaml`):
 ```yaml
@@ -303,7 +400,7 @@ actions:
 mode: single
 ```
 
-> Jedes Entriegeln meldet die WeLock-App ab, und zwischen zwei Entriegelungen liegen mindestens 30 s.
+> Jedes Entriegeln meldet die WeLock-App ab, und zwischen zwei Entriegelungen liegen mindestens 12 s.
 
 ---
 
@@ -332,7 +429,7 @@ welock-bluetooth/
 │   ├── diagnostics.py             # Diagnosedaten (geschwärzt)
 │   ├── strings.json               # Basistexte (EN)
 │   └── translations/              # de, en, es, fr
-├── docs/                          # Reverse-Engineering-Methodik (anonymisiert, § 69e UrhG)
+├── docs/                          # Kurze Protokollbeschreibung
 ├── tools/                         # BLE- & Cloud-Diagnosetools (siehe tools/README.md)
 ├── tests/                         # Unit-Tests + optionaler Live-Smoke-Test (Marker "live")
 ├── src/, index.html, package.json # Begleitende Web-App (AI Studio)

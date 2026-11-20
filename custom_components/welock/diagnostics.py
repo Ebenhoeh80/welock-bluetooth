@@ -43,4 +43,9 @@ async def async_get_config_entry_diagnostics(
             "options": dict(entry.options),
         },
         "state": coordinator.data,
+        "offline_unlock": {
+            "enabled": coordinator.local_unlock,
+            "learned_commands": coordinator.cache.count,
+            "statistics": coordinator.stats.as_dict(),
+        },
     }

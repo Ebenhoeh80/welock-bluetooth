@@ -54,7 +54,7 @@
           "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
           "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
           "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)",
-          "local_unlock": "Constituer et utiliser le cache local de commandes pour le déverrouillage hors ligne (expérimental)"
+          "local_unlock": "Utiliser les commandes enregistrées pour le déverrouillage hors ligne (expérimental ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
         }
       }
     }
@@ -72,11 +72,39 @@
       },
       "last_access": {
         "name": "Dernier accès"
+      },
+      "unlocks_cloud": {
+        "name": "Déverrouillages via le cloud"
+      },
+      "unlocks_offline": {
+        "name": "Déverrouillages hors ligne"
+      },
+      "last_unlock": {
+        "name": "Dernière tentative de déverrouillage"
       }
     },
     "binary_sensor": {
       "connectivity": {
         "name": "Bluetooth accessible"
+      }
+    },
+    "switch": {
+      "offline_unlock": {
+        "name": "Déverrouillage hors ligne"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Historique des déverrouillages",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "unlock_cloud": "Déverrouillé via le cloud",
+              "unlock_offline": "Déverrouillé hors ligne",
+              "unlock_failed": "Échec du déverrouillage"
+            }
+          }
+        }
       }
     }
   },
@@ -88,6 +116,16 @@
         "page_size": {
           "name": "Nombre d'entrées",
           "description": "Combien des entrées de journal les plus récentes récupérer."
+        }
+      }
+    },
+    "import_commands": {
+      "name": "Importer une table de commandes",
+      "description": "Ajoute des commandes de déverrouillage d'un fichier de table JSON au cache local de commandes de la serrure. Les commandes existantes ne sont jamais écrasées. Cela n'active pas le déverrouillage hors ligne.",
+      "fields": {
+        "path": {
+          "name": "Fichier",
+          "description": "Chemin du fichier de table, relatif au dossier de configuration de Home Assistant."
         }
       }
     }
@@ -110,6 +148,18 @@
     },
     "bluetooth_error": {
       "message": "Erreur Bluetooth : {error}"
+    },
+    "import_path_not_allowed": {
+      "message": "Le chemin du fichier n'est pas autorisé : il doit s'agir d'un fichier .json dans le dossier de configuration de Home Assistant."
+    },
+    "import_file_unreadable": {
+      "message": "Le fichier de la table de commandes n'a pas pu être lu ({error})."
+    },
+    "import_invalid_table": {
+      "message": "La table de commandes n'est pas valide : {error}."
+    },
+    "import_wrong_lock": {
+      "message": "La table de commandes appartient à une autre serrure ; aucune entrée WeLock chargée n'a ce numéro d'appareil."
     }
   }
 }
