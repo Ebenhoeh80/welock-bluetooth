@@ -8,6 +8,7 @@ is stored: no commands, no account data, no addresses.
 
 from __future__ import annotations
 
+import re
 from collections import deque
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, TypedDict
@@ -57,6 +58,8 @@ class UnlockAttempt:
     # State when the connection was started (see ``ExchangeReport``).
     adv_age_ms: int | None = None
     connect_attempts: int | None = None
+    # Neutral label of the adapter or proxy that last heard the lock (see ``ble.scanner_label``).
+    scanner: str | None = None
 
 
 class PhaseTimes(TypedDict):
@@ -69,6 +72,7 @@ class PhaseTimes(TypedDict):
     teardown_ms: int | None
     adv_age_ms: int | None
     connect_attempts: int | None
+    scanner: str | None
 
 
 @dataclass
@@ -103,6 +107,8 @@ class PathStats:
         }
 
 
+_SCANNER_LABEL = re.compile(r"scanner-[0-9a-f]{8}")
+
 PHASE_KEYS = (
     "connect_ms",
     "status_ms",
@@ -128,6 +134,11 @@ def _optional_ms(value: object) -> int | None:
     return _valid_int(value, minimum=0)
 
 
+def _scanner(value: object) -> str | None:
+    """Return a stored scanner label, or ``None`` if it is not one."""
+    return value if isinstance(value, str) and _SCANNER_LABEL.fullmatch(value) else None
+
+
 def _non_negative_int(value: object) -> int:
     return _valid_int(value, minimum=0) or 0
 
@@ -151,6 +162,7 @@ def _attempt_from_dict(item: object) -> UnlockAttempt | None:
         error=error if isinstance(error, str) else None,
         rssi=_valid_int(item.get("rssi")),
         evicted=item.get("evicted") is True,
+        scanner=_scanner(item.get("scanner")),
         **{key: _optional_ms(item.get(key)) for key in PHASE_KEYS},
     )
 

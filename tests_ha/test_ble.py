@@ -66,7 +66,7 @@ class FakeClient:
 
 
 def _patches(client: FakeClient | Exception, device: object | None = MagicMock()):
-    info = SimpleNamespace(time=0.0, rssi=-65)
+    info = SimpleNamespace(time=0.0, rssi=-65, source="proxy-source-1")
     connect = (
         MagicMock(side_effect=client)
         if isinstance(client, Exception)
@@ -103,6 +103,9 @@ async def test_a_status_check_reads_battery_and_challenge_and_disconnects(
     assert report.connect_ms is not None and report.status_ms is not None
     assert report.rssi == -65 and report.adv_age_ms is not None and report.connect_attempts == 2
     assert not report.command_written and report.teardown_ms is not None
+    # the scanner is noted as a neutral label, never as the address it came from
+    assert report.scanner == ble.scanner_label("proxy-source-1")
+    assert report.scanner is not None and "proxy-source-1" not in report.scanner
 
 
 async def test_an_unlock_writes_the_command_and_notes_the_confirmation(hass: HomeAssistant) -> None:

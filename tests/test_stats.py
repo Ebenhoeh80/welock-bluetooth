@@ -31,7 +31,11 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.ble import ExchangeReport, _async_teardown  # noqa: E402
+from custom_components.welock.ble import (  # noqa: E402
+    ExchangeReport,
+    _async_teardown,
+    scanner_label,
+)
 from custom_components.welock.cache import (  # noqa: E402
     CommandCache,
     parse_command_table,
@@ -228,6 +232,25 @@ class PhaseTimeTests(unittest.TestCase):
         reloaded = _stats(stats._store.data)
         asyncio.run(reloaded.async_load())
         self.assertEqual((reloaded.latest.adv_age_ms, reloaded.latest.connect_attempts), (1800, 2))
+
+    def test_the_scanner_label_is_stored_and_a_foreign_value_is_dropped(self) -> None:
+        label = scanner_label("AA:BB:CC:DD:EE:FF")
+        self.assertRegex(label, r"^scanner-[0-9a-f]{8}$")
+        self.assertNotIn("AA:BB", label)
+        self.assertEqual(label, scanner_label("AA:BB:CC:DD:EE:FF"))
+        self.assertNotEqual(label, scanner_label("AA:BB:CC:DD:EE:00"))
+        self.assertIsNone(scanner_label(None))
+        self.assertIsNone(scanner_label(""))
+        stats = _stats()
+        asyncio.run(stats.async_record(_attempt(PATH_CLOUD, RESULT_CONFIRMED, scanner=label)))
+        data = stats._store.data
+        reloaded = _stats(data)
+        asyncio.run(reloaded.async_load())
+        self.assertEqual(reloaded.latest.scanner, label)
+        data["history"][0]["scanner"] = "AA:BB:CC:DD:EE:FF"  # not a label: ignored
+        again = _stats(data)
+        asyncio.run(again.async_load())
+        self.assertIsNone(again.latest.scanner)
 
     def test_attempts_without_phase_times_still_load(self) -> None:
         # Statistics written by rc.1/rc.2 have no phase times.

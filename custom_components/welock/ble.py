@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import logging
 import time
 from collections.abc import Awaitable, Callable
@@ -79,6 +80,21 @@ class ExchangeReport:
     adv_age_ms: int | None = None
     rssi: int | None = None
     connect_attempts: int | None = None
+    # Which adapter or proxy heard that advertisement, as a neutral label (see
+    # ``scanner_label``). Observation only: it never influences the connection.
+    scanner: str | None = None
+
+
+def scanner_label(source: object) -> str | None:
+    """Return a neutral label for the adapter or proxy that reported an advertisement.
+
+    The source Home Assistant gives is the address of the adapter or proxy; it is
+    shortened to a hash so statistics and diagnostics can tell scanners apart
+    (is a proxy used, which one) without naming them.
+    """
+    if not isinstance(source, str) or not source:
+        return None
+    return "scanner-" + hashlib.sha256(source.encode()).hexdigest()[:8]
 
 
 def _elapsed_ms(since: float) -> int:
@@ -118,6 +134,7 @@ def _note_advertisement(hass: HomeAssistant, address: str, report: ExchangeRepor
     if report is not None and info is not None:
         report.adv_age_ms = max(0, round((time.monotonic() - info.time) * 1000))
         report.rssi = info.rssi
+        report.scanner = scanner_label(getattr(info, "source", None))
 
 
 async def _async_connect(
