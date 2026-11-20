@@ -462,7 +462,7 @@ Planned and under consideration — **give a 👍 to what matters to you**, and 
 
 ## 📄 License
 
-Licensed under the MIT License, see [LICENSE](LICENSE).
+MIT © 2026 Daniel Ebenhöh — see [LICENSE](LICENSE).
 
 ---
 

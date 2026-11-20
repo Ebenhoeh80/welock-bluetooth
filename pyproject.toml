@@ -7,7 +7,7 @@ name = "welock-tools"
 version = "2.4.0"
 description = "Tools and Home Assistant integration suite for WeLock smart locks"
 readme = "README.md"
-authors = [{ name = "Ebenhoeh80" }]
+authors = [{ name = "Daniel Ebenhöh" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
