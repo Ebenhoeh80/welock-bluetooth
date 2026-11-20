@@ -5,67 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.0] - 2026-11-20
+
+Offline unlocking (a command from the local table instead of a cloud request) is kept, and
+has now been verified on a real lock: in a series of 30 offline unlocks the cylinder released
+every time (checked by eye) and the lock confirmed all of them (45 of 45 offline unlocks
+counted, none failed). It stays **off** by default, and any problem falls back to the cloud.
 
 ### Added
-- **Unlock is reported as soon as the lock confirms.** The connection is now closed in the
-  background afterwards (about 0.2 s on a PC, around 2 s in Home Assistant), so the lock shows
-  *unlocked* sooner. The Bluetooth connection stays reserved until it is closed, and the
-  teardown time is added to the unlock history afterwards.
-- The unlock history now counts the connection attempts correctly (the first attempt was missing).
-- **Connection diagnostics for unlock attempts.** Each attempt now also records the
-  age of the lock's last advertisement, the signal strength when the connection started and
-  the number of connection attempts, to tell "the lock was not heard" apart from "the
-  adapter could not connect". Retries use the newest Bluetooth device object.
-- **Offline-unlock switch.** `switch.<name>_offline_unlock` turns the local
-  command cache on or off from the UI or an automation. It takes effect
-  immediately (no reload) and is remembered across restarts. It is the same
-  setting as the option in the *Configure* dialog; the default stays off.
+- **Offline-unlock switch.** `switch.<name>_offline_unlock` turns the local command cache on
+  or off from the UI or an automation. It takes effect immediately (no reload) and is
+  remembered across restarts. It is the same setting as the option in the *Configure*
+  dialog; the default stays off.
 - **Unlock statistics.** Counters per path, `sensor.<name>_unlocks_via_cloud` and
-  `sensor.<name>_unlocks_offline`, split into confirmed / unconfirmed / failed
-  with the average duration. They survive restarts.
-- **Unlock history.** An event entity fires one event per unlock attempt
-  (`unlock_cloud`, `unlock_offline`, `unlock_failed`), visible in the logbook, and
-  `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part
-  of the diagnostics download. No commands, account data or addresses are stored.
-- **Import a command table.** The service `welock.import_commands` adds unlock
-  commands from a JSON table file in the Home Assistant configuration folder
-  (default `welock-oracle-table.json`) to the local command cache of the lock the
-  file belongs to (matched by device number). Every entry is validated, the whole
-  file is rejected if any entry is invalid, existing commands are never
-  overwritten (differences are reported as conflicts) and offline unlocking is
-  not switched on. The result (added / unchanged / conflicts / known) is returned
-  as the service response.
-- **Where the unlock time goes.** Every unlock attempt now records the time of
-  each phase in milliseconds (`connect_ms`, `status_ms`, `command_ms`,
-  `confirm_ms`, `teardown_ms`): establishing the Bluetooth connection (including
-  waiting for a busy adapter), the challenge answer, getting the command (cloud
-  round-trip or cache), writing it and waiting for the lock's answer, and
-  disconnecting. They are part of the unlock history event, the *Last unlock
-  attempt* sensor and the diagnostics download.
-- README (en/de): how to verify offline unlocking on your own lock, and a
-  measurement table for how long the cylinder stays free after an unlock (not
-  measured yet; the 7 s default of the display option is an assumption).
-
-### Fixed
-- **Last access sensor keeps its value across restarts.** The sensor is only
-  filled by the on-demand `welock.fetch_access_log` service, so it used to fall
-  back to `unknown` after every restart or reload of the entry. The last fetched
-  entries are now restored from the previous state. It still stays `unknown`
-  until the service has been run once (it is never polled, because a cloud login
-  ends other sessions of the account).
+  `sensor.<name>_unlocks_offline`, split into confirmed / unconfirmed / failed with the
+  average duration. They survive restarts.
+- **Unlock history.** An event entity fires one event per unlock attempt (`unlock_cloud`,
+  `unlock_offline`, `unlock_failed`), visible in the logbook, and
+  `sensor.<name>_last_unlock_attempt` keeps the last attempts. Both are also part of the
+  diagnostics download. No commands, account data or addresses are stored.
+- **Where the unlock time goes.** Every attempt records the time of each phase in
+  milliseconds (`connect_ms`, `status_ms`, `command_ms`, `confirm_ms`, `teardown_ms`) and
+  how the connection started (age of the lock's last advertisement, signal strength, number
+  of connection attempts). This tells "the lock was not heard" apart from "the adapter could
+  not connect". Retries use the newest Bluetooth device object.
+- **Import a command table.** The service `welock.import_commands` adds unlock commands from
+  a JSON table file in the Home Assistant configuration folder (default
+  `welock-oracle-table.json`) to the local command cache of the lock the file belongs to
+  (matched by device number). Every entry is validated, the whole file is rejected if any
+  entry is invalid, existing commands are never overwritten (differences are reported as
+  conflicts) and offline unlocking is not switched on. The result (added / unchanged /
+  conflicts / known) is returned as the service response.
+- **`tools/welock_bench.py`:** measures scan, connect, status and teardown against the lock
+  from a PC and rates the result, to find out whether slow unlocks are the lock, the
+  adapter or Home Assistant.
+- Tests for where the unlock command comes from (stored table or cloud) and for the
+  statistics, the import and the background teardown.
 
 ### Changed
-- **Shorter wait between two unlocks: 12 s instead of 30 s.** The knob stays engaged for 10 s (measured) and the lock takes no command meanwhile, so a short pause is enough. The default for *Show as unlocked for* is now 10 s (was 7 s).
-- **Faster unlock state.** After writing the unlock command the integration waited up
-  to 15 s for a confirmation from the lock before showing "unlocked". The lock
-  normally answers within about half a second, so the wait is now 3 s
-  (`CONFIRM_TIMEOUT`). The lock itself already opens as soon as the command is
-  written; only the displayed state is faster.
-- A stored command that fails while being written to the lock is dropped from the
-  cache, so the next unlock for that challenge value asks the cloud again.
-- README (en/de): the *Last access* sensor and the access-log service now state
-  clearly that the value is only refreshed on demand.
+- **Unlock is reported as soon as the lock confirms.** The connection is now closed in the
+  background afterwards (about 2 s in Home Assistant), so the lock shows *unlocked* sooner.
+  The Bluetooth connection stays reserved until it is closed, and the teardown time is added
+  to the unlock history afterwards.
+- **Shorter wait between two unlocks: 12 s instead of 30 s.** The knob stays engaged for 10 s
+  (measured) and the lock takes no command meanwhile, so a short pause is enough. The default
+  for *Show as unlocked for* is now 10 s (was 7 s).
+- **Faster unlock state.** After writing the unlock command the integration waited up to 15 s
+  for a confirmation from the lock before showing "unlocked". The lock normally answers within
+  about half a second, so the wait is now 3 s. The lock itself already opens as soon as the
+  command is written; only the displayed state is faster.
+- A stored command that fails while being written to the lock is dropped from the cache, so
+  the next unlock for that challenge value asks the cloud again.
+- **Release zip.** `hacs.json` now uses `zip_release`, and a workflow attaches `welock.zip`
+  to every release.
+- **Documentation.** The reverse-engineering notes in `docs/` were replaced by a short
+  description of the Bluetooth exchange and the cloud request (`docs/PROTOCOL.md`). The
+  README (en/de) states what has been verified on the lock, the measured 10 s knob window
+  and the 12 s minimum between unlocks, and how to verify offline unlocking on your own lock.
+
+### Fixed
+- **Last access sensor keeps its value across restarts.** The sensor is only filled by the
+  on-demand `welock.fetch_access_log` service, so it used to fall back to `unknown` after
+  every restart or reload of the entry. The last fetched entries are now restored from the
+  previous state. It still stays `unknown` until the service has been run once (it is never
+  polled, because a cloud login ends other sessions of the account).
+- The unlock history counts the connection attempts correctly (the first attempt was
+  missing).
 
 ## [2.2.0] - 2026-11-16
 

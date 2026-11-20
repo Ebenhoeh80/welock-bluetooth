@@ -49,9 +49,11 @@ from custom_components.welock.const import (  # noqa: E402
     RESULT_UNCONFIRMED,
 )
 from custom_components.welock.coordinator import (  # noqa: E402
+    choose_unlock_command,
     options_change_is_live,
     static_options,
 )
+from custom_components.welock.protocol import BatteryResponse  # noqa: E402
 from custom_components.welock.stats import UnlockAttempt, UnlockStats  # noqa: E402
 
 CMD_RF7 = b"U1BOFHOIOFAAAAM"
@@ -422,6 +424,85 @@ class BackgroundTeardownTests(unittest.TestCase):
         asyncio.run(stats.async_record(_attempt(PATH_OFFLINE, RESULT_CONFIRMED, 6000)))
         self.assertFalse(asyncio.run(stats.async_update_latest(old, teardown_ms=1)))
         self.assertIsNone(stats.latest.teardown_ms)
+
+
+class ChooseUnlockCommandTests(unittest.TestCase):
+    """Where the command for an unlock comes from: stored table or cloud."""
+
+    STORED = b"U1BOFHOIOFAAAAM"
+    FROM_CLOUD = b"U1CLOUDCMDXXXXX"
+    STATE = BatteryResponse(random_factor=7, battery=100)
+
+    def _cache(self, stored: bytes | None = None) -> CommandCache:
+        cache = CommandCache(MagicMock(), "entry-test")
+        cache._store = _FakeStore()
+        if stored is not None:
+            asyncio.run(cache.async_put(7, stored))
+        return cache
+
+    def _choose(self, cache: CommandCache, *, local_unlock: bool, cloud_error: bool = False):
+        calls: list[int] = []
+
+        async def request_cloud(state: BatteryResponse) -> bytes:
+            calls.append(state.random_factor)
+            if cloud_error:
+                raise RuntimeError("cloud down")
+            return self.FROM_CLOUD
+
+        async def run():
+            return await choose_unlock_command(
+                local_unlock=local_unlock,
+                cache=cache,
+                request_cloud=request_cloud,
+                state=self.STATE,
+            )
+
+        return run, calls
+
+    def test_switch_on_and_stored_command_uses_it_without_the_cloud(self) -> None:
+        run, calls = self._choose(self._cache(self.STORED), local_unlock=True)
+        self.assertEqual(asyncio.run(run()), (PATH_OFFLINE, self.STORED))
+        self.assertEqual(calls, [])
+
+    def test_switch_off_never_uses_the_stored_command(self) -> None:
+        cache = self._cache(self.STORED)
+        run, calls = self._choose(cache, local_unlock=False)
+        self.assertEqual(asyncio.run(run()), (PATH_CLOUD, self.FROM_CLOUD))
+        self.assertEqual(calls, [7])
+
+    def test_unknown_challenge_asks_the_cloud_and_learns_the_answer(self) -> None:
+        cache = self._cache()
+        run, calls = self._choose(cache, local_unlock=True)
+        self.assertEqual(asyncio.run(run()), (PATH_CLOUD, self.FROM_CLOUD))
+        self.assertEqual(calls, [7])
+        self.assertEqual(cache.get(7), self.FROM_CLOUD)
+
+    def test_shadow_filling_happens_while_the_switch_is_off(self) -> None:
+        cache = self._cache()
+        run, _ = self._choose(cache, local_unlock=False)
+        asyncio.run(run())
+        self.assertEqual(cache.get(7), self.FROM_CLOUD)
+
+    def test_damaged_stored_entry_falls_back_to_the_cloud(self) -> None:
+        cache = self._cache()
+        cache._map[7] = "not-a-command"
+        run, calls = self._choose(cache, local_unlock=True)
+        self.assertEqual(asyncio.run(run()), (PATH_CLOUD, self.FROM_CLOUD))
+        self.assertEqual(calls, [7])
+
+    def test_cloud_failure_is_raised_and_nothing_is_stored(self) -> None:
+        cache = self._cache()
+        run, _ = self._choose(cache, local_unlock=True, cloud_error=True)
+        with self.assertRaises(RuntimeError):
+            asyncio.run(run())
+        self.assertIsNone(cache.get(7))
+
+    def test_only_a_stored_command_for_this_exact_challenge_is_used(self) -> None:
+        cache = self._cache()
+        asyncio.run(cache.async_put(8, self.STORED))  # a command for another challenge
+        run, calls = self._choose(cache, local_unlock=True)
+        self.assertEqual(asyncio.run(run()), (PATH_CLOUD, self.FROM_CLOUD))
+        self.assertEqual(calls, [7])
 
 
 if __name__ == "__main__":

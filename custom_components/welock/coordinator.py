@@ -74,6 +74,34 @@ def _phase_times(report: ExchangeReport) -> dict[str, int | None]:
     }
 
 
+async def choose_unlock_command(
+    *,
+    local_unlock: bool,
+    cache: CommandCache,
+    request_cloud: Callable[[BatteryResponse], Awaitable[bytes]],
+    state: BatteryResponse,
+) -> tuple[str, bytes]:
+    """Pick the unlock command for a challenge and say where it came from.
+
+    With the offline switch on and a stored command for exactly this challenge
+    value, that command is used (no cloud request, no app logout). In every other
+    case - switch off, unknown challenge value, damaged entry - the cloud is asked,
+    and what it returns is stored (shadow filling, even while the switch is off).
+    Nothing is ever sent that was not either returned by the cloud or validated
+    when it was read back from the table.
+    """
+    if local_unlock:
+        cached = cache.get(state.random_factor)
+        if cached is not None:
+            _LOGGER.debug(
+                "Local unlock command for randomFactor=%d (cache hit)", state.random_factor
+            )
+            return PATH_OFFLINE, cached
+    command = await request_cloud(state)
+    await cache.async_put(state.random_factor, command)
+    return PATH_CLOUD, command
+
+
 def options_change_is_live(applied: Mapping[str, Any], options: Mapping[str, Any]) -> bool:
     """Return True if only the offline switch differs, so no reload is needed."""
     return static_options(options) == dict(applied)
@@ -268,27 +296,22 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         path = PATH_NONE
         random_factor: int | None = None
 
+        async def _cloud(state: BatteryResponse) -> bytes:
+            nonlocal path
+            path = PATH_CLOUD  # recorded even if the cloud request itself fails
+            return await self.api.async_request_unlock_command(
+                self.device_number, self.ble_name, state.random_factor, state.battery
+            )
+
         async def _command(state: BatteryResponse) -> bytes:
             nonlocal path, random_factor
             random_factor = state.random_factor
-            # Use a locally learned command when the feature is enabled and the
-            # challenge value is already known - no cloud round-trip, no app logout.
-            if self._local_unlock:
-                cached = self.cache.get(state.random_factor)
-                if cached is not None:
-                    _LOGGER.debug(
-                        "Local unlock command for randomFactor=%d (cache hit)",
-                        state.random_factor,
-                    )
-                    path = PATH_OFFLINE
-                    return cached
-            # Otherwise ask the cloud and always learn the result (shadow filling),
-            # so the table keeps growing even while the feature is off.
-            path = PATH_CLOUD
-            command = await self.api.async_request_unlock_command(
-                self.device_number, self.ble_name, state.random_factor, state.battery
+            path, command = await choose_unlock_command(
+                local_unlock=self._local_unlock,
+                cache=self.cache,
+                request_cloud=_cloud,
+                state=state,
             )
-            await self.cache.async_put(state.random_factor, command)
             return command
 
         error: Exception | None = None
