@@ -272,6 +272,7 @@ async def test_the_software_part_of_an_unlock_stays_small(
             await asyncio.sleep(0.01)
         await hass.async_block_till_done()
     with capsys.disabled():
-        print(f"
-unlock software overhead: median {statistics.median(samples):.1f} ms, max {max(samples):.1f} ms")
+        print(
+            f"unlock software overhead: median {statistics.median(samples):.1f} ms, max {max(samples):.1f} ms"
+        )
     assert statistics.median(samples) < 250
