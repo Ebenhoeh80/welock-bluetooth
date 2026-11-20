@@ -110,6 +110,8 @@ async def _async_import_commands(hass: HomeAssistant, call: ServiceCall) -> dict
     try:
         device_number, table = parse_command_table(data)
     except ValueError as err:
+        # The message is fixed text plus counts and challenge numbers, never a command
+        # (see parse_command_table and its test), so it may be shown to the user.
         raise ServiceValidationError(
             translation_domain=DOMAIN,
             translation_key="import_invalid_table",

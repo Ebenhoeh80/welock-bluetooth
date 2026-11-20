@@ -319,6 +319,16 @@ class ParseCommandTableTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_command_table(_table_file(**{bad_key: CMD_RF6}))
 
+    def test_error_text_never_echoes_keys_that_look_like_commands(self) -> None:
+        # A table keyed by commands instead of challenge numbers (a mix-up) is rejected without
+        # putting any of the commands into the message that is shown to the user.
+        with self.assertRaises(ValueError) as caught:
+            parse_command_table(_table_file(**{CMD_RF6: "6", CMD_RF7_STR: "7"}))
+        message = str(caught.exception)
+        self.assertNotIn(CMD_RF6[:6], message)
+        self.assertNotIn(CMD_RF7_STR[:6], message)
+        self.assertIn("2 invalid", message)
+
     def test_error_text_names_the_entry_but_never_a_command(self) -> None:
         with self.assertRaises(ValueError) as caught:
             parse_command_table(_table_file(**{"6": CMD_RF6, "7": "U1BAD"}))
