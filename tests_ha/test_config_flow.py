@@ -113,7 +113,10 @@ async def test_the_lock_in_range_is_preselected_and_a_bluetooth_error_can_be_ret
     assert result["data_schema"]({})[CONF_ADDRESS] == OTHER_ADDRESS
 
     result = await hass.config_entries.flow.async_configure(flow_id, {CONF_ADDRESS: ADDRESS})
-    for error, key in ((LockNotInRange("far"), "not_in_range"), (WeLockBleError("x"), "ble_failed")):
+    for error, key in (
+        (LockNotInRange("far"), "not_in_range"),
+        (WeLockBleError("x"), "ble_failed"),
+    ):
         with patch(EXCHANGE, side_effect=error):
             result = await hass.config_entries.flow.async_configure(flow_id, {})
         assert result["step_id"] == "verify" and result["errors"] == {"base": key}

@@ -91,7 +91,9 @@ async def _run(hass: HomeAssistant, client, **kwargs):
         return await ble.async_exchange(hass, ADDRESS, confirm_timeout=0.05, timeout=0.2, **kwargs)
 
 
-async def test_a_status_check_reads_battery_and_challenge_and_disconnects(hass: HomeAssistant) -> None:
+async def test_a_status_check_reads_battery_and_challenge_and_disconnects(
+    hass: HomeAssistant,
+) -> None:
     client = FakeClient(junk_first=True)
     report = ble.ExchangeReport()
     state = await _run(hass, client, report=report)
@@ -147,7 +149,9 @@ async def test_errors_while_closing_are_swallowed(hass: HomeAssistant) -> None:
     assert report.teardown_ms is not None
 
 
-async def test_a_lock_that_does_not_answer_raises_and_still_disconnects(hass: HomeAssistant) -> None:
+async def test_a_lock_that_does_not_answer_raises_and_still_disconnects(
+    hass: HomeAssistant,
+) -> None:
     client = FakeClient(answer_status=False)
     with pytest.raises(ble.WeLockBleError):
         await _run(hass, client)
