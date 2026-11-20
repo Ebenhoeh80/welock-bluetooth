@@ -82,7 +82,7 @@ a standing connection, not different code.
 | black | formatting (the CI and `RELEASING.md` use black; `ruff format` would change 3 further files) | pass |
 | MyPy with the real Home Assistant types | no errors | pass (19 before) |
 | pytest, unit tests (Python 3.10 to 3.13) | all pass | 128 passed, 1 skipped (live test) |
-| pytest in a real Home Assistant core | all pass | 70 passed |
+| pytest in a real Home Assistant core | all pass | 83 passed |
 | Coverage (both suites combined) | at least 95 % | 98.3 % |
 | hassfest | valid manifest, strings, quality scale | pass |
 | xenon | absolute B, modules A, average A | pass |
