@@ -133,6 +133,7 @@ async def test_a_stored_command_that_fails_to_write_is_dropped(
         from custom_components.welock.protocol import BatteryResponse
 
         await command_provider(BatteryResponse(random_factor=7, battery=80))
+        report.command_written = True
         raise WeLockBleError("write failed")
 
     with (
