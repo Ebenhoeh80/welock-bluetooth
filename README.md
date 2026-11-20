@@ -121,9 +121,19 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_unlocks_offline` | Sensor | Number of unlocks whose command came from the local cache (no cloud contact). Same attributes. |
 | `event.<name>_unlock_history` | Event | One event per unlock attempt (`unlock_cloud`, `unlock_offline`, `unlock_failed`) with path, result, duration and challenge value. Shows up in the logbook and history. |
 | `sensor.<name>_last_unlock_attempt` | Sensor (diagnostic) | Time of the last unlock attempt; attributes carry its result and the ten most recent attempts. |
+| `sensor.<name>_connection_quality` | Sensor (diagnostic) | How well Home Assistant reaches the lock: `good`, `fair`, `poor`, or `unknown` until three unlock attempts exist. Judged from the latest ten attempts (connect time, failures) and the signal strength; the attributes show the details and a suggestion (move the adapter or a Bluetooth proxy closer when the signal is weak). See [Slow or failing unlocks](#-troubleshooting). |
 | `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
 
 The exact entity IDs depend on the BLE name and the HA language.
+
+### Repairs hints and services
+
+- **Repairs issues** (Settings → System → Repairs) appear when the lock has been out of Bluetooth range
+  for more than 6 hours, when its battery is below 20 % (they clear above 25 %), and when the connection
+  is clearly poor (at least five attempts with a median connect time of 15 s or more, or two failures).
+  They clear themselves when the condition ends.
+- **`welock.clear_commands`** forgets all stored unlock commands. The table fills again from the cloud's
+  answers; until then offline unlocking has nothing to use (unless you import a table again).
 
 ---
 
@@ -279,6 +289,7 @@ command was written, which helps to compare the timing of several attempts.
 
 | Message / symptom | Cause & fix |
 | :--- | :--- |
+| *Slow or failing unlocks* | The lock advertises only about every 3 s, and a weak signal makes Home Assistant wait for more advertisements, so connecting takes 3 to 20 s or more. In tests, an adapter 20 cm from the lock connected in about 7 s on average, at 50 cm with a weak signal it took about 17 s. Move the Bluetooth adapter or an ESPHome Bluetooth proxy as close to the lock as possible (and away from metal and USB 3 ports); see the *Connection quality* sensor. `tools/welock_bench.py` measures this from a PC. |
 | *Email address or password is incorrect* | Check the WeLock app credentials. Cross-check with the [tools](#-diagnostic-tools-tools): `tools/run_cloud_login.*`. |
 | *No lock with a Bluetooth module was found in this account* | The lock is not set up in the app, or without a BLE module. |
 | *The discovered lock does not belong to this WeLock account* | Discovery found a foreign or differently assigned module. Log in with the correct account or start setup manually. |
