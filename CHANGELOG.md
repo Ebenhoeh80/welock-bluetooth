@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-20
+
 ### Added
 - **Connection quality sensor.** `sensor.<name>_connection_quality` rates how well Home Assistant
   reaches the lock (good / fair / poor, or unknown until three unlock attempts exist) from the

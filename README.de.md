@@ -118,9 +118,20 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_entsperrungen_offline` | Sensor | Anzahl der Entsperrungen, deren Befehl aus dem lokalen Cache kam (ohne Cloud-Kontakt). Gleiche Attribute. |
 | `event.<name>_entsperr_verlauf` | Event | Ein Ereignis je Entsperrversuch (`unlock_cloud`, `unlock_offline`, `unlock_failed`) mit Pfad, Ergebnis, Dauer und Challenge-Wert. Erscheint im Logbuch und im Verlauf. |
 | `sensor.<name>_letzter_entsperrversuch` | Sensor (Diagnose) | Zeitpunkt des letzten Entsperrversuchs; die Attribute enthalten Ergebnis und die zehn letzten Versuche. |
+| `sensor.<name>_verbindungsqualitat` | Sensor (Diagnose) | Wie gut Home Assistant das Schloss erreicht: `good`, `fair`, `poor` oder `unknown`, bis drei Entsperrversuche vorliegen. Beurteilt aus den letzten zehn Versuchen (Verbindungszeit, Fehlschläge) und der Signalstärke; die Attribute zeigen Details und einen Vorschlag (Adapter oder Bluetooth-Proxy näher ans Schloss, wenn das Signal schwach ist). Siehe [Langsame oder fehlschlagende Entsperrungen](#-fehlerbehebung). |
 | `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Bleibt `unbekannt`, bis der Dienst `welock.fetch_access_log` einmal ausgeführt wurde; die zuletzt abgerufenen Einträge bleiben über Neustarts erhalten. |
 
 Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
+
+### Reparatur-Hinweise und Dienste
+
+- **Reparatur-Hinweise** (Einstellungen → System → Reparaturen) erscheinen, wenn das Schloss mehr als 6 Stunden
+  außer Bluetooth-Reichweite war, wenn die Batterie unter 20 % liegt (sie verschwinden über 25 %) und wenn die
+  Verbindung deutlich schlecht ist (mindestens fünf Versuche mit einer mittleren Verbindungszeit ab 15 s oder
+  zwei Fehlschläge). Sie verschwinden von selbst, wenn die Ursache entfällt.
+- **`welock.clear_commands`** vergisst alle gespeicherten Entsperrbefehle. Die Tabelle füllt sich aus den
+  Antworten der Cloud wieder auf; bis dahin hat das Offline-Entsperren nichts zu verwenden (außer du importierst
+  eine Tabelle erneut).
 
 ---
 
@@ -285,6 +296,7 @@ wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
 
 | Meldung / Symptom | Ursache & Lösung |
 | :--- | :--- |
+| *Langsame oder fehlschlagende Entsperrungen* | Das Schloss sendet nur etwa alle 3 s, und ein schwaches Signal lässt Home Assistant auf weitere Pakete warten; das Verbinden dauert daher 3 bis 20 s oder länger. In Tests verband ein Adapter in 20 cm Abstand im Mittel in etwa 7 s, bei 50 cm mit schwachem Signal dauerte es etwa 17 s. Stelle den Bluetooth-Adapter oder einen ESPHome-Bluetooth-Proxy so nah wie möglich ans Schloss (und weg von Metall und USB-3-Anschlüssen); siehe den Sensor *Verbindungsqualität*. `tools/welock_bench.py` misst das von einem PC aus. |
 | *E-Mail-Adresse oder Passwort ist falsch* | Zugangsdaten der WeLock-App prüfen. Mit den [Tools](#-diagnose-tools-tools) gegenprüfen: `tools/run_cloud_login.*`. |
 | *In diesem Konto wurde kein Schloss mit Bluetooth-Modul gefunden* | Das Schloss ist in der App nicht oder ohne BLE-Modul eingerichtet. |
 | *Das gefundene Schloss gehört nicht zu diesem WeLock-Konto* | Die Discovery hat ein fremdes oder anders zugeordnetes Modul gefunden. Mit dem richtigen Konto anmelden oder die Einrichtung manuell starten. |
