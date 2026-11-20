@@ -53,7 +53,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 4. Abhängigkeit prüfen (bleak)
-$BleakCheck = & $PythonBin -c "import bleak" 2>$null
+# Mit "Stop" würde die Fehlerausgabe von Python (fehlendes bleak) als Abbruch gewertet,
+# statt die Installationshinweise unten anzuzeigen.
+$PrevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& $PythonBin -c "import bleak" 2>$null | Out-Null
+$BleakExit = $LASTEXITCODE
+$ErrorActionPreference = $PrevEap
+$LASTEXITCODE = $BleakExit
 if ($LASTEXITCODE -ne 0) {
     Write-Host "======================================================================" -ForegroundColor Red
     Write-Host "FEHLER: Das erforderliche Python-Paket 'bleak' ist nicht installiert!" -ForegroundColor Red
