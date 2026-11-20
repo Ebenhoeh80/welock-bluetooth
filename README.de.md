@@ -440,6 +440,19 @@ welock-bluetooth/
 
 ---
 
+## 🗺️ Roadmap & Ideen
+
+Geplant und in Prüfung — **gib dem ein 👍, was dir wichtig ist**, und bring eigene Ideen ein:
+
+- 🔜 Optionaler automatischer Abruf des Zutrittsprotokolls nach jedem Entsperren
+- 💡 Beim Ankommen vorab verbinden (kürzere Wartezeit beim Entsperren)
+- 💡 Anleitung für einen Bluetooth-Proxy an der Tür
+- ✅ Offline-Entsperren am echten Schloss verifiziert (2.3.0)
+
+➡️ Alle Ideen & Abstimmung: **[Discussions → Ideas](https://github.com/Ebenhoeh80/welock-bluetooth/discussions/categories/ideas)**
+
+---
+
 ## 📄 Lizenz
 
 Lizenziert unter der MIT-Lizenz, siehe [LICENSE](LICENSE).
@@ -450,13 +463,15 @@ Lizenziert unter der MIT-Lizenz, siehe [LICENSE](LICENSE).
 
 <div align="center">
 
-**Ich entwickle und pflege diese Integration in meiner Freizeit – und trage die laufenden Kosten aus eigener Tasche.**
+**Ich entwickle und pflege diese Integration in meiner Freizeit und trage die laufenden Kosten – meine Zeit, Strom sowie die Entwicklungswerkzeuge und IT-Ausstattung, die ich dafür nutze – aus eigener Tasche.**
 
-Wenn sie dir Zeit oder Ärger erspart, hält eine kleine freiwillige Spende das Projekt am Leben und motiviert zu neuen Funktionen.
-Jeder Beitrag, egal wie klein, freut mich riesig. Vielen Dank! 🙏
+Wenn sie dir Zeit oder Ärger erspart, hilft eine kleine freiwillige Spende, das Projekt am Laufen zu halten. Jeder Beitrag, egal wie klein, freut mich riesig. Vielen Dank! 🙏
 
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
   <img src="https://img.shields.io/badge/Spendier%20mir%20einen%20Kaffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Spenden via PayPal" height="42">
+</a>
+<a href="https://buymeacoffee.com/daneben">
+  <img src="https://img.shields.io/badge/%E2%98%95%20Spendier%20mir%20einen%20Kaffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
 </a>
 
 </div>
