@@ -54,7 +54,9 @@ rules:
 
   # --- Gold ---
   devices: done
-  diagnostics: done
+  diagnostics:
+    status: done
+    comment: Title, unique id, lock number, Bluetooth address, account and password are redacted, the runtime state is an allowlist, and commands and challenge values are never exported; a test searches the whole output for every identifier.
   discovery: done
   discovery-update-info:
     status: exempt

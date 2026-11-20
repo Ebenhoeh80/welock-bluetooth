@@ -3,7 +3,7 @@
 This page records how the integration works, where its time goes, what can fail and how it
 recovers, what is checked automatically, and which options were rejected and why. Numbers are
 measured, with date and method; where something was not measured, it says so.
-Last updated: 2026-11-20 (version 2.5.0).
+Last updated: 2026-11-21 (version 2.6.0).
 
 ## 1. Architecture and data flow
 
@@ -79,14 +79,16 @@ a standing connection, not different code.
 | Judge | Gate | Result 2026-11-20 |
 |---|---|---|
 | Ruff (E, W, F, I, B, C4, UP) | no findings | pass; extended rules (SIM, RET, PL, C901, ANN): 0 findings |
-| black | formatting | pass |
+| black | formatting (the CI and `RELEASING.md` use black; `ruff format` would change 3 further files) | pass |
 | MyPy with the real Home Assistant types | no errors | pass (19 before) |
-| pytest, unit tests (Python 3.10 to 3.13) | all pass | 125 passed, 1 skipped (live test) |
+| pytest, unit tests (Python 3.10 to 3.13) | all pass | 128 passed, 1 skipped (live test) |
 | pytest in a real Home Assistant core | all pass | 70 passed |
 | Coverage (both suites combined) | at least 95 % | 98.3 % |
 | hassfest | valid manifest, strings, quality scale | pass |
 | xenon | absolute B, modules A, average A | pass |
 | CodeQL (security-and-quality) | no new alerts | pass; one rule switched off for the MD5 protocol hashing (`.github/codeql/codeql-config.yml`) |
+| Diagnostics | the whole JSON contains no account, title, lock number, address, command | pass (test searches every identifier) |
+| Supply chain (CI) | `contents: read`, actions pinned to SHAs, test package pinned | pass; hassfest and hacs/action deliberately stay on their documented references |
 | Home Assistant Quality Scale | `quality_scale.yaml` | Gold; only Platinum `strict-typing` open |
 
 Not run: SonarQube, Semgrep (not available on the development machine), py-spy and Scalene (the
@@ -112,3 +114,4 @@ numbers above come from the integration's own phase times and a benchmark with a
 
 - Platinum rule `strict-typing`.
 - Field test of every release candidate at the lock (unlock several times, offline and cloud). 2.5.0-rc.1 was tested on 2026-11-20 and released as 2.5.0.
+- 2.6.0 has not been tried at the lock yet. It changes nothing on the unlock path, but each recorded attempt now also carries the scanner label: after the update, check that an unlock is still recorded in the history and in the diagnostics.
