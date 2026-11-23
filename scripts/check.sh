@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the same checks as the CI job "lint-and-test" (plus mypy from "ha-tests") locally.
+# Runs a local subset of the CI checks (the HA job needs Home Assistant and Python 3.14).
 # Usage: scripts/check.sh      (from any folder; uses .venv if there is one)
 set -u
 cd "$(dirname "$0")/.."
@@ -35,7 +35,7 @@ if "$PY" -m mypy --version >/dev/null 2>&1 && "$PY" -c "import homeassistant" >/
 else
   echo; echo "== mypy: needs mypy and Home Assistant (its types) in this environment, skipped; the CI runs it"
 fi
-step "unit tests (tests/)" "$PY" -m unittest discover -s tests
+step "pytest (unit tests, -m not live)" "$PY" -m pytest -m "not live"
 
 echo
 echo "NOTE: tests_ha/ (the integration inside a real Home Assistant core, job 'ha-tests') needs"

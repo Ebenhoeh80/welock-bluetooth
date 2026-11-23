@@ -99,6 +99,14 @@ class CommandCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(cache.get(7), CMD_RF7)
         self.assertEqual(cache.count, 1)  # "zz" invalid, 999 out of range
 
+    async def test_load_ignores_a_damaged_commands_container(self) -> None:
+        """A damaged storage shape must not prevent the lock from setting up."""
+        for commands in (["garbage"], "junk", 42, None):
+            with self.subTest(commands=commands):
+                cache = _make_cache({"commands": commands})
+                await cache.async_load()
+                self.assertEqual(cache.count, 0)
+
     async def test_get_discards_corrupt_entry(self) -> None:
         cache = _make_cache()
         await cache.async_load()

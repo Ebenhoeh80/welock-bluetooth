@@ -196,7 +196,11 @@ def _async_heal_title(hass: HomeAssistant, entry: WeLockConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: WeLockConfigEntry) -> bool:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        # Issues from older versions were created without a config entry link.
+        clear_issues(hass, entry.entry_id)
+    return unloaded
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

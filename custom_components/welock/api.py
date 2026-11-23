@@ -343,7 +343,7 @@ class WeLockApiClient:
         if not isinstance(token, str) or not token:
             raise InvalidAuth("No access_token in login response")
         self._access_token = token
-        _LOGGER.debug("Logged in to WeLock Cloud as %s", self._username)
+        _LOGGER.debug("Logged in to WeLock Cloud")
 
     async def _authorized(self, path: str, form: dict[str, str]) -> Any:
         """Log in, send one request and drop the token again.

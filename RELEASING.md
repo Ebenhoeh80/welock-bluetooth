@@ -9,24 +9,25 @@ feature the minor version, a fix the patch version.
 1. Check that everything meant for the release is merged to `main` and CI is green.
 2. In `CHANGELOG.md`, rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD` and start a new empty
    `[Unreleased]` section above it. The section's text becomes the release notes.
-3. Set the new version in `custom_components/welock/manifest.json`, `pyproject.toml` and `tests/test_manifest.py` (it asserts the version).
+3. Set the new version in `custom_components/welock/manifest.json`, `pyproject.toml` and `EXPECTED_VERSION` in `tests/test_manifest.py`. The tests assert that all three agree and that `CHANGELOG.md` has a matching, non-empty section.
 
 ## 2. Check locally
 
-`scripts/check.sh` (or `powershell -File scripts\check.ps1` on Windows) runs the same steps as the CI.
-The Home Assistant tests (`tests_ha/`, job `ha-tests`) run only in the CI or in WSL. Or by hand:
+`scripts/check.sh` (or `powershell -File scripts\check.ps1` on Windows) runs a local subset of the CI steps.
+The Home Assistant tests (`tests_ha/`, job `ha-tests`, coverage gate and mypy) run only in the CI or in a Python 3.14 environment with Home Assistant; xenon and mypy are optional locally. Or by hand:
 
 ```bash
-python -m ruff check custom_components tests tools
+python -m ruff check custom_components tests tools tests_ha
 python -m black --check custom_components tests tests_ha tools
-python -m pytest tests
+python -m pytest -m "not live"
 ```
-The tests run without Home Assistant (it is stubbed). The Home Assistant wiring (entities, options, the unlock path) is checked on a live system after the release; see step 7.
+The unit tests run without Home Assistant (it is stubbed). The Home Assistant wiring (entities, options, the unlock path) is checked on a live system after the release; see step 7.
 
 ## 3. Pull request
 
-Open a pull request with the changelog and version change, wait for the CI checks
-(`lint-and-test` (Python 3.10 to 3.13), `Hassfest validation` and the HACS `validate` job) and squash-merge it.
+Open a pull request with the changelog and version change, wait for **all** CI checks
+(`CI` with `lint-and-test` for Python 3.10–3.13, `ha-tests` with coverage ≥ 95 % and mypy,
+`Hassfest validation`, HACS `validate` and CodeQL `analyze`) and squash-merge it.
 
 ## 4. Tag
 

@@ -30,12 +30,14 @@ class FakeClient:
         junk_first: bool = False,
         fail_stop: bool = False,
         fail_disconnect: bool = False,
+        hang_disconnect: bool = False,
     ) -> None:
         self.answer_status = answer_status
         self.confirm = confirm
         self.junk_first = junk_first
         self.fail_stop = fail_stop
         self.fail_disconnect = fail_disconnect
+        self.hang_disconnect = hang_disconnect
         self.callback = None
         self.written: list[bytes] = []
         self.stopped = False
@@ -60,6 +62,8 @@ class FakeClient:
         self.stopped = True
 
     async def disconnect(self) -> None:
+        if self.hang_disconnect:
+            await asyncio.Event().wait()  # a proxy that never answers the disconnect
         if self.fail_disconnect:
             raise BleakError("disconnect failed")
         self.disconnected = True
@@ -143,6 +147,17 @@ async def test_the_teardown_can_be_handed_to_the_caller(hass: HomeAssistant) -> 
     assert len(handed) == 1 and not client.disconnected
     await handed[0]
     assert client.disconnected
+
+
+async def test_a_hanging_disconnect_cannot_hold_the_lock_slot(hass: HomeAssistant) -> None:
+    """A disconnect that never returns must be bounded, or every later unlock is 'lock_busy'."""
+    client = FakeClient(hang_disconnect=True)
+    report = ble.ExchangeReport()
+    with patch.object(ble, "TEARDOWN_TIMEOUT", 0.05):
+        await asyncio.wait_for(_run(hass, client, report=report), 1)
+    assert client.stopped
+    assert not client.disconnected  # the hanging call was cancelled
+    assert report.teardown_ms is not None
 
 
 async def test_errors_while_closing_are_swallowed(hass: HomeAssistant) -> None:

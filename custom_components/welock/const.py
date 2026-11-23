@@ -31,6 +31,8 @@ BLE_TIMEOUT: Final = 15.0  # seconds to wait for the lock's status answer
 # half a second (seen in the app's Bluetooth trace). Waiting longer only delays
 # the unlocked state in Home Assistant when no answer comes.
 CONFIRM_TIMEOUT: Final = 3.0  # seconds to wait for that confirmation
+# Closing a BLE connection must never hold the single per-lock slot forever.
+TEARDOWN_TIMEOUT: Final = 5.0  # seconds each for stop_notify() and disconnect()
 
 # Local offline command cache (rf -> command). The cloud unlock command depends
 # only on the one-byte randomFactor of the BLE challenge, so there are at most

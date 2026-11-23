@@ -1,4 +1,4 @@
-# Runs the same checks as the CI job "lint-and-test" (plus mypy from "ha-tests") locally.
+# Runs a local subset of the CI checks (the HA job needs Home Assistant and Python 3.14).
 # Usage: powershell -File scripts\check.ps1      (from any folder; uses .venv if there is one)
 $ErrorActionPreference = "Continue"
 Set-Location (Join-Path $PSScriptRoot "..")
@@ -33,7 +33,7 @@ if ((Test-Module "mypy") -and $haInstalled) {
 } else {
     Write-Host ""; Write-Host "== mypy: needs mypy and Home Assistant (its types) in this environment, skipped; the CI runs it"
 }
-Invoke-Step "unit tests (tests/)" @("-m", "unittest", "discover", "-s", "tests")
+Invoke-Step "pytest (unit tests, -m not live)" @("-m", "pytest", "-m", "not live")
 
 Write-Host ""
 Write-Host "NOTE: tests_ha/ (the integration inside a real Home Assistant core, job 'ha-tests') needs"
