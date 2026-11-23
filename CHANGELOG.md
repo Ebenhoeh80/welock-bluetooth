@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-11-23
+
+Patch release. The unlock command path, entity IDs, entry identity and learned command table are unchanged.
+
+### Fixed
+- **A stuck Bluetooth disconnect can no longer block the lock.** Closing the connection is time-limited (5 s per step). Before, a proxy that never answered a disconnect left the single per-lock slot reserved, so later unlocks were refused as `lock_busy` and battery reads were skipped.
+- **A failed teardown handoff releases the slot again.** When Home Assistant cannot schedule the background task that closes the connection, the connection is closed synchronously and the BLE lock is released. Before, the slot stayed busy until the entry was reloaded.
+- **Damaged command storage no longer prevents setup.** A `commands` value of the wrong shape (list, string, number) is ignored during load instead of raising an `AttributeError` and failing the whole entry.
+- **Repairs issues disappear on unload.** They are explicitly cleared when the entry is unloaded, so they no longer describe a lock that is no longer loaded.
+- **The WeLock account is no longer written to debug logs** during cloud login. Diagnostics already redact it.
+
+### Added
+- **Release consistency checks:** the tests now fail when the manifest version, `pyproject.toml` and `EXPECTED_VERSION` disagree or when `CHANGELOG.md` has no non-empty section for the version. `RELEASING.md` lists all CI gates.
+- **Regression tests** for the bounded teardown, the failed handoff, damaged storage, issue cleanup on unload and the login log.
+
+### Changed
+- `scripts/check.sh` and `scripts/check.ps1` now use the same pytest command as CI (`-m "not live"`) and describe themselves as a local subset of the CI checks.
+
 ## [2.6.0] - 2026-11-21
 
 Maintenance release. The unlock path, the command cache, the identity of the entry, entity IDs and

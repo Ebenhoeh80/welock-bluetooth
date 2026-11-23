@@ -83,6 +83,14 @@ async def test_an_unlock_command_is_requested_with_a_fresh_login() -> None:
     assert client.username == "user@example.com"
 
 
+async def test_login_log_does_not_contain_the_account(caplog: pytest.LogCaptureFixture) -> None:
+    """A shared debug log must not reveal the WeLock account (diagnostics redact it too)."""
+    client, _ = _client({ENDPOINT_AUTH: FakeResponse(payload=LOGIN_OK)}, user="private@example.com")
+    with caplog.at_level("DEBUG"):
+        await client.async_authenticate()
+    assert "private@example.com" not in caplog.text
+
+
 async def test_the_device_list_and_access_log_are_parsed() -> None:
     client, _ = _client(
         {

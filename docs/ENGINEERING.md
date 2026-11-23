@@ -3,7 +3,7 @@
 This page records how the integration works, where its time goes, what can fail and how it
 recovers, what is checked automatically, and which options were rejected and why. Numbers are
 measured, with date and method; where something was not measured, it says so.
-Last updated: 2026-11-21 (version 2.6.0).
+Last updated: 2026-11-23 (version 2.6.1).
 
 ## 1. Architecture and data flow
 
@@ -53,7 +53,9 @@ Last updated: 2026-11-21 (version 2.6.0).
 | Wrong/changed password | `InvalidAuth` | re-authentication flow starts |
 | Stored command fails while being written | could fail again | the command is dropped, the next attempt asks the cloud |
 | Exchange returns no status (internal) | possible uninitialised variable (found by CodeQL) | now handled explicitly as a failed attempt |
-| Damaged storage | wrong numbers | tolerant loading ignores damaged parts |
+| Damaged storage | wrong numbers | tolerant loading ignores damaged parts, including a `commands` value of the wrong shape |
+| Bluetooth disconnect never returns | the single per-lock slot stays reserved, later unlocks are refused | `TEARDOWN_TIMEOUT` bounds `stop_notify()` and `disconnect()` to 5 s each |
+| Background teardown cannot be scheduled | connection stays open and the slot stays busy | the handoff flag is set only after scheduling; on failure the connection is closed and the lock released here |
 
 ## 4. Where the time goes (measured)
 
@@ -74,16 +76,19 @@ The connection time does not follow the age of the lock's last advertisement (6.
 time of about 2 s therefore needs a shorter radio path (an ESP32 Bluetooth proxy close to the lock) or
 a standing connection, not different code.
 
-## 5. Quality gates (all run in CI)
+## 5. Quality gates
 
-| Judge | Gate | Result 2026-11-20 |
+The gates below are enforced in CI unless a row says *manual*; manual rows are measurements, not
+blocking checks.
+
+| Judge | Gate | Result 2026-11-23 |
 |---|---|---|
-| Ruff (E, W, F, I, B, C4, UP) | no findings | pass; extended rules (SIM, RET, PL, C901, ANN): 0 findings |
+| Ruff (E, W, F, I, B, C4, UP) | no findings | pass; extended rules (SIM, RET, PL, C901, ANN) are *manual* and not configured in `pyproject.toml` (201 findings with the current tool version, deliberately not enabled) |
 | black | formatting (the CI and `RELEASING.md` use black; `ruff format` would change 3 further files) | pass |
-| MyPy with the real Home Assistant types | no errors | pass (19 before) |
-| pytest, unit tests (Python 3.10 to 3.13) | all pass | 128 passed, 1 skipped (live test) |
-| pytest in a real Home Assistant core | all pass | 83 passed |
-| Coverage (both suites combined) | at least 95 % | 98.3 % |
+| MyPy with the real Home Assistant types | no errors | pass (19 source files checked) |
+| pytest, unit tests (Python 3.10 to 3.13) | all pass | 131 passed, 1 deselected (live test, `-m "not live"`) |
+| pytest in a real Home Assistant core | all pass | 87 passed |
+| Coverage (both suites combined) | at least 95 % | 98.46 % |
 | hassfest | valid manifest, strings, quality scale | pass |
 | xenon | absolute B, modules A, average A | pass |
 | CodeQL (security-and-quality) | no new alerts | pass; one rule switched off for the MD5 protocol hashing (`.github/codeql/codeql-config.yml`) |

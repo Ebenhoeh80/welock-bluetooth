@@ -87,6 +87,22 @@ async def test_unlock_through_the_cloud_is_recorded_and_learned(
     assert coordinator.stats.latest.teardown_ms == 30
 
 
+async def test_a_failed_teardown_handoff_does_not_leave_the_lock_busy(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    fake_lock: FakeLock,
+    cloud_command: MagicMock,
+) -> None:
+    """If the background task cannot be scheduled, the lock slot must be released."""
+    coordinator = await _setup(hass, config_entry)
+    with (
+        patch.object(hass, "async_create_background_task", side_effect=RuntimeError("shutdown")),
+        pytest.raises(RuntimeError),
+    ):
+        await _unlock(hass, settle=False)
+    assert not coordinator._ble_lock.locked()
+
+
 async def test_offline_switch_uses_the_stored_command_without_the_cloud(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,
@@ -165,6 +181,22 @@ async def test_low_battery_raises_a_repairs_issue(
     assert issue is not None
     assert issue.translation_key == "battery_low"
     assert issue.is_fixable is False
+
+
+async def test_repairs_issue_is_cleared_on_unload(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    fake_lock: FakeLock,
+    cloud_command: MagicMock,
+) -> None:
+    await _setup(hass, config_entry)
+    fake_lock.battery = 10
+    await _unlock(hass)
+    issue_id = f"battery_low_{config_entry.entry_id}"
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+    assert await hass.config_entries.async_unload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
 
 
 async def test_clear_commands_forgets_the_table(

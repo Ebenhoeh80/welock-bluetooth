@@ -19,7 +19,7 @@ from bleak_retry_connector import BleakClientWithServiceCache, establish_connect
 from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant
 
-from .const import BLE_TIMEOUT, CONFIRM_TIMEOUT
+from .const import BLE_TIMEOUT, CONFIRM_TIMEOUT, TEARDOWN_TIMEOUT
 from .protocol import (
     BATTERY_REQUEST,
     NOTIFY_UUID,
@@ -281,8 +281,8 @@ async def _async_teardown(
     started = time.monotonic()
     # A failure to close must never mask the real exchange exception.
     with contextlib.suppress(BleakError, asyncio.TimeoutError, OSError):
-        await client.stop_notify(NOTIFY_UUID)
+        await asyncio.wait_for(client.stop_notify(NOTIFY_UUID), TEARDOWN_TIMEOUT)
     with contextlib.suppress(BleakError, asyncio.TimeoutError, OSError):
-        await client.disconnect()
+        await asyncio.wait_for(client.disconnect(), TEARDOWN_TIMEOUT)
     if report is not None:
         report.teardown_ms = _elapsed_ms(started)

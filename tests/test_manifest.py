@@ -1,8 +1,13 @@
 """Unit tests for Home Assistant and HACS manifests."""
 
 import json
+import re
 import unittest
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+# Bump this together with the manifest, pyproject.toml and the changelog (RELEASING.md).
+EXPECTED_VERSION = "2.6.1"
 
 
 class TestManifests(unittest.TestCase):
@@ -25,6 +30,33 @@ class TestManifests(unittest.TestCase):
         self.assertIn("bleak-retry-connector>=3.1.0", data.get("requirements", []))
         self.assertIn("bluetooth_adapters", data.get("dependencies", []))
         self.assertTrue(any(m.get("local_name") == "WeLock*" for m in data.get("bluetooth", [])))
+
+    def test_versions_agree(self) -> None:
+        """Manifest, pyproject and the expected release version must be the same."""
+        manifest = json.loads(
+            (ROOT / "custom_components/welock/manifest.json").read_text(encoding="utf-8")
+        )
+        pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        match = re.search(r'^version = "([^"]+)"$', pyproject, re.MULTILINE)
+        self.assertIsNotNone(match, "pyproject.toml must declare a project version")
+        assert match is not None  # for the type checker
+        self.assertEqual(match.group(1), EXPECTED_VERSION)
+        self.assertEqual(manifest.get("version"), EXPECTED_VERSION)
+
+    def test_changelog_has_section_for_this_version(self) -> None:
+        """A release without a changelog section would publish empty release notes."""
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        heading = re.compile(
+            rf"^## \[{re.escape(EXPECTED_VERSION)}\] - \d{{4}}-\d{{2}}-\d{{2}}\s*$",
+            re.MULTILINE,
+        )
+        found = heading.search(changelog)
+        self.assertIsNotNone(found, f"CHANGELOG.md needs a section for {EXPECTED_VERSION}")
+        assert found is not None  # for the type checker
+        rest = changelog[found.end() :]
+        next_heading = re.search(r"^## ", rest, re.MULTILINE)
+        section = rest[: next_heading.start()] if next_heading else rest
+        self.assertTrue(section.strip(), f"The {EXPECTED_VERSION} section must not be empty")
 
     def test_hacs_manifest(self) -> None:
         """Validate hacs.json fields."""

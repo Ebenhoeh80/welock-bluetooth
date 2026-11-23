@@ -241,7 +241,17 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ):
                 self.async_update_listeners()
 
-        task = self.hass.async_create_background_task(_run(), f"welock teardown {self.address}")
+        run = _run()
+        try:
+            task = self.hass.async_create_background_task(run, f"welock teardown {self.address}")
+        except Exception:
+            # Nothing will await either coroutine now; close both so Python does
+            # not warn and the connection is not left half-open. The caller
+            # releases the BLE lock.
+            run.close()
+            if asyncio.iscoroutine(teardown):
+                teardown.close()
+            raise
         self._teardown_tasks.add(task)
         task.add_done_callback(self._teardown_tasks.discard)
 
@@ -352,8 +362,10 @@ class WeLockCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         def _hand_off(teardown: Awaitable[None]) -> None:
             nonlocal handed_off
-            handed_off = True
             self._run_teardown_in_background(teardown, report, recorded)
+            # Only after the task was scheduled: if scheduling fails, the caller
+            # must close the connection and release the BLE lock itself.
+            handed_off = True
 
         await self._ble_lock.acquire()
         try:

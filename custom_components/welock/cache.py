@@ -16,6 +16,7 @@ not a self-generated payload - and it is re-validated before every use.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -105,13 +106,15 @@ class CommandCache:
         data = await self._store.async_load()
         table: dict[int, str] = {}
         if isinstance(data, dict):
-            for key, value in (data.get("commands") or {}).items():
-                try:
-                    rf = int(key)
-                except (TypeError, ValueError):
-                    continue
-                if 0 <= rf <= 255 and self._is_valid_hex(value):
-                    table[rf] = value
+            commands = data.get("commands")
+            if isinstance(commands, Mapping):
+                for key, value in commands.items():
+                    try:
+                        rf = int(key)
+                    except (TypeError, ValueError):
+                        continue
+                    if 0 <= rf <= 255 and self._is_valid_hex(value):
+                        table[rf] = value
         self._map = table
         self._loaded = True
         _LOGGER.debug("Loaded %d/%d learned unlock commands", len(table), COMMAND_SPACE)
