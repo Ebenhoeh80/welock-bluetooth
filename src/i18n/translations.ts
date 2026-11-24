@@ -147,7 +147,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
     },
 
     downloadZip: 'Integration als ZIP herunterladen',
-    downloadZipSub: 'Direkt in config/custom_components/welock entpacken',
+    downloadZipSub: 'Direkt in config/custom_components/welock_ble entpacken',
     copyRepoUrl: 'Repository-URL kopieren',
     copied: 'Kopiert!',
     openGithub: 'GitHub Repository',
@@ -162,7 +162,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
 
     explorer: {
       title: 'Integrations-Dateistruktur',
-      subtitle: 'Alle Python-, JSON- und Markdown-Komponenten für custom_components/welock',
+      subtitle: 'Alle Python-, JSON- und Markdown-Komponenten für custom_components/welock_ble',
       fileTree: 'Dateibaum',
       copyFile: 'Code kopieren',
       copiedFile: 'Code in Zwischenablage kopiert!',
@@ -268,7 +268,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
     },
 
     downloadZip: 'Download Integration (.ZIP)',
-    downloadZipSub: 'Extract directly into config/custom_components/welock',
+    downloadZipSub: 'Extract directly into config/custom_components/welock_ble',
     copyRepoUrl: 'Copy Repository URL',
     copied: 'Copied!',
     openGithub: 'GitHub Repository',
@@ -283,7 +283,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
 
     explorer: {
       title: 'Integration File Structure',
-      subtitle: 'All Python, JSON, and Markdown files for custom_components/welock',
+      subtitle: 'All Python, JSON, and Markdown files for custom_components/welock_ble',
       fileTree: 'File Tree',
       copyFile: 'Copy Code',
       copiedFile: 'Code copied to clipboard!',
@@ -389,7 +389,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
     },
 
     downloadZip: 'Descargar Integración (.ZIP)',
-    downloadZipSub: 'Descomprimir en config/custom_components/welock',
+    downloadZipSub: 'Descomprimir en config/custom_components/welock_ble',
     copyRepoUrl: 'Copiar URL del Repositorio',
     copied: '¡Copiado!',
     openGithub: 'Repositorio GitHub',
@@ -404,7 +404,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
 
     explorer: {
       title: 'Estructura de Archivos de la Integración',
-      subtitle: 'Todos los archivos Python, JSON y Markdown para custom_components/welock',
+      subtitle: 'Todos los archivos Python, JSON y Markdown para custom_components/welock_ble',
       fileTree: 'Árbol de archivos',
       copyFile: 'Copiar código',
       copiedFile: '¡Código copiado al portapapeles!',
@@ -510,7 +510,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
     },
 
     downloadZip: 'Télécharger l’intégration (.ZIP)',
-    downloadZipSub: 'À extraire dans config/custom_components/welock',
+    downloadZipSub: 'À extraire dans config/custom_components/welock_ble',
     copyRepoUrl: 'Copier l’URL du dépôt',
     copied: 'Copié !',
     openGithub: 'Dépôt GitHub',
@@ -525,7 +525,7 @@ export const TRANSLATIONS: Record<Language, TranslationDict> = {
 
     explorer: {
       title: 'Arborescence des fichiers de l’intégration',
-      subtitle: 'Tous les fichiers Python, JSON et Markdown pour custom_components/welock',
+      subtitle: 'Tous les fichiers Python, JSON et Markdown pour custom_components/welock_ble',
       fileTree: 'Arborescence',
       copyFile: 'Copier le code',
       copiedFile: 'Code copié dans le presse-papiers !',

@@ -2,7 +2,7 @@
 
 from typing import Final
 
-DOMAIN: Final = "welock"
+DOMAIN: Final = "welock_ble"
 
 # Config entry data keys
 CONF_USERNAME: Final = "username"
@@ -36,9 +36,9 @@ TEARDOWN_TIMEOUT: Final = 5.0  # seconds each for stop_notify() and disconnect()
 
 # Local offline command cache (rf -> command). The cloud unlock command depends
 # only on the one-byte randomFactor of the BLE challenge, so there are at most
-# 256 distinct commands per lock. They are learned from the cloud during normal
-# use and persisted per config entry; battery and devicePassword do not change
-# the command.
+# 256 distinct commands per lock. They are learned from the cloud while the
+# offline-unlock switch is on (or imported explicitly) and persisted per config
+# entry; battery and devicePassword do not change the command.
 COMMAND_SPACE: Final = 256  # number of possible randomFactor values (0..255)
 STORAGE_VERSION: Final = 1
 
@@ -64,7 +64,7 @@ ENDPOINT_DEVICES: Final = "/Device/GetDevices"
 ENDPOINT_UNLOCK: Final = "/Command/UnLock"
 # Read-only access log (who opened the lock, when and how). Each read requires a
 # cloud login, which ends other sessions of the account (e.g. the WeLock app),
-# so it is fetched only on demand via the welock.fetch_access_log service.
+# so it is fetched only on demand via the welock_ble.fetch_access_log service.
 ENDPOINT_UNLOCK_RECORD: Final = "/device/GetUnlockRecord"
 
 # Service names

@@ -12,4 +12,4 @@ jobs:
   release:
     uses: Ebenhoeh80/.github/.github/workflows/release-zip.yml@027a1a4938327366197450ddc9d3bfc785e0fea2 # v1
     with:
-      domain: welock
+      domain: welock_ble

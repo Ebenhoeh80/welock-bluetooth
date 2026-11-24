@@ -27,7 +27,7 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.api import (  # noqa: E402
+from custom_components.welock_ble.api import (  # noqa: E402
     CannotConnect,
     InvalidAuth,
     LockUnavailable,
@@ -39,7 +39,7 @@ from custom_components.welock.api import (  # noqa: E402
     parse_envelope,
     parse_unlock_command,
 )
-from custom_components.welock.protocol import (  # noqa: E402
+from custom_components.welock_ble.protocol import (  # noqa: E402
     BATTERY_REQUEST,
     format_mac,
     parse_battery_response,

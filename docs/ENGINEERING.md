@@ -8,7 +8,7 @@ Last updated: 2026-11-23 (version 2.6.1).
 ## 1. Architecture and data flow
 
 ```
- Home Assistant                         integration "welock"                       outside
+ Home Assistant                       integration "welock_ble"                       outside
  ───────────────                        ──────────────────────                     ───────
  lock.unlock  ─────────────►  lock.py ──► coordinator.async_unlock()
  switch / options ─────────►  switch.py   │  _ensure_unlock_possible()  (12 s interval, busy lock)
@@ -21,6 +21,9 @@ Last updated: 2026-11-23 (version 2.6.1).
                               choose_unlock_command()  ──► cache (256 learned commands) ──► offline
                                           └──────────────► api.WeLockApiClient ───────────► cloud (HTTPS)
 ```
+
+`choose_unlock_command()` learns a cloud answer only while the offline-unlock switch is on;
+with the switch off it returns the cloud command without writing to the cache.
 
 - **Coordinator** (`coordinator.py`) is the only place with state: presence/RSSI poll every 60 s (reads
   Home Assistant's Bluetooth cache, no radio traffic), battery read over BLE every 24 h, unlock

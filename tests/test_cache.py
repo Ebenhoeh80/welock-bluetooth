@@ -30,7 +30,7 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.cache import CommandCache  # noqa: E402
+from custom_components.welock_ble.cache import CommandCache  # noqa: E402
 
 # Real commands harvested from the test lock (randomFactor -> 15-byte U1 command).
 CMD_RF7 = b"U1BOFHOIOFAAAAM"

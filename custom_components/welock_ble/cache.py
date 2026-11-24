@@ -6,11 +6,13 @@ the real lock showed the command is a deterministic function of the single
 ``devicePassword`` do not change it. There are therefore at most 256 distinct
 commands per lock.
 
-This cache stores each command the cloud returns under its ``randomFactor``. Over
-normal use the table fills itself up; once a value is known, the integration can
-build the very same command locally without a cloud round-trip. A cached command
-is byte-identical to what the cloud would return - it is a stored real command,
-not a self-generated payload - and it is re-validated before every use.
+With the offline-unlock switch on, this cache stores each command the cloud
+returns under its ``randomFactor``. Over time the table fills up; once a value is
+known, the integration can use the very same command locally without a cloud
+round-trip. A cached command is byte-identical to what the cloud would return -
+it is a stored real command, not a self-generated payload - and it is re-validated
+before every use. While the switch is off, cloud answers are not learned: the
+table can only grow through this switch or an explicit import.
 """
 
 from __future__ import annotations

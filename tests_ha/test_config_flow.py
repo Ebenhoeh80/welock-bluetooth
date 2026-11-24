@@ -12,15 +12,15 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.selector import TextSelector, TextSelectorType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.welock.api import (
+from custom_components.welock_ble.api import (
     CannotConnect,
     InvalidAuth,
     WeLockApiError,
     WeLockBleModule,
     WeLockDevice,
 )
-from custom_components.welock.ble import LockNotInRange, WeLockBleError
-from custom_components.welock.const import (
+from custom_components.welock_ble.ble import LockNotInRange, WeLockBleError
+from custom_components.welock_ble.const import (
     CONF_ADDRESS,
     CONF_BLE_NAME,
     CONF_DEVICE_NUMBER,
@@ -28,13 +28,13 @@ from custom_components.welock.const import (
     CONF_USERNAME,
     DOMAIN,
 )
-from custom_components.welock.protocol import BatteryResponse
+from custom_components.welock_ble.protocol import BatteryResponse
 
 from .conftest import ADDRESS, DEVICE_NUMBER
 
-LOGIN = "custom_components.welock.config_flow._async_login_and_list"
-EXCHANGE = "custom_components.welock.config_flow.async_exchange"
-IN_RANGE = "custom_components.welock.config_flow.lock_in_range"
+LOGIN = "custom_components.welock_ble.config_flow._async_login_and_list"
+EXCHANGE = "custom_components.welock_ble.config_flow.async_exchange"
+IN_RANGE = "custom_components.welock_ble.config_flow.lock_in_range"
 OTHER_ADDRESS = "AA:BB:CC:DD:EE:01"
 
 
@@ -92,7 +92,7 @@ async def test_the_full_setup_creates_an_entry(hass: HomeAssistant) -> None:
 
     with (
         patch(EXCHANGE, return_value=BatteryResponse(random_factor=1, battery=80)),
-        patch("custom_components.welock.async_setup_entry", return_value=True),
+        patch("custom_components.welock_ble.async_setup_entry", return_value=True),
     ):
         result = await hass.config_entries.flow.async_configure(flow_id, {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -217,7 +217,7 @@ async def test_reauthentication_stores_the_new_password(
     assert result["step_id"] == "reauth_confirm"
     with (
         patch(LOGIN, return_value=_account(ADDRESS)),
-        patch("custom_components.welock.async_setup_entry", return_value=True),
+        patch("custom_components.welock_ble.async_setup_entry", return_value=True),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_PASSWORD: "new-password"}
@@ -254,7 +254,7 @@ async def test_the_options_can_be_changed(
     config_entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     assert result["step_id"] == "init"
-    with patch("custom_components.welock.async_setup_entry", return_value=True):
+    with patch("custom_components.welock_ble.async_setup_entry", return_value=True):
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             {

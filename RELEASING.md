@@ -9,7 +9,7 @@ feature the minor version, a fix the patch version.
 1. Check that everything meant for the release is merged to `main` and CI is green.
 2. In `CHANGELOG.md`, rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD` and start a new empty
    `[Unreleased]` section above it. The section's text becomes the release notes.
-3. Set the new version in `custom_components/welock/manifest.json`, `pyproject.toml` and `EXPECTED_VERSION` in `tests/test_manifest.py`. The tests assert that all three agree and that `CHANGELOG.md` has a matching, non-empty section.
+3. Set the new version in `custom_components/welock_ble/manifest.json`, `pyproject.toml` and `EXPECTED_VERSION` in `tests/test_manifest.py`. The tests assert that all three agree and that `CHANGELOG.md` has a matching, non-empty section.
 
 ## 2. Check locally
 
@@ -46,13 +46,13 @@ pre-release (set the same suffix in the manifest version).
 
 The tag starts `.github/workflows/release-zip.yml`, which calls the shared workflow in
 [`Ebenhoeh80/.github`](https://github.com/Ebenhoeh80/.github). It checks that the tag matches the
-manifest version, builds `welock.zip` (integration files at the zip root, as HACS expects with
+manifest version, builds `welock_ble.zip` (integration files at the zip root, as HACS expects with
 `zip_release`), and creates or updates the GitHub release with the matching changelog section and
 the zip attached. If the tag and the version differ, the workflow fails and nothing is published.
 
 ## 6. Verify the release
 
-- The release page shows the changelog text and the `welock.zip` asset.
+- The release page shows the changelog text and the `welock_ble.zip` asset.
 - HACS offers the new version (use *Update information* on the repository if it is slow).
 
 ## 7. Update and check a live system

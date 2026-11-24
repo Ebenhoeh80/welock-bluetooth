@@ -39,11 +39,12 @@ The status request alone does **not** unlock; it is also used to read the batter
   number, the device name, the challenge value and the battery level. A cloud login
   ends other sessions of the same account, so the WeLock app is logged out.
 - **Local command table (optional, learned, verified on a single lock):** the command depends only on
-  the one-byte challenge value, so there are at most 256 different commands.
-  Commands that the cloud has returned are stored, and a table can be imported.
-  With the *Offline unlock* switch on, a stored command for the current challenge
-  value is used and no cloud request is made. If writing a stored command fails,
-  it is dropped from the table and the next attempt asks the cloud again.
+  the one-byte challenge value, so there are at most 256 different commands. With
+  the *Offline unlock* switch on, commands returned by the cloud are stored and a
+  stored command for the current challenge value is used without a cloud request;
+  a table can also be imported explicitly. With the switch off, nothing is learned
+  or stored. If writing a stored command fails, it is dropped from the table and
+  the next attempt asks the cloud again.
 
 ## Timing
 

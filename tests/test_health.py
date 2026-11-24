@@ -26,10 +26,10 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock import health  # noqa: E402
-from custom_components.welock import issues as issues_module  # noqa: E402
-from custom_components.welock.issues import WeLockIssues  # noqa: E402
-from custom_components.welock.stats import UnlockAttempt  # noqa: E402
+from custom_components.welock_ble import health  # noqa: E402
+from custom_components.welock_ble import issues as issues_module  # noqa: E402
+from custom_components.welock_ble.issues import WeLockIssues  # noqa: E402
+from custom_components.welock_ble.stats import UnlockAttempt  # noqa: E402
 
 
 def _attempt(connect_ms: int | None = 3000, result: str = "confirmed") -> UnlockAttempt:

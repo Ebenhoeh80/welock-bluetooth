@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "welock-tools"
-version = "2.6.1"
+version = "3.0.0"
 description = "Tools and Home Assistant integration suite for WeLock smart locks"
 readme = "README.md"
 authors = [{ name = "Daniel Ebenhöh" }]
@@ -64,5 +64,5 @@ warn_unused_ignores = true
 # Home Assistant's own type hints for schemas name a newer schema library than voluptuous, which
 # the integrations (and Home Assistant itself) still use at run time.
 [[tool.mypy.overrides]]
-module = ["welock", "welock.config_flow"]
+module = ["welock_ble", "welock_ble.config_flow"]
 disable_error_code = ["arg-type"]

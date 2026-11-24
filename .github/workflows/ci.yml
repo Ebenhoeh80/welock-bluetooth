@@ -72,10 +72,10 @@ jobs:
 
       - name: Run Home Assistant tests
         run: |
-          pytest -c tests_ha/pytest.ini tests_ha --cov=custom_components/welock
-          pytest tests -o asyncio_mode=auto -p no:cacheprovider --cov=custom_components/welock --cov-append --cov-report=term-missing --cov-fail-under=95
+          pytest -c tests_ha/pytest.ini tests_ha --cov=custom_components/welock_ble
+          pytest tests -o asyncio_mode=auto -p no:cacheprovider --cov=custom_components/welock_ble --cov-append --cov-report=term-missing --cov-fail-under=95
 
       - name: Type check (mypy, with the real Home Assistant types)
         run: |
           pip install mypy
-          mypy custom_components/welock
+          mypy custom_components/welock_ble

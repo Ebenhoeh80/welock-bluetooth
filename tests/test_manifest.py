@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 # Bump this together with the manifest, pyproject.toml and the changelog (RELEASING.md).
-EXPECTED_VERSION = "2.6.1"
+EXPECTED_VERSION = "3.0.0"
 
 
 class TestManifests(unittest.TestCase):
@@ -15,13 +15,15 @@ class TestManifests(unittest.TestCase):
 
     def test_custom_components_manifest(self) -> None:
         """Validate manifest.json fields."""
-        manifest_path = Path("custom_components/welock/manifest.json")
-        self.assertTrue(manifest_path.exists(), "custom_components/welock/manifest.json must exist")
+        manifest_path = Path("custom_components/welock_ble/manifest.json")
+        self.assertTrue(
+            manifest_path.exists(), "custom_components/welock_ble/manifest.json must exist"
+        )
 
         with manifest_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.assertEqual(data.get("domain"), "welock")
+        self.assertEqual(data.get("domain"), "welock_ble")
         self.assertEqual(data.get("name"), "WeLock Smart Lock BLE")
         self.assertTrue(data.get("config_flow"))
         self.assertIn("@Ebenhoeh80", data.get("codeowners", []))
@@ -34,7 +36,7 @@ class TestManifests(unittest.TestCase):
     def test_versions_agree(self) -> None:
         """Manifest, pyproject and the expected release version must be the same."""
         manifest = json.loads(
-            (ROOT / "custom_components/welock/manifest.json").read_text(encoding="utf-8")
+            (ROOT / "custom_components/welock_ble/manifest.json").read_text(encoding="utf-8")
         )
         pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         match = re.search(r'^version = "([^"]+)"$', pyproject, re.MULTILINE)

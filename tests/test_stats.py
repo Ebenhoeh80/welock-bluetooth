@@ -31,16 +31,16 @@ for mod in [
 ]:
     sys.modules.setdefault(mod, MagicMock())
 
-from custom_components.welock.ble import (  # noqa: E402
+from custom_components.welock_ble.ble import (  # noqa: E402
     ExchangeReport,
     _async_teardown,
     scanner_label,
 )
-from custom_components.welock.cache import (  # noqa: E402
+from custom_components.welock_ble.cache import (  # noqa: E402
     CommandCache,
     parse_command_table,
 )
-from custom_components.welock.const import (  # noqa: E402
+from custom_components.welock_ble.const import (  # noqa: E402
     BLE_TIMEOUT,
     CONF_LOCAL_UNLOCK,
     CONFIRM_TIMEOUT,
@@ -52,13 +52,13 @@ from custom_components.welock.const import (  # noqa: E402
     RESULT_FAILED,
     RESULT_UNCONFIRMED,
 )
-from custom_components.welock.coordinator import (  # noqa: E402
+from custom_components.welock_ble.coordinator import (  # noqa: E402
     choose_unlock_command,
     options_change_is_live,
     static_options,
 )
-from custom_components.welock.protocol import BatteryResponse  # noqa: E402
-from custom_components.welock.stats import UnlockAttempt, UnlockStats  # noqa: E402
+from custom_components.welock_ble.protocol import BatteryResponse  # noqa: E402
+from custom_components.welock_ble.stats import UnlockAttempt, UnlockStats  # noqa: E402
 
 CMD_RF7 = b"U1BOFHOIOFAAAAM"
 
@@ -539,11 +539,12 @@ class ChooseUnlockCommandTests(unittest.TestCase):
         self.assertEqual(calls, [7])
         self.assertEqual(cache.get(7), self.FROM_CLOUD)
 
-    def test_shadow_filling_happens_while_the_switch_is_off(self) -> None:
+    def test_switch_off_does_not_learn_the_cloud_answer(self) -> None:
         cache = self._cache()
         run, _ = self._choose(cache, local_unlock=False)
         asyncio.run(run())
-        self.assertEqual(cache.get(7), self.FROM_CLOUD)
+        self.assertIsNone(cache.get(7))
+        self.assertEqual(cache.count, 0)
 
     def test_damaged_stored_entry_falls_back_to_the_cloud(self) -> None:
         cache = self._cache()

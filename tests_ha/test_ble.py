@@ -10,8 +10,8 @@ import pytest
 from bleak.exc import BleakError
 from homeassistant.core import HomeAssistant
 
-from custom_components.welock import ble
-from custom_components.welock.protocol import BATTERY_REQUEST, WRITE_UUID
+from custom_components.welock_ble import ble
+from custom_components.welock_ble.protocol import BATTERY_REQUEST, WRITE_UUID
 
 from .conftest import ADDRESS
 

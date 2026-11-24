@@ -12,7 +12,7 @@
 
 Suite für **WeLock Smart Door Locks** (z. B. Touch41, SECBN51, PCB41, SECBREBL01):
 
-1. 🏠 **Home Assistant HACS Integration** (`custom_components/welock`): Entriegeln per Bluetooth über den Home-Assistant-Bluetooth-Stack (lokaler Adapter oder ESPHome-Bluetooth-Proxy). Die WeLock-Cloud liefert dabei nur den einmaligen Entriegelungsbefehl. Mit geführter Einrichtung, Bluetooth-Discovery, Akku-, Signal- und Erreichbarkeitssensoren.
+1. 🏠 **Home Assistant HACS Integration** (`custom_components/welock_ble`): Entriegeln per Bluetooth über den Home-Assistant-Bluetooth-Stack (lokaler Adapter oder ESPHome-Bluetooth-Proxy). Die WeLock-Cloud liefert dabei nur den einmaligen Entriegelungsbefehl. Mit geführter Einrichtung, Bluetooth-Discovery, Akku-, Signal- und Erreichbarkeitssensoren.
 2. 🔬 **BLE & Cloud Diagnose-Tools** ([`tools/`](tools/README.md)): Python-Werkzeuge für BLE-Suche, Akkustand/Challenge, GATT-Inspektion, Cloud-Login und Entriegelungstests.
 
 ---
@@ -82,8 +82,14 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
 
 ### Manuell
 1. Neuestes [Release](https://github.com/Ebenhoeh80/welock-bluetooth/releases) herunterladen.
-2. Ordner `custom_components/welock` nach `/config/custom_components/welock/` kopieren.
+2. Ordner `custom_components/welock_ble` nach `/config/custom_components/welock_ble/` kopieren.
 3. Home Assistant neu starten.
+
+> ⚠️ **Upgrade von 2.x:** Die Integration heißt jetzt `welock_ble` statt `welock`, damit sie die
+> Cloud-/WIFIBOX-WeLock-Integration in HACS nicht mehr überschreibt. Entferne den alten
+> Integrationseintrag (und den alten Ordner `custom_components/welock`) und richte **WeLock Smart
+> Lock BLE** neu ein. Entitäts-IDs und Dienste beginnen jetzt mit `welock_ble`; eine bisher gelernte
+> Befehlstabelle muss bei Bedarf mit `welock_ble.import_commands` erneut importiert werden.
 
 ---
 
@@ -112,14 +118,14 @@ Nach Schritt 3 legt HA das Gerät mit allen Entitäten an.
 | `sensor.<name>_batterie` | Sensor (Diagnose) | Akkustand in %, direkt vom Schloss gelesen. |
 | `sensor.<name>_signalstarke` | Sensor (Diagnose, standardmäßig deaktiviert) | RSSI der letzten Bluetooth-Advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_erreichbar` | Binärsensor (Diagnose) | An, solange ein verbindungsfähiger Adapter oder Proxy das Schloss sieht. |
-| `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock). |
+| `sensor.<name>_gelernte_offline_befehle` | Sensor (Diagnose, standardmäßig deaktiviert) | Anzahl der lokal gelernten Entriegelungsbefehle (von 256) samt Abdeckung. Es wird nur gelernt, solange Offline-Entsperren aktiv ist oder eine Tabelle importiert wird. Siehe [Lokaler Offline-Unlock](#-lokaler-offline-unlock). |
 | `switch.<name>_offline_entsperren` | Schalter (Konfiguration) | Schaltet das [Offline-Entsperren](#-lokaler-offline-unlock) mit sofortiger Wirkung ein oder aus; die Einstellung bleibt über Neustarts erhalten. Standardmäßig aus. |
 | `sensor.<name>_entsperrungen_uber_die_cloud` | Sensor | Anzahl der Entsperrungen, deren Befehl von der WeLock-Cloud kam. Attribute: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
 | `sensor.<name>_entsperrungen_offline` | Sensor | Anzahl der Entsperrungen, deren Befehl aus dem lokalen Cache kam (ohne Cloud-Kontakt). Gleiche Attribute. |
 | `event.<name>_entsperr_verlauf` | Event | Ein Ereignis je Entsperrversuch (`unlock_cloud`, `unlock_offline`, `unlock_failed`) mit Pfad, Ergebnis, Dauer und Challenge-Wert. Erscheint im Logbuch und im Verlauf. |
 | `sensor.<name>_letzter_entsperrversuch` | Sensor (Diagnose) | Zeitpunkt des letzten Entsperrversuchs; die Attribute enthalten Ergebnis und die zehn letzten Versuche. |
 | `sensor.<name>_verbindungsqualitat` | Sensor (Diagnose) | Wie gut Home Assistant das Schloss erreicht: `good`, `fair`, `poor` oder `unknown`, bis drei Entsperrversuche vorliegen. Beurteilt aus den letzten zehn Versuchen (Verbindungszeit, Fehlschläge) und der Signalstärke; die Attribute zeigen Details und einen Vorschlag (Adapter oder Bluetooth-Proxy näher ans Schloss, wenn das Signal schwach ist). Siehe [Langsame oder fehlschlagende Entsperrungen](#-fehlerbehebung). |
-| `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Bleibt `unbekannt`, bis der Dienst `welock.fetch_access_log` einmal ausgeführt wurde; die zuletzt abgerufenen Einträge bleiben über Neustarts erhalten. |
+| `sensor.<name>_letzter_zugriff` | Sensor (Diagnose, standardmäßig deaktiviert) | Letzter Eintrag des Zutrittsprotokolls (wer, wann, wie). Bleibt `unbekannt`, bis der Dienst `welock_ble.fetch_access_log` einmal ausgeführt wurde; die zuletzt abgerufenen Einträge bleiben über Neustarts erhalten. |
 
 Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
@@ -129,9 +135,9 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
   außer Bluetooth-Reichweite war, wenn die Batterie unter 20 % liegt (sie verschwinden über 25 %) und wenn die
   Verbindung deutlich schlecht ist (mindestens fünf Versuche mit einer mittleren Verbindungszeit ab 15 s oder
   zwei Fehlschläge). Sie verschwinden von selbst, wenn die Ursache entfällt.
-- **`welock.clear_commands`** vergisst alle gespeicherten Entsperrbefehle. Die Tabelle füllt sich aus den
-  Antworten der Cloud wieder auf; bis dahin hat das Offline-Entsperren nichts zu verwenden (außer du importierst
-  eine Tabelle erneut).
+- **`welock_ble.clear_commands`** vergisst alle gespeicherten Entsperrbefehle. Die Tabelle füllt sich aus den
+  Antworten der Cloud wieder auf, solange Offline-Entsperren aktiv ist (oder nach einem erneuten Import); bis
+  dahin hat das Offline-Entsperren nichts zu verwenden.
 
 ---
 
@@ -152,12 +158,15 @@ Die genauen Entity-IDs hängen vom BLE-Namen und von der HA-Sprache ab.
 
 Der Cloud-Entriegelungsbefehl hängt **allein vom `randomFactor`-Byte** der
 BLE-Challenge ab (nicht von Akkustand oder BLE-Schlüssel). Es gibt daher höchstens
-**256 verschiedene Befehle** pro Schloss. Die Integration **lernt** jeden von der
-Cloud gelieferten Befehl und speichert ihn pro Konfigurationseintrag.
+**256 verschiedene Befehle** pro Schloss. Solange die Option Offline-Entsperren
+aktiv ist, **lernt** die Integration jeden von der Cloud gelieferten Befehl und
+speichert ihn pro Konfigurationseintrag. Bei ausgeschalteter Option wird nichts
+gelernt oder gespeichert.
 
-* Die Tabelle füllt sich **im normalen Betrieb von selbst** – auch wenn die Option
-  aus ist (die Cloud wird dann weiter genutzt, aber jeder Befehl mitgelernt). Der
-  Sensor *Gelernte Offline-Befehle* zeigt den Fortschritt (x/256).
+* Die Tabelle füllt sich **nur bei aktiver Option** (oder durch einen expliziten
+  Import). Offline-Entsperrungen brauchen dann keine Cloud-Anfrage; unbekannte
+  Werte gehen weiter an die Cloud und werden aus der Antwort gelernt. Der Sensor
+  *Gelernte Offline-Befehle* zeigt den Fortschritt (x/256).
 * Mit aktivierter Option wird ein **bekannter** Challenge-Wert **lokal ohne
   Cloud-Login** beantwortet – schneller und ohne Abmeldung der WeLock-App.
 * Ein gespeicherter Befehl ist **byte-identisch** zu dem, den die Cloud liefern
@@ -214,11 +223,12 @@ an das Schloss.
 Um zu prüfen (und zu dokumentieren), dass das Offline-Entsperren wirklich
 funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
 
-1. Lass die Tabelle sich füllen (normaler Betrieb bei **ausgeschaltetem**
-   Schalter) oder prüfe `learned_commands` am Schalter.
-2. Schalte den Schalter **ein**. Entsperre die Tür mehrmals im Abstand von
-   mindestens 12 s und notiere jedes Mal per Augenschein, ob der Zylinder wirklich
-   freigegeben hat.
+1. Schalte den Schalter **ein** und prüfe `learned_commands` am Schalter. Jede
+   Cloud-Antwort auf einen unbekannten Challenge-Wert wird jetzt gelernt, sodass
+   sich die Tabelle mit der Zeit füllt. Du kannst auch eine Tabelle importieren
+   (siehe oben).
+2. Entsperre die Tür mehrmals im Abstand von mindestens 12 s und notiere jedes Mal
+   per Augenschein, ob der Zylinder wirklich freigegeben hat.
 3. Vergleiche *Entsperrungen offline* mit deinen Notizen: `confirmed` +
    `unconfirmed` ist das, was dem Schloss gesendet wurde, dein Augenschein ist die
    Wahrheit. Noch nicht gespeicherte Challenge-Werte beantwortet die Cloud; sie
@@ -227,7 +237,7 @@ funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
    Assistant (oder den WeLock-Cloud-Host) und wiederhole Schritt 2.
    Offline-Entsperrungen werden weiter gezählt; `unlock_failed`-Ereignisse mit
    `path: cloud` zeigen, dass die Cloud nicht erreichbar war.
-5. Optional danach `welock.fetch_access_log` ausführen. Das eigene Protokoll des
+5. Optional danach `welock_ble.fetch_access_log` ausführen. Das eigene Protokoll des
    Schlosses sollte dieselben Entsperrungen auflisten (das meldet die WeLock-App
    einmal ab).
 
@@ -245,7 +255,7 @@ funktioniert, führe eine Serie von Entsperrungen durch und lies die Zähler:
 
 ## 📜 Zutrittsprotokoll (Dienst)
 
-Der Dienst **`welock.fetch_access_log`** holt das Zutrittsprotokoll (wer, wann,
+Der Dienst **`welock_ble.fetch_access_log`** holt das Zutrittsprotokoll (wer, wann,
 mit welcher Methode) aus der Cloud und schreibt es in den Sensor *Letzter
 Zugriff* (Attribute inkl. der letzten Einträge).
 
@@ -309,7 +319,7 @@ wann der Befehl geschrieben wurde; das hilft beim Vergleich mehrerer Versuche.
 ```yaml
 logger:
   logs:
-    custom_components.welock: debug
+    custom_components.welock_ble: debug
 ```
 Die **Diagnosedaten** (Gerät → Diagnose herunterladen) enthalten weder Konto noch Passwort.
 
@@ -467,7 +477,7 @@ Einrichtung, Optionen und Entitäten sind lokalisiert: 🇩🇪 Deutsch · 🇬�
 
 ```text
 welock-bluetooth/
-├── custom_components/welock/      # Home Assistant HACS Integration
+├── custom_components/welock_ble/      # Home Assistant HACS Integration
 │   ├── __init__.py                # Setup/Unload
 │   ├── manifest.json              # Manifest inkl. Bluetooth-Matcher "WeLock*"
 │   ├── config_flow.py             # Einrichtung: Discovery → Login → Auswahl → BLE-Prüfung; Reauth; Optionen

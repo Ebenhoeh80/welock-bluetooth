@@ -31,8 +31,8 @@ What the integration stores and who could misuse it:
 | Asset | Where it is | Risk | What to do |
 | ----- | ----------- | ---- | ---------- |
 | WeLock account (user name, password) | Home Assistant config entry in `.storage` | Whoever can read the configuration or a backup can log in to the WeLock cloud as you. | Protect access to Home Assistant; use a password that is not used elsewhere. |
-| **Learned unlock commands** (up to 256, one per challenge value) | `.storage` (`welock.<entry id>.commands`), and therefore in every **backup** of Home Assistant | A command opens the lock whenever the lock presents the challenge value it belongs to. With a full table every challenge can be answered. | Encrypt your backups and keep them off shared storage; use the `welock.clear_commands` service before giving a backup or the storage folder away. |
-| Import file `welock-oracle-table.json` (default name of the `welock.import_commands` service) | Home Assistant configuration folder | The file contains the commands in plain text. | **Delete the file right after the import** (it is not needed afterwards) and do not copy it into backups or repositories. |
+| **Learned unlock commands** (up to 256, one per challenge value) | `.storage` (`welock_ble.<entry id>.commands`), and therefore in every **backup** of Home Assistant | A command opens the lock whenever the lock presents the challenge value it belongs to. With a full table every challenge can be answered. | Encrypt your backups and keep them off shared storage; use the `welock_ble.clear_commands` service before giving a backup or the storage folder away. |
+| Import file `welock-oracle-table.json` (default name of the `welock_ble.import_commands` service) | Home Assistant configuration folder | The file contains the commands in plain text. | **Delete the file right after the import** (it is not needed afterwards) and do not copy it into backups or repositories. |
 | Diagnostics download | Created on request | Contains no account data, no addresses, no lock number, no title, no commands, no challenge values. | Still check the file before sharing it. |
 
 Combined risk: anyone who holds a copy of the command table **and** is within Bluetooth range of the lock (a few metres) can open it. The commands are not a way to open the lock from afar; they need a Bluetooth connection to the lock. Each stored command is only ever written for exactly the challenge value of the current connection, which the lock presents anew for every connection (see [docs/PROTOCOL.md](docs/PROTOCOL.md)); the table is therefore as sensitive as a key that is limited to radio range.
@@ -40,7 +40,7 @@ Combined risk: anyone who holds a copy of the command table **and** is within Bl
 Recommendations:
 
 - Turn on backup encryption in Home Assistant and keep the encryption key separately.
-- Leave *Offline unlock* off (default) if you do not need it; the table is still learned along the way, so use the `welock.clear_commands` service if you want to remove it.
+- Leave *Offline unlock* off (default) if you do not need it: with the switch off the cloud answers are not learned, so no command table is built. Explicit imports and previously stored tables remain; use the `welock_ble.clear_commands` service to remove them.
 - Do not share Home Assistant backups, the `.storage` folder or the import file in issues or forums.
 
 ## Reporting a Vulnerability

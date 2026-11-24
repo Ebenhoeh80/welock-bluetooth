@@ -22,7 +22,7 @@ sys.modules.setdefault("homeassistant.components.bluetooth", MagicMock())
 from homeassistant.core import HomeAssistant  # noqa: E402
 from pytest_homeassistant_custom_component.common import MockConfigEntry  # noqa: E402
 
-from custom_components.welock.const import (  # noqa: E402
+from custom_components.welock_ble.const import (  # noqa: E402
     CONF_ADDRESS,
     CONF_BLE_NAME,
     CONF_DEVICE_NUMBER,
@@ -31,7 +31,7 @@ from custom_components.welock.const import (  # noqa: E402
     CONF_USERNAME,
     DOMAIN,
 )
-from custom_components.welock.protocol import BatteryResponse  # noqa: E402
+from custom_components.welock_ble.protocol import BatteryResponse  # noqa: E402
 
 ADDRESS = "C4:43:4A:03:42:A9"
 DEVICE_NUMBER = "22231059"
@@ -92,8 +92,8 @@ class FakeLock:
         confirm_timeout: float = 3.0,
         teardown_runner: Callable[[Any], None] | None = None,
     ) -> BatteryResponse:
-        """Same contract as ``custom_components.welock.ble.async_exchange``."""
-        from custom_components.welock.ble import WeLockBleError
+        """Same contract as ``custom_components.welock_ble.ble.async_exchange``."""
+        from custom_components.welock_ble.ble import WeLockBleError
 
         if self.fail_to_connect:
             if report is not None:
@@ -129,13 +129,13 @@ def fake_lock() -> Iterator[FakeLock]:
     info = MagicMock()
     info.rssi = -70
     with (
-        patch("custom_components.welock.coordinator.async_exchange", lock.exchange),
+        patch("custom_components.welock_ble.coordinator.async_exchange", lock.exchange),
         patch(
-            "custom_components.welock.coordinator.bluetooth.async_last_service_info",
+            "custom_components.welock_ble.coordinator.bluetooth.async_last_service_info",
             return_value=info,
         ),
         patch(
-            "custom_components.welock.coordinator.bluetooth.async_address_present",
+            "custom_components.welock_ble.coordinator.bluetooth.async_address_present",
             return_value=True,
         ),
     ):
@@ -146,7 +146,7 @@ def fake_lock() -> Iterator[FakeLock]:
 def cloud_command() -> Iterator[MagicMock]:
     """Patch the cloud request for an unlock command."""
     with patch(
-        "custom_components.welock.api.WeLockApiClient.async_request_unlock_command",
+        "custom_components.welock_ble.api.WeLockApiClient.async_request_unlock_command",
         return_value=CLOUD_COMMAND,
     ) as mock:
         yield mock

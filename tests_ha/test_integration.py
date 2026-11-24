@@ -14,9 +14,9 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.welock.const import DOMAIN
-from custom_components.welock.coordinator import WeLockCoordinator
-from custom_components.welock.diagnostics import async_get_config_entry_diagnostics
+from custom_components.welock_ble.const import DOMAIN
+from custom_components.welock_ble.coordinator import WeLockCoordinator
+from custom_components.welock_ble.diagnostics import async_get_config_entry_diagnostics
 
 from .conftest import ADDRESS, CLOUD_COMMAND, DEVICE_NUMBER, STORED_COMMAND, FakeLock
 
@@ -74,6 +74,7 @@ async def test_unlock_through_the_cloud_is_recorded_and_learned(
     cloud_command: MagicMock,
 ) -> None:
     coordinator = await _setup(hass, config_entry)
+    await coordinator.async_set_local_unlock(True)  # commands are learned only while it is on
     await _unlock(hass, settle=False)
 
     # Reported as soon as the lock confirms; the connection is still being closed.
@@ -141,6 +142,7 @@ async def test_switch_off_ignores_the_stored_command(
     await _unlock(hass)
     assert fake_lock.commands_written == [CLOUD_COMMAND]
     cloud_command.assert_called_once()
+    assert coordinator.cache.get(7) == STORED_COMMAND  # the cloud answer is not learned
 
 
 async def test_a_second_unlock_is_held_back_for_a_moment(
@@ -206,6 +208,7 @@ async def test_clear_commands_forgets_the_table(
     cloud_command: MagicMock,
 ) -> None:
     coordinator = await _setup(hass, config_entry)
+    await coordinator.async_set_local_unlock(True)  # commands are learned only while it is on
     await _unlock(hass)
     assert coordinator.cache.count == 1
     await hass.services.async_call(DOMAIN, "clear_commands", {}, blocking=True)
@@ -342,7 +345,7 @@ async def test_a_title_chosen_by_the_user_stays(
 
 
 def test_the_generated_titles_are_recognised() -> None:
-    from custom_components.welock.identity import is_generated_title, lock_title
+    from custom_components.welock_ble.identity import is_generated_title, lock_title
 
     assert lock_title("22231059") == "WeLock (22231059)"
     for title in ("WeLockFMHAE", "WeLock", "WeLock (22231059)"):

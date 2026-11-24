@@ -85,7 +85,11 @@ class WeLockSignalSensor(WeLockEntity, SensorEntity):
 
 
 class WeLockLearnedCommandsSensor(WeLockEntity, SensorEntity):
-    """How many of the 256 offline unlock commands have been learned so far."""
+    """How many of the 256 offline unlock commands have been learned so far.
+
+    Commands are learned only while the offline-unlock switch is on (or when a
+    table is imported explicitly); with the switch off the count stays unchanged.
+    """
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "commands"
@@ -119,7 +123,7 @@ class WeLockLastAccessSensor(WeLockEntity, RestoreEntity, SensorEntity):
     The state is the time of the latest entry; attributes carry who opened the
     lock and how, plus the most recent entries. The log is never polled (the
     cloud login ends other sessions of the account), so the sensor stays empty
-    until the ``welock.fetch_access_log`` service is used. The last fetched
+    until the ``welock_ble.fetch_access_log`` service is used. The last fetched
     entries are restored after a restart or reload, so the value is not lost.
     Disabled by default.
     """
