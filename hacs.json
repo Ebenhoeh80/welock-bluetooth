@@ -3,5 +3,5 @@
   "render_readme": true,
   "homeassistant": "2024.11.0",
   "zip_release": true,
-  "filename": "welock.zip"
+  "filename": "welock_ble.zip"
 }

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-24
+
+Breaking release for the HACS default-repository review. The unlock protocol itself is unchanged.
+
+### Changed
+- **Integration domain is now `welock_ble`** (was `welock`). The `welock` domain belongs to the cloud/WIFIBOX integration already in the HACS catalog; both installed into `custom_components/welock` and overwrote each other. The install folder, manifest domain, services (`welock_ble.fetch_access_log`, `welock_ble.import_commands`, `welock_ble.clear_commands`), device identifier, diagnostics, entity IDs and release zip (`welock_ble.zip`) follow the new domain. Existing installations must remove the old integration and add it again; re-import a command table if you used one.
+- **Unlock commands are learned only while Offline unlock is on.** Previously every cloud answer was written to the table even with the switch off (up to 256 commands per lock in `.storage` and in every backup). With the switch off the cloud is still asked, but nothing is stored; an explicit table import is unaffected. README (en/de), SECURITY.md, protocol/engineering notes, tool docs, option/service texts and all four translations were updated.
+- The HACS submission and the release workflow now use the new domain and zip asset name.
+
+### Added
+- Regression tests for "no learning with the switch off", both in the unit tests and in the real Home Assistant core tests.
+
 ## [2.6.1] - 2026-11-23
 
 Patch release. The unlock command path, entity IDs, entry identity and learned command table are unchanged.

@@ -8,7 +8,7 @@ from typing import Any
 import aiohttp
 import pytest
 
-from custom_components.welock.api import (
+from custom_components.welock_ble.api import (
     ENDPOINT_AUTH,
     ENDPOINT_DEVICES,
     ENDPOINT_UNLOCK,

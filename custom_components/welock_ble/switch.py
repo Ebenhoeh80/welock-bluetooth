@@ -29,9 +29,10 @@ class WeLockOfflineUnlockSwitch(WeLockEntity, SwitchEntity):
     """Use locally learned unlock commands instead of asking the cloud.
 
     On: when the lock's challenge value is already known, the stored command is
-    sent without a cloud round-trip. Off: every unlock asks the cloud (the table
-    keeps learning). The switch takes effect immediately and is remembered across
-    restarts; it is the same setting as the option in the integration's dialog.
+    sent without a cloud round-trip, and unknown values are learned from the
+    cloud's answer. Off: every unlock asks the cloud and nothing is stored. The
+    switch takes effect immediately and is remembered across restarts; it is the
+    same setting as the option in the integration's dialog.
     """
 
     _attr_entity_category = EntityCategory.CONFIG

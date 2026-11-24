@@ -23,7 +23,7 @@ Thank you for your interest in improving this project! We welcome contributions,
 - **Python Code**: Format with `black` and lint with `ruff`.
 - **Type Annotations**: Provide complete type annotations for all new functions and classes.
 - **Home Assistant Standards**: Follow the [Home Assistant Integration Quality Scale](https://developers.home-assistant.io/docs/integration_quality_scale_index).
-- **Localization**: If you add new strings to `strings.json`, update the translations in `custom_components/welock/translations/` (`de.json`, `en.json`, `es.json`, `fr.json`).
+- **Localization**: If you add new strings to `strings.json`, update the translations in `custom_components/welock_ble/translations/` (`de.json`, `en.json`, `es.json`, `fr.json`).
 
 ## Pull Request Guidelines
 

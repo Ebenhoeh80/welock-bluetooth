@@ -13,7 +13,7 @@
 
 A suite for **WeLock smart door locks** (e.g. Touch41, SECBN51, PCB41, SECBREBL01):
 
-1. 🏠 **Home Assistant HACS integration** (`custom_components/welock`): unlock over Bluetooth through the Home Assistant Bluetooth stack (a local adapter or an ESPHome Bluetooth proxy). The WeLock cloud only supplies the single-use unlock command. Includes a guided setup, Bluetooth discovery, and battery, signal and reachability sensors.
+1. 🏠 **Home Assistant HACS integration** (`custom_components/welock_ble`): unlock over Bluetooth through the Home Assistant Bluetooth stack (a local adapter or an ESPHome Bluetooth proxy). The WeLock cloud only supplies the single-use unlock command. Includes a guided setup, Bluetooth discovery, and battery, signal and reachability sensors.
 2. 🔬 **BLE & cloud diagnostic tools** ([`tools/`](tools/README.md)): Python utilities for BLE scanning, battery/challenge reads, GATT inspection, cloud login and unlock tests.
 
 ---
@@ -85,8 +85,14 @@ Home Assistant                          Lock (BLE)                 WeLock cloud
 
 ### Manually
 1. Download the latest [release](https://github.com/Ebenhoeh80/welock-bluetooth/releases).
-2. Copy the folder `custom_components/welock` to `/config/custom_components/welock/`.
+2. Copy the folder `custom_components/welock_ble` to `/config/custom_components/welock_ble/`.
 3. Restart Home Assistant.
+
+> ⚠️ **Upgrading from 2.x:** the integration domain changed from `welock` to `welock_ble` so it no
+> longer overwrites the cloud/WIFIBOX WeLock integration in HACS. Remove the old integration entry
+> (and the old `custom_components/welock` folder), then add **WeLock Smart Lock BLE** again. Entity
+> IDs and services now start with `welock_ble`; a previously learned command table must be imported
+> again with `welock_ble.import_commands` if you want to keep using offline unlock.
 
 ---
 
@@ -115,14 +121,14 @@ After step 3, HA creates the device with all entities.
 | `sensor.<name>_battery` | Sensor (diagnostic) | Battery level in %, read directly from the lock. |
 | `sensor.<name>_signal_strength` | Sensor (diagnostic, disabled by default) | RSSI of the latest Bluetooth advertisements in dBm. |
 | `binary_sensor.<name>_bluetooth_reachable` | Binary sensor (diagnostic) | On while a connectable adapter or proxy sees the lock. |
-| `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. See [Local offline unlock](#-local-offline-unlock). |
+| `sensor.<name>_learned_offline_commands` | Sensor (diagnostic, disabled by default) | Number of locally learned unlock commands (out of 256) plus coverage. Commands are learned only while offline unlocking is on or a table is imported. See [Local offline unlock](#-local-offline-unlock). |
 | `switch.<name>_offline_unlock` | Switch (configuration) | Turns [offline unlocking](#-local-offline-unlock) on or off with immediate effect; the setting is remembered across restarts. Off by default. |
 | `sensor.<name>_unlocks_via_cloud` | Sensor | Number of unlocks whose command came from the WeLock cloud. Attributes: `confirmed`, `unconfirmed`, `failed`, `average_duration_ms`. |
 | `sensor.<name>_unlocks_offline` | Sensor | Number of unlocks whose command came from the local cache (no cloud contact). Same attributes. |
 | `event.<name>_unlock_history` | Event | One event per unlock attempt (`unlock_cloud`, `unlock_offline`, `unlock_failed`) with path, result, duration and challenge value. Shows up in the logbook and history. |
 | `sensor.<name>_last_unlock_attempt` | Sensor (diagnostic) | Time of the last unlock attempt; attributes carry its result and the ten most recent attempts. |
 | `sensor.<name>_connection_quality` | Sensor (diagnostic) | How well Home Assistant reaches the lock: `good`, `fair`, `poor`, or `unknown` until three unlock attempts exist. Judged from the latest ten attempts (connect time, failures) and the signal strength; the attributes show the details and a suggestion (move the adapter or a Bluetooth proxy closer when the signal is weak). See [Slow or failing unlocks](#-troubleshooting). |
-| `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
+| `sensor.<name>_last_access` | Sensor (diagnostic, disabled by default) | Last entry of the access log (who, when, how). Stays `unknown` until the `welock_ble.fetch_access_log` service has been run once; the last fetched entries are kept across restarts. |
 
 The exact entity IDs depend on the BLE name and the HA language.
 
@@ -132,8 +138,9 @@ The exact entity IDs depend on the BLE name and the HA language.
   for more than 6 hours, when its battery is below 20 % (they clear above 25 %), and when the connection
   is clearly poor (at least five attempts with a median connect time of 15 s or more, or two failures).
   They clear themselves when the condition ends.
-- **`welock.clear_commands`** forgets all stored unlock commands. The table fills again from the cloud's
-  answers; until then offline unlocking has nothing to use (unless you import a table again).
+- **`welock_ble.clear_commands`** forgets all stored unlock commands. The table fills again from the cloud's
+  answers while offline unlocking is on (or after an explicit import); until then offline unlocking has
+  nothing to use.
 
 ---
 
@@ -154,12 +161,14 @@ The exact entity IDs depend on the BLE name and the HA language.
 
 The cloud unlock command depends **only on the `randomFactor` byte** of the BLE
 challenge (not on the battery level or the BLE key). There are therefore at most
-**256 distinct commands** per lock. The integration **learns** every command the
-cloud returns and stores it per config entry.
+**256 distinct commands** per lock. While the offline-unlock option is on, the
+integration **learns** every command the cloud returns and stores it per config
+entry. With the option off, no commands are learned or stored.
 
-* The table fills itself **during normal use** — even while the option is off
-  (the cloud is still used, but every command is learned along the way). The
-  *Learned offline commands* sensor shows the progress (x/256).
+* The table fills itself **only while the option is on** (or when you import a
+  table explicitly). Offline unlocks then need no cloud request; unknown values
+  still go to the cloud and are learned from its answer. The *Learned offline
+  commands* sensor shows the progress (x/256).
 * With the option enabled, a **known** challenge value is answered **locally
   without a cloud login** — faster and without logging the WeLock app out.
 * A stored command is **byte-identical** to what the cloud would return (no
@@ -212,10 +221,11 @@ switches offline unlocking on nor writes anything to the lock.
 To check that offline unlocking really works (and to document it), run a series
 of unlocks and read the counters:
 
-1. Let the table fill (normal use with the switch **off**) or check
-   `learned_commands` on the switch.
-2. Turn the switch **on**. Unlock the door several times, at least 12 s apart,
-   and note by eye each time whether the cylinder really released.
+1. Turn the switch **on** and check `learned_commands` on the switch. Every cloud
+   answer for an unknown challenge value is now learned, so the table fills up
+   over time. You can also import a table (see above).
+2. Unlock the door several times, at least 12 s apart, and note by eye each time
+   whether the cylinder really released.
 3. Compare *Unlocks offline* with your notes: `confirmed` + `unconfirmed` is what
    the lock was sent, your observation is the ground truth. Challenge values that
    are not yet stored are answered by the cloud and show up under *Unlocks via
@@ -224,7 +234,7 @@ of unlocks and read the counters:
    Assistant (or the WeLock cloud host) while repeating step 2. Offline unlocks
    still count; `unlock_failed` events with `path: cloud` show the cloud being
    unreachable.
-5. Optionally run `welock.fetch_access_log` afterwards. The lock's own log
+5. Optionally run `welock_ble.fetch_access_log` afterwards. The lock's own log
    should list the same unlocks (this logs the WeLock app out once).
 
 > ✅ **Verified on the maintainer's lock (2026-11-20):** in a series of 30 offline
@@ -240,7 +250,7 @@ of unlocks and read the counters:
 
 ## 📜 Access log (service)
 
-The **`welock.fetch_access_log`** service fetches the access log (who, when, by
+The **`welock_ble.fetch_access_log`** service fetches the access log (who, when, by
 which method) from the cloud and writes it into the *Last access* sensor
 (attributes include the most recent entries).
 
@@ -302,7 +312,7 @@ command was written, which helps to compare the timing of several attempts.
 ```yaml
 logger:
   logs:
-    custom_components.welock: debug
+    custom_components.welock_ble: debug
 ```
 The **diagnostics** (Device → Download diagnostics) contain neither the account nor the password.
 
@@ -460,7 +470,7 @@ The project documentation is available in **[English](README.md)** and **[Deutsc
 
 ```text
 welock-bluetooth/
-├── custom_components/welock/      # Home Assistant HACS integration
+├── custom_components/welock_ble/      # Home Assistant HACS integration
 │   ├── __init__.py                # Setup/unload
 │   ├── manifest.json              # Manifest incl. Bluetooth matcher "WeLock*"
 │   ├── config_flow.py             # Setup: discovery → login → select → BLE check; reauth; options

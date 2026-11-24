@@ -54,7 +54,7 @@
           "auto_relock_delay": "Afficher comme déverrouillée pendant (secondes)",
           "battery_interval": "Lire la batterie par Bluetooth toutes les (heures, 0 = seulement au déverrouillage)",
           "scan_interval": "Vérifier la portée Bluetooth toutes les (secondes)",
-          "local_unlock": "Utiliser les commandes apprises pour le déverrouillage hors ligne (apprises et vérifiées sur une seule serrure : 45 sur 45 ; désactivé par défaut ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
+          "local_unlock": "Utiliser les commandes apprises pour le déverrouillage hors ligne (les commandes ne sont apprises que lorsque cette option est activée et vérifiées sur une seule serrure : 45 sur 45 ; désactivé par défaut ; aussi disponible via l’interrupteur « Déverrouillage hors ligne »)"
         }
       }
     }
@@ -150,7 +150,7 @@
     },
     "clear_commands": {
       "name": "Effacer les commandes de déverrouillage enregistrées",
-      "description": "Oublie toutes les commandes de déverrouillage enregistrées de toutes les serrures. Le tableau se remplit de nouveau avec les réponses du cloud ; d'ici là, le déverrouillage hors ligne n'a rien à utiliser (sauf si vous importez à nouveau un tableau)."
+      "description": "Oublie toutes les commandes de déverrouillage enregistrées de toutes les serrures. Le tableau se remplit de nouveau avec les réponses du cloud tant que le déverrouillage hors ligne est activé ou après un import explicite ; d'ici là, le déverrouillage hors ligne n'a rien à utiliser."
     }
   },
   "exceptions": {

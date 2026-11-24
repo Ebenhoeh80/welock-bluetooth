@@ -2,7 +2,7 @@ import { RepoFile } from '../types';
 
 export const REPO_FILES: RepoFile[] = [
   {
-    path: 'custom_components/welock/manifest.json',
+    path: 'custom_components/welock_ble/manifest.json',
     name: 'manifest.json',
     category: 'json',
     description: {
@@ -12,7 +12,7 @@ export const REPO_FILES: RepoFile[] = [
       fr: "Manifeste d'intégration Home Assistant (Domaine, version, propriétaires, classe IoT)",
     },
     content: `{
-  "domain": "welock",
+  "domain": "welock_ble",
   "name": "WeLock Smart Lock",
   "codeowners": ["@Ebenhoeh80"],
   "config_flow": true,
@@ -24,7 +24,7 @@ export const REPO_FILES: RepoFile[] = [
 }`,
   },
   {
-    path: 'custom_components/welock/const.py',
+    path: 'custom_components/welock_ble/const.py',
     name: 'const.py',
     category: 'python',
     description: {
@@ -36,7 +36,7 @@ export const REPO_FILES: RepoFile[] = [
     content: `"""Constants for the WeLock Smart Lock integration."""
 from typing import Final
 
-DOMAIN: Final = "welock"
+DOMAIN: Final = "welock_ble"
 
 # Configuration keys
 CONF_USERNAME: Final = "username"
@@ -72,7 +72,7 @@ ATTR_FIRMWARE_VERSION: Final = "firmware_version"
 ATTR_SIGNAL_STRENGTH: Final = "signal_strength"`,
   },
   {
-    path: 'custom_components/welock/api.py',
+    path: 'custom_components/welock_ble/api.py',
     name: 'api.py',
     category: 'python',
     description: {
@@ -274,7 +274,7 @@ class WeLockApiClient:
             return []`,
   },
   {
-    path: 'custom_components/welock/__init__.py',
+    path: 'custom_components/welock_ble/__init__.py',
     name: '__init__.py',
     category: 'python',
     description: {
@@ -408,7 +408,7 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await async_setup_entry(hass, entry)`,
   },
   {
-    path: 'custom_components/welock/config_flow.py',
+    path: 'custom_components/welock_ble/config_flow.py',
     name: 'config_flow.py',
     category: 'python',
     description: {
@@ -554,7 +554,7 @@ class WeLockOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=options_schema)`,
   },
   {
-    path: 'custom_components/welock/lock.py',
+    path: 'custom_components/welock_ble/lock.py',
     name: 'lock.py',
     category: 'python',
     description: {
@@ -724,7 +724,7 @@ class WeLockLock(CoordinatorEntity, LockEntity):
         self.async_write_ha_state()`,
   },
   {
-    path: 'custom_components/welock/sensor.py',
+    path: 'custom_components/welock_ble/sensor.py',
     name: 'sensor.py',
     category: 'python',
     description: {
@@ -893,7 +893,7 @@ class WeLockLastUnlockTypeSensor(WeLockSensorBase):
         return mapping.get(str(val).lower(), str(val))`,
   },
   {
-    path: 'custom_components/welock/binary_sensor.py',
+    path: 'custom_components/welock_ble/binary_sensor.py',
     name: 'binary_sensor.py',
     category: 'python',
     description: {
@@ -1028,7 +1028,7 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return True`,
   },
   {
-    path: 'custom_components/welock/translations/de.json',
+    path: 'custom_components/welock_ble/translations/de.json',
     name: 'translations/de.json',
     category: 'json',
     description: {
@@ -1102,7 +1102,7 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
 }`,
   },
   {
-    path: 'custom_components/welock/translations/en.json',
+    path: 'custom_components/welock_ble/translations/en.json',
     name: 'translations/en.json',
     category: 'json',
     description: {
@@ -1176,7 +1176,7 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
 }`,
   },
   {
-    path: 'custom_components/welock/translations/es.json',
+    path: 'custom_components/welock_ble/translations/es.json',
     name: 'translations/es.json',
     category: 'json',
     description: {
@@ -1250,7 +1250,7 @@ class WeLockGatewayBinarySensor(CoordinatorEntity, BinarySensorEntity):
 }`,
   },
   {
-    path: 'custom_components/welock/translations/fr.json',
+    path: 'custom_components/welock_ble/translations/fr.json',
     name: 'translations/fr.json',
     category: 'json',
     description: {

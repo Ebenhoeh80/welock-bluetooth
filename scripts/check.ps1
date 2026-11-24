@@ -29,7 +29,7 @@ if (Test-Module "xenon") {
 & $py -c "import homeassistant" *> $null
 $haInstalled = ($LASTEXITCODE -eq 0)
 if ((Test-Module "mypy") -and $haInstalled) {
-    Invoke-Step "mypy" @("-m", "mypy", "custom_components/welock")
+    Invoke-Step "mypy" @("-m", "mypy", "custom_components/welock_ble")
 } else {
     Write-Host ""; Write-Host "== mypy: needs mypy and Home Assistant (its types) in this environment, skipped; the CI runs it"
 }

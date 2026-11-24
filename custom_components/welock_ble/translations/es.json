@@ -54,7 +54,7 @@
           "auto_relock_delay": "Mostrar como abierta durante (segundos)",
           "battery_interval": "Leer la batería por Bluetooth cada (horas, 0 = solo al abrir)",
           "scan_interval": "Comprobar el alcance Bluetooth cada (segundos)",
-          "local_unlock": "Usar comandos aprendidos para el desbloqueo sin conexión (aprendidos y comprobados en una sola cerradura: 45 de 45; desactivado por defecto; también disponible como interruptor «Desbloqueo sin conexión»)"
+          "local_unlock": "Usar comandos aprendidos para el desbloqueo sin conexión (los comandos solo se aprenden con esta opción activada y se comprobaron en una sola cerradura: 45 de 45; desactivado por defecto; también disponible como interruptor «Desbloqueo sin conexión»)"
         }
       }
     }
@@ -150,7 +150,7 @@
     },
     "clear_commands": {
       "name": "Borrar los comandos de apertura guardados",
-      "description": "Olvida todos los comandos de apertura guardados de todas las cerraduras. La tabla se vuelve a llenar con las respuestas de la nube; hasta entonces la apertura sin conexión no tiene nada que usar (salvo que importes una tabla de nuevo)."
+      "description": "Olvida todos los comandos de apertura guardados de todas las cerraduras. La tabla se vuelve a llenar con las respuestas de la nube mientras la apertura sin conexión esté activada o tras importar una tabla; hasta entonces la apertura sin conexión no tiene nada que usar."
     }
   },
   "exceptions": {

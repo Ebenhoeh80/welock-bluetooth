@@ -13,21 +13,21 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.welock.api import (
+from custom_components.welock_ble.api import (
     CannotConnect,
     InvalidAuth,
     LockUnavailable,
     WeLockAccessRecord,
     WeLockApiError,
 )
-from custom_components.welock.ble import LockNotInRange, WeLockBleError
-from custom_components.welock.const import DOMAIN
+from custom_components.welock_ble.ble import LockNotInRange, WeLockBleError
+from custom_components.welock_ble.const import DOMAIN
 
 from .conftest import DEVICE_NUMBER, STORED_COMMAND, FakeLock
 from .test_integration import _entity_id, _setup, _unlock
 
-REQUEST = "custom_components.welock.api.WeLockApiClient.async_request_unlock_command"
-ACCESS_LOG = "custom_components.welock.api.WeLockApiClient.async_get_access_log"
+REQUEST = "custom_components.welock_ble.api.WeLockApiClient.async_request_unlock_command"
+ACCESS_LOG = "custom_components.welock_ble.api.WeLockApiClient.async_get_access_log"
 
 
 def _record(time: str = "2026-11-20 10:00:00") -> WeLockAccessRecord:
@@ -130,14 +130,14 @@ async def test_a_stored_command_that_fails_to_write_is_dropped(
     await coordinator.async_set_local_unlock(True)
 
     async def failing_exchange(hass, address, command_provider=None, report=None, **kwargs):
-        from custom_components.welock.protocol import BatteryResponse
+        from custom_components.welock_ble.protocol import BatteryResponse
 
         await command_provider(BatteryResponse(random_factor=7, battery=80))
         report.command_written = True
         raise WeLockBleError("write failed")
 
     with (
-        patch("custom_components.welock.coordinator.async_exchange", failing_exchange),
+        patch("custom_components.welock_ble.coordinator.async_exchange", failing_exchange),
         pytest.raises(HomeAssistantError),
     ):
         await _unlock(hass)

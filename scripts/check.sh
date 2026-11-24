@@ -31,7 +31,7 @@ else
   echo; echo "== xenon: not installed (pip install xenon), skipped; the CI runs it"
 fi
 if "$PY" -m mypy --version >/dev/null 2>&1 && "$PY" -c "import homeassistant" >/dev/null 2>&1; then
-  step "mypy" "$PY" -m mypy custom_components/welock
+  step "mypy" "$PY" -m mypy custom_components/welock_ble
 else
   echo; echo "== mypy: needs mypy and Home Assistant (its types) in this environment, skipped; the CI runs it"
 fi

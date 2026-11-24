@@ -91,9 +91,10 @@ BLE-Schlüssel), es gibt also höchstens **256 verschiedene Befehle** pro Schlos
   `randomFactor` abhängen.
 * `welock_offline_oracle.py --harvest` erntet die Tabelle `randomFactor→command`
   einmalig aus der Cloud (**kein BLE-Write**); danach erzeugt `--table … --rf N`
-  Befehle rein offline. Die Integration lernt dieselbe Tabelle im Betrieb selbst.
+  Befehle rein offline. Die Integration lernt dieselbe Tabelle im Betrieb selbst,
+  solange Offline-Entsperren aktiv ist; bei ausgeschaltetem Schalter wird nichts gespeichert.
 * `welock_cloud_audit.py` liest das Zutrittsprotokoll (entspricht dem Dienst
-  `welock.fetch_access_log` der Integration).
+  `welock_ble.fetch_access_log` der Integration).
 
 > ⚠️ Geerntete Tabellen/Berichte sind **schloss-spezifisch** und landen im
 > **git-ignorierten** Ordner `tools/offline-data/`. Niemals committen. Diese

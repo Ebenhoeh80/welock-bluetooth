@@ -1,5 +1,5 @@
 {
-  "domain": "welock",
+  "domain": "welock_ble",
   "name": "WeLock Smart Lock BLE",
   "bluetooth": [
     {
@@ -14,8 +14,8 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Ebenhoeh80/welock-bluetooth/issues",
-  "loggers": ["custom_components.welock"],
+  "loggers": ["custom_components.welock_ble"],
   "quality_scale": "gold",
   "requirements": ["bleak-retry-connector>=3.1.0"],
-  "version": "2.6.1"
+  "version": "3.0.0"
 }

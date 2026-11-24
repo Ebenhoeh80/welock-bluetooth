@@ -100,8 +100,9 @@ async def choose_unlock_command(
 
     With the offline switch on and a stored command for exactly this challenge
     value, that command is used (no cloud request, no app logout). In every other
-    case - switch off, unknown challenge value, damaged entry - the cloud is asked,
-    and what it returns is stored (shadow filling, even while the switch is off).
+    case - switch off, unknown challenge value, damaged entry - the cloud is asked.
+    Only while the switch is on is the cloud's answer learned and stored, so the
+    table never fills itself for users who have not enabled offline unlocking.
     Nothing is ever sent that was not either returned by the cloud or validated
     when it was read back from the table.
     """
@@ -113,7 +114,8 @@ async def choose_unlock_command(
             )
             return PATH_OFFLINE, cached
     command = await request_cloud(state)
-    await cache.async_put(state.random_factor, command)
+    if local_unlock:
+        await cache.async_put(state.random_factor, command)
     return PATH_CLOUD, command
 
 
