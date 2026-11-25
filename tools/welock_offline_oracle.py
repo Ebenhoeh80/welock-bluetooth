@@ -330,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.table:
         return run_offline(args)
     parser.error("Entweder --harvest (Online-Ernte) oder --table (Offline-Nutzung) angeben.")
+    return 2  # parser.error() beendet bereits; das Ende bleibt so explizit
 
 
 if __name__ == "__main__":
