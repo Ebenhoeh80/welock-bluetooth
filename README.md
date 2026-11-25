@@ -523,8 +523,13 @@ MIT © 2026 Daniel Ebenhöh — see [LICENSE](LICENSE).
 
 If it saves you time or trouble, a small voluntary tip helps keep the project going. Every contribution, however small, is hugely appreciated. Thank you! 🙏
 
+Sponsoring is voluntary and does not buy support, features or response times.
+
+<a href="https://github.com/sponsors/Ebenhoeh80">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Sponsor%20on%20GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" height="42">
+</a>
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
-  <img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" height="42">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Donate%20via%20PayPal-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" height="42">
 </a>
 <a href="https://buymeacoffee.com/daneben">
   <img src="https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">

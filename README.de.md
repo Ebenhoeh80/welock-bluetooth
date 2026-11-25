@@ -530,8 +530,13 @@ MIT © 2026 Daniel Ebenhöh — siehe [LICENSE](LICENSE).
 
 Wenn sie dir Zeit oder Ärger erspart, hilft eine kleine freiwillige Spende, das Projekt am Laufen zu halten. Jeder Beitrag, egal wie klein, freut mich riesig. Vielen Dank! 🙏
 
+Sponsoring ist freiwillig und begründet keinen Anspruch auf Support, Funktionen oder Antwortzeiten.
+
+<a href="https://github.com/sponsors/Ebenhoeh80">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Auf%20GitHub%20sponsern-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" height="42">
+</a>
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
-  <img src="https://img.shields.io/badge/Spendier%20mir%20einen%20Kaffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Spenden via PayPal" height="42">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Spenden%20via%20PayPal-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Spenden via PayPal" height="42">
 </a>
 <a href="https://buymeacoffee.com/daneben">
   <img src="https://img.shields.io/badge/%E2%98%95%20Spendier%20mir%20einen%20Kaffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
