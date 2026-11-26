@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 # Bump this together with the manifest, pyproject.toml and the changelog (RELEASING.md).
-EXPECTED_VERSION = "3.0.0"
+EXPECTED_VERSION = "3.0.1"
 
 
 class TestManifests(unittest.TestCase):
@@ -70,7 +70,7 @@ class TestManifests(unittest.TestCase):
 
         self.assertEqual(data.get("name"), "WeLock Smart Lock BLE")
         self.assertTrue(data.get("render_readme"))
-        self.assertEqual(data.get("homeassistant"), "2024.11.0")
+        self.assertEqual(data.get("homeassistant"), "2025.7.0")
 
 
 if __name__ == "__main__":

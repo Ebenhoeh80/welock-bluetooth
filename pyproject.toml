@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "welock-tools"
-version = "3.0.0"
+version = "3.0.1"
 description = "Tools and Home Assistant integration suite for WeLock smart locks"
 readme = "README.md"
 authors = [{ name = "Daniel Ebenhöh" }]

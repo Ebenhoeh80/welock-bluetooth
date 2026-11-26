@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.core import Context, HomeAssistant, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError, Unauthorized
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 
 from custom_components.welock_ble.api import (
     CannotConnect,
@@ -171,6 +171,60 @@ async def test_import_refuses_files_outside_the_rules(
         await hass.services.async_call(
             DOMAIN, "import_commands", {"path": name}, blocking=True, return_response=True
         )
+
+
+async def test_command_table_services_are_admin_only_and_keep_the_import_response(
+    hass: HomeAssistant, config_entry: MockConfigEntry, fake_lock: FakeLock
+) -> None:
+    """Stored unlock commands are credentials: only an admin may import or clear them."""
+    await _setup(hass, config_entry)
+    admin = MockUser(is_owner=True).add_to_hass(hass)
+    regular = MockUser().add_to_hass(hass)
+
+    assert hass.services.supports_response(DOMAIN, "import_commands") is SupportsResponse.OPTIONAL
+    regular_context = Context(user_id=regular.id)
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(
+            DOMAIN,
+            "import_commands",
+            {},
+            blocking=True,
+            return_response=True,
+            context=regular_context,
+        )
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(
+            DOMAIN,
+            "clear_commands",
+            {},
+            blocking=True,
+            context=regular_context,
+        )
+
+    admin_context = Context(user_id=admin.id)
+    await hass.services.async_call(
+        DOMAIN, "clear_commands", {}, blocking=True, context=admin_context
+    )
+
+    table = await _write_table(
+        hass,
+        "welock-admin-table.json",
+        json.dumps({"device_number": DEVICE_NUMBER, "table": {"1": "U1IMPORTEDCMD01"}}),
+    )
+    try:
+        result = await hass.services.async_call(
+            DOMAIN,
+            "import_commands",
+            {"path": table.name},
+            blocking=True,
+            return_response=True,
+            context=admin_context,
+        )
+    finally:
+        await hass.async_add_executor_job(table.unlink)
+    # The admin keeps the import summary; only randomFactor keys may be listed as
+    # conflicts, never the imported credential itself.
+    assert result == {"added": 1, "unchanged": 0, "conflicts": [], "known": 1}
 
 
 async def test_import_reports_a_missing_or_broken_file(
