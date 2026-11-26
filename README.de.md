@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/Ebenhoeh80/welock-bluetooth?style=for-the-badge&color=blue)](https://github.com/Ebenhoeh80/welock-bluetooth/releases)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.7+-41BDF5.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io)
 [![Languages](https://img.shields.io/badge/languages-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-success.svg?style=for-the-badge)](#-sprachen--languages)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
@@ -57,7 +57,7 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
 ## 📋 Voraussetzungen
 
 ### Für die Home-Assistant-Integration
-* **Home Assistant 2024.11.0** oder neuer, mit **HACS** oder Dateizugriff auf `/config/custom_components/`.
+* **Home Assistant 2025.7.0** oder neuer, mit **HACS** oder Dateizugriff auf `/config/custom_components/`.
 * **Bluetooth in Reichweite der Tür:** ein Bluetooth-Adapter am HA-Host oder ein **ESPHome-Bluetooth-Proxy** mit aktiven Verbindungen (`bluetooth_proxy: active: true`). Die Integration braucht eine *verbindungsfähige* Strecke zum Schloss, passives Mithören reicht nicht.
 * **WeLock-Konto:** E-Mail und Passwort der WeLock-App (iOS/Android). Eine separate Client-ID oder eine WiFiBox wird **nicht** benötigt.
 * Das Schloss muss in der WeLock-App eingerichtet sein. Die Integration liest Schlossnummer (`deviceNumber`) und BLE-Modul (`ble[].deviceName`, `ble[].deviceMac`) aus dem Konto.
@@ -76,9 +76,12 @@ Home Assistant                          Schloss (BLE)              WeLock-Cloud
 ## 📦 Installation
 
 ### Über HACS (empfohlen)
-1. **HACS** öffnen → Drei-Punkte-Menü → **Benutzerdefinierte Repositories**.
-2. URL `https://github.com/Ebenhoeh80/welock-bluetooth` eingeben, Kategorie **Integration**, **Hinzufügen**.
-3. **WeLock Smart Lock** suchen → **Herunterladen** → Home Assistant **neu starten**.
+1. **HACS** öffnen → **Integrationen** → **Repositories entdecken und herunterladen** (oder **+**).
+2. **WeLock Smart Lock BLE** suchen → **Herunterladen** → Home Assistant **neu starten**.
+
+Falls die Integration noch nicht angeboten wird, einmal als benutzerdefiniertes Repository
+hinzufügen: **HACS** → Drei-Punkte-Menü → **Benutzerdefinierte Repositories**, URL
+`https://github.com/Ebenhoeh80/welock-bluetooth`, Kategorie **Integration**, dann Schritt 2 wiederholen.
 
 ### Manuell
 1. Neuestes [Release](https://github.com/Ebenhoeh80/welock-bluetooth/releases) herunterladen.

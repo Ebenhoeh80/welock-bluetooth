@@ -18,6 +18,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service import async_register_admin_service
 
 from .api import WeLockApiClient
 from .cache import CommandCache, parse_command_table
@@ -150,14 +151,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         partial(_async_fetch_access_log, hass),
         schema=_FETCH_ACCESS_LOG_SCHEMA,
     )
-    hass.services.async_register(
+    # Both services change the table of stored unlock commands, i.e. credentials for a
+    # physical lock. Only administrators may import or wipe them.
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_IMPORT_COMMANDS,
         partial(_async_import_commands, hass),
         schema=_IMPORT_COMMANDS_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
-    hass.services.async_register(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_CLEAR_COMMANDS,
         partial(_async_clear_commands, hass),

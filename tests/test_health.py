@@ -13,6 +13,7 @@ for mod in [
     "homeassistant.core",
     "homeassistant.helpers",
     "homeassistant.helpers.aiohttp_client",
+    "homeassistant.helpers.service",
     "homeassistant.helpers.storage",
     "homeassistant.helpers.update_coordinator",
     "homeassistant.components",

@@ -11,7 +11,7 @@ Unlock **WeLock smart cylinders** (Touch41, SECBN51, PCB41, SECBREBL01, …) fro
 - 🌐 Deutsch · English · Español · Français
 
 ## Requirements
-- Home Assistant **2024.11** or newer
+- Home Assistant **2025.7** or newer
 - Bluetooth adapter or ESPHome Bluetooth proxy (active connections) within reach of the door
 - WeLock app account (email + password). No WiFiBox and no client ID required.
 

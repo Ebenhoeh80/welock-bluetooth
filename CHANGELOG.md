@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-26
+
+Security fix for the HACS default-repository review. The unlock protocol is unchanged.
+
+### Security
+- `welock_ble.import_commands` and `welock_ble.clear_commands` are now registered with
+  `async_register_admin_service`. Stored unlock commands are credentials for a physical lock, so
+  only Home Assistant administrators may import or wipe the table. The import still returns its
+  summary (`added`, `unchanged`, `conflicts`, `known`) and never returns command bytes.
+
+### Changed
+- Minimum Home Assistant version is now 2025.7.0: that is the first release whose
+  `async_register_admin_service` accepts `supports_response`, which is needed to keep the import
+  result. The HACS installation instructions now lead with searching the default catalog and keep
+  the custom-repository steps as a fallback.
+
 ## [3.0.0] - 2026-11-24
 
 Breaking release for the HACS default-repository review. The unlock protocol itself is unchanged.
