@@ -1,5 +1,7 @@
 # Engineering notes: architecture, failure modes, measurements, quality gates
 
+Deutsche Fassung: [ENGINEERING.de.md](ENGINEERING.de.md).
+
 This page records how the integration works, where its time goes, what can fail and how it
 recovers, what is checked automatically, and which options were rejected and why. Numbers are
 measured, with date and method; where something was not measured, it says so.
